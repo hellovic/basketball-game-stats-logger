@@ -127,6 +127,21 @@ test('file names are readable and filesystem safe', () => {
   assert.equal(teamFileName({}), 'team_team.json');
 });
 
+test('file names keep non-Latin scripts, so saves cannot overwrite each other', () => {
+  // An ASCII-only slug turned every Chinese name into `team_team.json`, so
+  // saving the second team silently overwrote the first.
+  assert.equal(teamFileName({ name: '陳大文' }), '陳大文_team.json');
+  assert.equal(teamFileName({ name: 'Sunrise 2026' }), 'Sunrise-2026_team.json');
+  assert.equal(teamFileName({ name: 'Águilas' }), 'Águilas_team.json');
+  assert.notEqual(
+    teamFileName({ name: '陳大文' }),
+    teamFileName({ name: '李小明' }),
+    'two different Chinese team names must produce two different file names',
+  );
+  // A hostile non-Latin name is still neutralised.
+  assert.equal(teamFileName({ name: '../../etc/passwd' }), 'etc-passwd_team.json');
+});
+
 // ---------------------------------------------------------------------------
 // Reading
 // ---------------------------------------------------------------------------

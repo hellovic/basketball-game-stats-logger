@@ -67,12 +67,20 @@ export function teamFileJson(team, { appVersion = null, exportedAt = Date.now() 
   return JSON.stringify(payload, null, 2);
 }
 
-/** `2026-01-17_Northside_team.json`, safe for every filesystem. */
+/**
+ * `Northside_team.json`, safe for every filesystem.
+ *
+ * Letters and digits are kept in ANY script, not just ASCII. An ASCII-only
+ * slug turned a Chinese team name into the same `team_team.json` every time, so
+ * saving the second team silently overwrote the first. Everything that is not a
+ * letter or digit collapses to a single `-`, which also neutralises `/` and `..`
+ * in a hostile name.
+ */
 export function teamFileName(team) {
   const name =
     String(team?.name ?? '')
-      .trim()
-      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .normalize('NFC')
+      .replace(/[^\p{L}\p{N}]+/gu, '-')
       .replace(/^-+|-+$/g, '') || 'team';
   return `${name}_team.json`;
 }
@@ -110,7 +118,7 @@ export function parseTeamFile(text) {
       team: null,
       error:
         'That is a full game backup, not a team. Use "Restore from JSON…" in the ' +
-        'Export panel for that file.',
+        'bottom bar for that file.',
     };
   }
 
