@@ -550,9 +550,11 @@ function renderFooter() {
   ).join('');
 
   // Shown so a stale cached bundle is obvious at a glance when something looks
-  // out of date.
+  // out of date. The build stamp is the discriminator: if you are expecting a
+  // fix and this still reads the old stamp, the browser is running old code.
   const version = document.querySelector('meta[name="app-version"]')?.content;
-  $('app-version').textContent = version ? `v${version}` : '';
+  const build = document.querySelector('meta[name="app-build"]')?.content;
+  $('app-version').textContent = version ? `v${version}${build ? ` · ${build}` : ''}` : '';
 }
 
 /**
