@@ -865,9 +865,17 @@ function openRosterImport(team, source, detail = '') {
   pendingSource = source;
   pendingDetail = detail;
 
+  // The paste box is closed here rather than left open: both dialogs share the
+  // same stacking level, and the paste box comes later in the document, so
+  // leaving it open would hide the confirmation behind it and look like the
+  // button did nothing at all.
+  $('paste-roster-dialog').hidden = true;
+
   // A file replaces, matching the wording of the button that opened it. A paste
   // is a deliberate edit, so both choices are offered, starting from replace.
   const isPaste = source === 'the pasted roster';
+  // The title should not say "from a file" when nothing was read from a file.
+  $('load-team-title').textContent = isPaste ? 'Use the pasted roster' : 'Load a team from a file';
   $('load-mode-replace').checked = true;
   $('load-mode-add').checked = false;
   $('load-team-mode').hidden = !isPaste;

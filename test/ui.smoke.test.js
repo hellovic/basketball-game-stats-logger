@@ -622,9 +622,11 @@ test('pasting a roster asks to replace or add, then imports on confirm', async (
 
   const dialog = document.getElementById('load-team-dialog');
   assert.equal(dialog.hidden, false, 'the same confirmation the file path uses');
-  // The paste box stays behind the overlay, so the pasted text is still visible
-  // while the choice is made; the confirmation owns the click either way.
-  assert.equal(paste.hidden, false);
+  // The paste box must close, because both dialogs share one stacking level and
+  // the paste box sits later in the document: leaving it open put the
+  // confirmation behind it, so a real click on "Read these players" looked like
+  // it had done nothing at all.
+  assert.equal(paste.hidden, true, 'the paste box must not cover the confirmation');
   // A paste supplies players, not an identity, and it offers both choices.
   assert.equal(document.getElementById('load-team-mode').hidden, false);
   assert.match(document.getElementById('load-team-target').textContent, /the pasted roster/);
