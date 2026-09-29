@@ -120,27 +120,59 @@ On macOS the first incoming connection may raise a firewall prompt — allow it,
 or the other devices will time out. Use `--local` when you want to be certain
 nothing is exposed to the network at all.
 
-### Team files
+### Team files and rosters
 
-Rosters do not change much week to week, so a team can be saved as a file and
-loaded back next game.
+Rosters do not change much week to week, so a team can be saved and loaded back
+next game. Writing JSON by hand is the hard way; **Paste roster…** is the easy
+one.
 
+**Paste roster…** takes the two columns you already have open in a spreadsheet,
+a notes app or a message — one player per line:
+
+```
+Player  Number
+陳大文   55
+李小明   4
+```
+
+- The separator can be a tab, a comma or runs of spaces, so pasting straight out
+  of Excel, Numbers, Google Sheets or a document all work.
+- The header row is optional, its wording does not have to match the example, and
+  its columns may be in either order. With no header, the numeric column is found
+  by looking at the data, so `陳大文,U14,55` reads the number as 55, not U14.
+- Extra columns are ignored (and named back to you), blank lines and `#` comments
+  are skipped, and a leading `#` on a number is stripped.
+- A team name is never taken from a paste: the paste replaces or adds *players*,
+  and your team keeps its name and abbreviation.
+- Shared jersey numbers, unnumbered players and nameless rows are reported as
+  warnings rather than blocking the import.
+
+Then choose **Replace it** or **Add to it**. **Replace** keeps the entries those
+players already logged in the score and the play-by-play, and drops the players
+themselves — for deleting players *and* their entries, use the checkboxes in the
+roster instead.
+
+- **Load team from file… (JSON or CSV)** reads a saved team or a `.csv` back,
+  deciding by the file extension. A CSV is parsed exactly like a paste.
 - **Save team as file** writes the current team's name, abbreviation and roster
-  to a small JSON file, named `Northside_team.json`, and downloads it.
-- **Load team from file…** reads one back. You pick a file, the app shows what is
-  in it, and nothing changes until you confirm — loading replaces the current
-  roster, which is too destructive to trigger from a file picker alone.
+  to a small JSON file, named after the team, and downloads it.
 
-The other team and the game log are never touched, so loading is safe mid-game.
-Player stats already recorded stay attached to the right players.
+Whichever way a roster arrives, the app shows what it understood and what will
+change, and nothing happens until you confirm — replacing a roster is too
+destructive to trigger from a file picker or a paste alone.
+
+The other team and the game log are never touched, so an import is safe
+mid-game. Player stats already recorded stay attached to the right players:
+importing reuses an existing player's identity when the names match.
 
 Because it is a file, a team can be mailed to another coach, carried to the
 scorer's other laptop, and kept as a backup — none of which a browser-local
 store can do. Keep your teams somewhere sensible; there is no cloud copy.
 
 Picking the wrong file is handled rather than ignored: a full game backup is
-detected and you are pointed at **Restore from JSON…** instead, and a corrupt
-file reports the problem without changing anything.
+detected and you are pointed at **Restore from JSON…** instead, JSON pasted into
+the text box says so rather than being parsed into nonsense, and a corrupt file
+reports the problem without changing anything.
 
 The file looks like this, and is safe to hand-edit:
 
@@ -306,6 +338,7 @@ app/
     store.js        state, entry/undo/delete, roster loading, persistence
     clock.js        period lengths, starting, ticking down
     teamfile.js     the team file format: capture, write and parse
+    rosterimport.js reading a pasted roster or CSV, forgivingly
     format.js       clock, percentage and label formatting
     export.js       CSV and JSON generation
     sample.js       the seeded sample game
@@ -319,13 +352,14 @@ test/
   clock.test.js     period lengths, refilling, ticking, period ends
   store.test.js     game settings: period structure, length, clock state
   teamfile.test.js  team file format, round trips and rejections
+  rosterimport.test.js  pasted/CSV roster parsing, delimiters and headers
   sample.test.js    the seed game is well formed and its math reconciles
   ui.smoke.test.js  boots the UI against a minimal DOM stub
 ```
 
-`stats.js`, `derive.js`, `store.js`, `clock.js`, `teamfile.js`, `format.js` and
-`export.js` never touch the DOM, which is what lets the tests exercise them
-directly.
+`stats.js`, `derive.js`, `store.js`, `clock.js`, `teamfile.js`,
+`rosterimport.js`, `format.js` and `export.js` never touch the DOM, which is what
+lets the tests exercise them directly.
 
 ### Adding a statistic
 
