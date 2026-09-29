@@ -1153,6 +1153,68 @@ tbody tr:hover {
   margin-top: var(--sp-2);
 }
 
+.dialog__panel--wide {
+  max-width: 560px;
+}
+
+/* Replace or add: the only choice when a roster arrives, so it sits with the
+   summary the user is reading rather than in the buttons. */
+.dialog__mode {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.dialog__mode[hidden] {
+  display: none;
+}
+
+.dialog__mode-label {
+  flex: 1 1 100%;
+}
+
+.dialog__radio {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.dialog__radio input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* A pasted roster is wide and tall: one player per line. Monospace so the
+   columns a scorer pastes in stay visually aligned. */
+.paste-area {
+  width: 100%;
+  min-height: 180px;
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-num);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.paste-area:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .dialog__error {
   margin: var(--sp-2) 0 0;
   padding: var(--sp-2) var(--sp-3);

@@ -242,7 +242,10 @@
         Save team as file
       </button>
       <button type="button" class="btn btn--sm btn--ghost" data-action="open-load-team">
-        Load team from file&hellip;
+        Load team from file&hellip; (JSON or CSV)
+      </button>
+      <button type="button" class="btn btn--sm btn--ghost" data-action="open-paste-roster">
+        Paste roster&hellip;
       </button>
     </div>
   </div>
@@ -257,18 +260,54 @@
 <!-- =====================================================================
      Team file: hidden file picker and the import confirmation
      ===================================================================== -->
-<input type="file" id="team-file-input" accept="application/json,.json" hidden>
+<input type="file" id="team-file-input" accept="application/json,.json,.csv,.txt,text/csv,text/plain" hidden>
+<input type="file" id="roster-file-input" accept=".csv,.txt,text/csv,text/plain" hidden>
 
 <div class="dialog" id="load-team-dialog" role="dialog" aria-modal="true"
      aria-labelledby="load-team-title" hidden>
   <div class="dialog__panel">
     <h2 class="dialog__title" id="load-team-title">Load a team from a file</h2>
     <p class="hint" id="load-team-target"></p>
+    <div class="dialog__mode" id="load-team-mode">
+      <span class="dialog__mode-label">What to do with the roster:</span>
+      <label class="dialog__radio">
+        <input type="radio" name="load-team-mode" id="load-mode-replace" value="replace" checked>
+        <span>Replace it</span>
+      </label>
+      <label class="dialog__radio">
+        <input type="radio" name="load-team-mode" id="load-mode-add" value="add">
+        <span>Add to it</span>
+      </label>
+    </div>
     <p class="dialog__error" id="load-team-error" hidden></p>
     <div class="dialog__actions">
       <button type="button" class="btn btn--ghost" data-action="close-dialog">Cancel</button>
       <button type="button" class="btn btn--primary" data-action="confirm-load-team" id="confirm-load-team">
         Load team
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     Paste a roster: the two columns a scorer actually has to hand
+     ===================================================================== -->
+<div class="dialog" id="paste-roster-dialog" role="dialog" aria-modal="true"
+     aria-labelledby="paste-roster-title" hidden>
+  <div class="dialog__panel dialog__panel--wide">
+    <h2 class="dialog__title" id="paste-roster-title">Paste a roster</h2>
+    <p class="hint">
+      One player per line: the player and their number, separated by a tab or a
+      comma. A header row is optional, and extra columns are ignored.
+    </p>
+    <textarea id="roster-paste-text" class="paste-area" rows="10" spellcheck="false"
+              placeholder="Player&#9;Number&#10;陳大文&#9;55&#10;李小明&#9;4"></textarea>
+    <p class="hint">The team name and abbreviation are kept as they are &mdash; a paste only replaces players.</p>
+    <p class="dialog__error" id="paste-roster-error" hidden></p>
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--ghost" data-action="close-dialog">Cancel</button>
+      <button type="button" class="btn btn--primary" data-action="import-pasted-roster">
+        Read these players
       </button>
     </div>
   </div>

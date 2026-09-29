@@ -14,6 +14,7 @@
 import {
   addEvent,
   addPlayer,
+  appendRoster,
   createGame,
   deleteEvent,
   loadState,
@@ -31,6 +32,7 @@ import {
 } from './store.js';
 import { COUNTING, REBOUND, SHOOTING, describeEvent, entryButtons, getStat } from './stats.js';
 import { parseTeamFile, teamFileJson, teamFileName, teamFromGame } from './teamfile.js';
+import { parseRosterText } from './rosterimport.js';
 import {
   computeGame,
   consistencyWarnings,
@@ -746,26 +748,15 @@ function openLoadTeamFile() {
   $('team-file-input').click();
 }
 
-/** The parsed team waiting for the user to confirm replacing the roster. */
-let pendingTeam = null;
-let pendingTeamFileName = '';
-
-function closeDialogs() {
-  $('load-team-dialog').hidden = true;
-  pendingTeam = null;
-  pendingTeamFileName = '';
-}
-
 /**
- * Read a picked team file and ask for confirmation.
+ * Read a picked roster file and ask for confirmation.
  *
- * Nothing is applied until the user confirms, because the file replaces the
- * current roster and that is a destructive action to trigger from a file picker.
+ * A `.json` team file and a `.csv` roster are two spellings of the same thing,
+ * so both land in the same confirmation dialog. Nothing is applied until the
+ * user confirms, because the import replaces the current roster and that is a
+ * destructive action to trigger from a file picker.
  */
-async function handleTeamFile(file) {
-  const error = $('load-team-error');
-  error.hidden = true;
-
+async function loadRosterFromFile(file) {
   let text;
   try {
     text = await file.text();
@@ -774,49 +765,223 @@ async function handleTeamFile(file) {
     return;
   }
 
-  const { team, error: problem } = parseTeamFile(text);
-  if (problem) {
-    showToast(problem);
+  // Decide by extension, not by MIME type: a CSV exported from Excel or
+  // Numbers arrives as `application/octet-stream` surprisingly often.
+  if (/\.json$/i.test(file.name)) {
+    const { team, error } = parseTeamFile(text);
+    if (error) {
+      showToast(error);
+      return;
+    }
+    openRosterImport(team, file.name);
+    return;
+  }
+
+  const result = parseRosterText(text);
+  if (result.error) {
+    showToast(result.error);
+    return;
+  }
+
+  const current = teamFor(detailTeamSlot);
+  const players = result.players.map((player, index) => ({
+    ...player,
+    // Reuse an existing id when a player of the same name is already here, so
+    // events logged earlier against that player keep pointing at them.
+    id: existingPlayerId(current?.id, player.name) || `import_${index}_${player.number || 'x'}`,
+  }));
+
+  openRosterImport(
+    { name: current?.name || '', abbreviation: current?.abbreviation || '', players },
+    file.name,
+    describeRosterImport(result),
+  );
+}
+
+/** The id of a same-named player already on a team, so a reload keeps history. */
+function existingPlayerId(teamId, name) {
+  if (!teamId || !name) return null;
+  const match = game.players.find(
+    (player) => player.teamId === teamId && player.name.trim() === name.trim(),
+  );
+  return match ? match.id : null;
+}
+
+/** A sentence describing what the parser understood, warnings included. */
+function describeRosterImport(result) {
+  const bits = [];
+  if (result.hasHeader) bits.push('a header row');
+  if (result.delimiter) bits.push(`${result.delimiter}-separated columns`);
+  if (result.ignoredColumns.length > 0) bits.push(`ignored ${result.ignoredColumns.join(', ')}`);
+
+  const parts = [];
+  if (bits.length > 0) parts.push(`Read as ${bits.join(', ')}.`);
+  if (result.warnings.length > 0) parts.push(result.warnings.join(' '));
+  return parts.join(' ');
+}
+
+/** The parsed team waiting for the user to confirm replacing the roster. */
+let pendingTeam = null;
+/** Where the roster came from, for the confirmation wording and the toast. */
+let pendingSource = '';
+/** What the import understood: a sentence, or '' for a plain team file. */
+let pendingDetail = '';
+
+/**
+ * Whether the pending import adds to the roster or replaces it.
+ *
+ * Read from the dialog on demand rather than captured when the dialog opens:
+ * the user chooses *after* it opens, so a stored value would record whatever
+ * the radio held before they touched it.
+ */
+function selectionMode() {
+  return $('load-mode-add')?.checked ? 'add' : 'replace';
+}
+
+/** Forget the pending import. Also what Cancel does. */
+function closeImportDialogs() {
+  $('load-team-dialog').hidden = true;
+  $('paste-roster-dialog').hidden = true;
+  $('paste-roster-error').hidden = true;
+  pendingTeam = null;
+  pendingSource = '';
+  pendingDetail = '';
+}
+
+/** Which roster the sidebar is showing right now. */
+function detailTeam() {
+  return teamFor(detailTeamSlot);
+}
+
+function openRosterImport(team, source, detail = '') {
+  if (!team || !Array.isArray(team.players) || team.players.length === 0) {
+    showToast('No players were found in that roster.');
     return;
   }
 
   pendingTeam = team;
-  pendingTeamFileName = file.name;
+  pendingSource = source;
+  pendingDetail = detail;
 
-  const current = teamFor(detailTeamSlot);
-  const existing = playersOf(game, teamIdFor(detailTeamSlot)).length;
+  // A file replaces, matching the wording of the button that opened it. A paste
+  // is a deliberate edit, so both choices are offered, starting from replace.
+  const isPaste = source === 'the pasted roster';
+  $('load-mode-replace').checked = true;
+  $('load-mode-add').checked = false;
+  $('load-team-mode').hidden = !isPaste;
 
-  $('load-team-target').textContent =
-    `“${team.name}” from ${file.name} — ${team.players.length} player` +
-    `${team.players.length === 1 ? '' : 's'}` +
-    (team.abbreviation ? ` (${team.abbreviation})` : '') +
-    `. Loading replaces the ${existing} player${existing === 1 ? '' : 's'} currently on ` +
-    `${current?.name || 'this team'}. The other team and the game log are not touched.`;
-
-  const confirm = $('confirm-load-team');
-  confirm.disabled = false;
-  confirm.textContent = existing > 0 ? 'Replace roster' : 'Load team';
-
+  renderRosterImportSummary();
   $('load-team-dialog').hidden = false;
+}
+
+/**
+ * Write the confirmation sentence for the current team and mode.
+ *
+ * A replace discards the whole roster, so it says so plainly; the entries those
+ * players logged stay in the score and play-by-play, which is the opposite of
+ * what the roster's own ✕ does and is worth stating outright.
+ */
+function renderRosterImportSummary() {
+  const team = detailTeam();
+  const existing = playersOf(game, teamIdFor(detailTeamSlot));
+  const current = existing.length;
+  const incoming = pendingTeam.players.length;
+  const adding = selectionMode() === 'add';
+  const entriesForCurrent = game.events.filter((event) =>
+    existing.some((player) => player.id === event.playerId),
+  ).length;
+
+  let what;
+  if (adding) {
+    what =
+      `Add ${incoming} player${incoming === 1 ? '' : 's'} to ` +
+      `${current} already on ${team?.name || 'this team'}.`;
+  } else if (current === 0) {
+    what =
+      `Load ${incoming} player${incoming === 1 ? '' : 's'} onto ${team?.name || 'this team'}.`;
+  } else {
+    what =
+      `Replace the ${current} player${current === 1 ? '' : 's'} on ` +
+      `${team?.name || 'this team'} with ${incoming}.`;
+    if (entriesForCurrent > 0) {
+      what +=
+        ` Their ${entriesForCurrent} recorded entr${entriesForCurrent === 1 ? 'y' : 'ies'} ` +
+        `stay in the score and the play-by-play.`;
+    }
+  }
+
+  const from = pendingSource ? ` From ${pendingSource}.` : '';
+  $('load-team-target').textContent = `${what}${from} The other team and the game log are untouched.`;
+  if (pendingDetail) $('load-team-target').textContent += ` ${pendingDetail}`;
+
+  $('confirm-load-team').textContent = adding ? 'Add players' : current > 0 ? 'Replace roster' : 'Load team';
+}
+
+/** Open the paste box, reusing whatever was typed last time. */
+function openPasteRoster() {
+  $('paste-roster-error').hidden = true;
+  $('paste-roster-dialog').hidden = false;
+  // Focus is set after the dialog is visible; a hidden field cannot take it.
+  $('roster-paste-text').focus();
+}
+
+/** Read the paste box and open the same confirmation the file importer uses. */
+function importPastedRoster() {
+  const result = parseRosterText($('roster-paste-text').value);
+  const error = $('paste-roster-error');
+
+  if (result.error) {
+    error.textContent = result.error;
+    error.hidden = false;
+    return;
+  }
+
+  error.hidden = true;
+  const current = detailTeam();
+  // Keep the team's own name: a paste supplies players, not an identity.
+  openRosterImport(
+    {
+      name: current?.name || '',
+      abbreviation: current?.abbreviation || '',
+      players: result.players,
+    },
+    'the pasted roster',
+    describeRosterImport(result),
+  );
 }
 
 function confirmLoadTeam() {
   if (!pendingTeam) {
-    closeDialogs();
+    closeImportDialogs();
     return;
   }
 
   const team = pendingTeam;
   // Captured before closing, which clears the pending state.
-  const source = pendingTeamFileName;
-  mergeRoster(game, teamIdFor(detailTeamSlot), team);
+  const source = pendingSource;
+  const adding = selectionMode() === 'add' && pendingSource === 'the pasted roster';
+  const teamId = teamIdFor(detailTeamSlot);
+
+  if (adding) {
+    // No name in the payload, so the team's identity is left alone.
+    appendRoster(game, teamId, { players: team.players });
+  } else {
+    mergeRoster(game, teamId, team);
+  }
 
   save();
-  closeDialogs();
+  closeImportDialogs();
   render();
   showToast(
-    `Loaded ${team.name}${source ? ` from ${source}` : ''} — ${team.players.length} players.`,
+    `${adding ? 'Added' : 'Loaded'} ${team.players.length} player` +
+      `${team.players.length === 1 ? '' : 's'}` +
+      `${source ? ` from ${source}` : ''} — ${currentTeamName()}.`,
   );
+}
+
+/** The viewed team's name, for the toast that follows an import. */
+function currentTeamName() {
+  return teamFor(detailTeamSlot)?.name || 'the team';
 }
 
 
@@ -1094,7 +1259,13 @@ document.addEventListener('click', (event) => {
       confirmLoadTeam();
       break;
     case 'close-dialog':
-      closeDialogs();
+      closeImportDialogs();
+      break;
+    case 'open-paste-roster':
+      openPasteRoster();
+      break;
+    case 'import-pasted-roster':
+      importPastedRoster();
       break;
     case 'load-sample':
       loadSample();
@@ -1120,8 +1291,10 @@ document.addEventListener(
 // Enter commits a cell edit instead of adding a newline.
 document.addEventListener('keydown', (event) => {
   // Escape closes the import confirmation, discarding the picked file.
-  if (event.key === 'Escape' && !$('load-team-dialog').hidden && !clockIsBeingEdited()) {
-    closeDialogs();
+  // Escape closes whichever import dialog is open, discarding what it holds.
+  const importing = !$('load-team-dialog').hidden || !$('paste-roster-dialog').hidden;
+  if (event.key === 'Escape' && importing && !clockIsBeingEdited()) {
+    closeImportDialogs();
     return;
   }
 
@@ -1221,9 +1394,10 @@ $('import-file').addEventListener('change', (event) => {
   event.target.value = '';
 });
 
+// One picker for both formats: `loadRosterFromFile` decides by extension.
 $('team-file-input').addEventListener('change', (event) => {
   const file = event.target.files?.[0];
-  if (file) handleTeamFile(file);
+  if (file) loadRosterFromFile(file);
   // Cleared so picking the same file twice still fires a change event.
   event.target.value = '';
 });

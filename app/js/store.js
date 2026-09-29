@@ -135,6 +135,25 @@ function makePlayer(saved, teamId, used) {
 }
 
 /**
+ * Add players to a team without touching the ones already there.
+ *
+ * This is deliberately NOT `mergeRoster(game, teamId, {...existing, ...added})`:
+ * that path re-creates every incoming player through `makePlayer`, and an
+ * existing player passed through it is only kept if their id is still absent
+ * from `game.players`. The ids ARE already there, so all of them would be
+ * reassigned and every event they had logged would be orphaned. Appending keeps
+ * both the roster and the event log intact.
+ */
+export function appendRoster(game, teamId, savedTeam) {
+  const used = new Set(game.players.map((player) => player.id));
+  const added = (savedTeam.players || []).map((saved) => makePlayer(saved, teamId, used));
+
+  game.players = [...game.players, ...added];
+  touch(game);
+  return game;
+}
+
+/**
  * Load a saved team's name, abbreviation and roster into a game slot.
  *
  * Written as a pure function of the game and the saved team so it can be tested

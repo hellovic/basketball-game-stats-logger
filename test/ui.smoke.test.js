@@ -539,8 +539,13 @@ test('a picked team file asks for confirmation before replacing the roster', asy
 
   const dialog = document.getElementById('load-team-dialog');
   assert.equal(dialog.hidden, false, 'the confirm dialog should open');
-  assert.match(document.getElementById('load-team-target').textContent, /Riverside/);
-  assert.match(document.getElementById('load-team-target').textContent, /M\. Diaz|2 players/);
+  // The summary states the exact damage: how many players go, how many arrive,
+  // and that the entries they logged are kept.
+  const summary = document.getElementById('load-team-target').textContent;
+  assert.match(summary, /Riverside_team\.json/);
+  assert.match(summary, /Replace the 5 players on Northside with 2/);
+  assert.match(summary, /recorded entr/);
+  assert.equal(document.getElementById('load-team-mode').hidden, true, 'a file replaces, so no mode choice');
 
   // Nothing applied until confirmed.
   const beforeConfirm = document.getElementById('player-cards').innerHTML;
@@ -602,6 +607,146 @@ test('corrupt JSON is reported rather than thrown', async () => {
 
   assert.match(document.getElementById('toast').textContent, /not valid JSON/);
   assert.equal(document.getElementById('load-team-dialog').hidden, true);
+});
+
+test('pasting a roster asks to replace or add, then imports on confirm', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'open-paste-roster' }));
+  const paste = document.getElementById('paste-roster-dialog');
+  assert.equal(paste.hidden, false, 'the paste box should open');
+
+  document.getElementById('roster-paste-text').value = '陳大文,55\n李小明,4';
+  emit(dom.listeners, 'click', actionable({ action: 'import-pasted-roster' }));
+  await settle();
+
+  const dialog = document.getElementById('load-team-dialog');
+  assert.equal(dialog.hidden, false, 'the same confirmation the file path uses');
+  // The paste box stays behind the overlay, so the pasted text is still visible
+  // while the choice is made; the confirmation owns the click either way.
+  assert.equal(paste.hidden, false);
+  // A paste supplies players, not an identity, and it offers both choices.
+  assert.equal(document.getElementById('load-team-mode').hidden, false);
+  assert.match(document.getElementById('load-team-target').textContent, /the pasted roster/);
+  assert.match(document.getElementById('load-team-target').textContent, /Replace the 5 players/);
+  assert.equal(document.getElementById('load-team-target').textContent.includes('陳大文'), false);
+
+  // Nothing changes until the confirmation is accepted.
+  assert.match(document.getElementById('player-cards').innerHTML, /J\. Reed/);
+
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-load-team' }));
+  await settle();
+
+  assert.equal(dialog.hidden, true);
+  assert.match(document.getElementById('player-cards').innerHTML, /陳大文/);
+  assert.match(document.getElementById('player-cards').innerHTML, /李小明/);
+  assert.equal(document.getElementById('player-cards').innerHTML.includes('J. Reed'), false);
+  // The team keeps its own name: a paste only replaces players.
+  assert.equal(document.getElementById('score-home-name').textContent, 'Northside');
+  assert.match(document.getElementById('toast').textContent, /pasted roster/);
+});
+
+test('choosing Add keeps the players already on the team', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'open-paste-roster' }));
+  document.getElementById('roster-paste-text').value = '陳大文,55';
+  emit(dom.listeners, 'click', actionable({ action: 'import-pasted-roster' }));
+  await settle();
+
+  // The radio pair is real DOM, so a test drives it by setting .checked.
+  document.getElementById('load-mode-add').checked = true;
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-load-team' }));
+  await settle();
+
+  const cards = document.getElementById('player-cards').innerHTML;
+  // Assert on the jersey number, which renders in full: a long name is
+  // ellipsised in the compact row.
+  assert.match(cards, /player-card__number">4</, 'the existing roster survives');
+  assert.match(cards, /陳大文/, 'and the pasted player joins it');
+});
+
+test('a single-column paste is reported in the dialog, not imported', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'open-paste-roster' }));
+  document.getElementById('roster-paste-text').value = '陳大文\n李小明';
+
+  emit(dom.listeners, 'click', actionable({ action: 'import-pasted-roster' }));
+  await settle();
+
+  const error = document.getElementById('paste-roster-error');
+  assert.equal(error.hidden, false, 'the problem is shown next to the box');
+  assert.match(error.textContent, /player and a number/i);
+  assert.equal(
+    document.getElementById('load-team-dialog').hidden,
+    true,
+    'no confirmation for input that could not be read',
+  );
+  assert.match(document.getElementById('player-cards').innerHTML, /J\. Reed/, 'roster untouched');
+});
+
+test('an empty paste is reported rather than importing nothing', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'open-paste-roster' }));
+  document.getElementById('roster-paste-text').value = '   \n  ';
+
+  emit(dom.listeners, 'click', actionable({ action: 'import-pasted-roster' }));
+  await settle();
+
+  assert.match(document.getElementById('paste-roster-error').textContent, /empty/i);
+  assert.equal(document.getElementById('load-team-dialog').hidden, true);
+});
+
+test('Escape closes the paste box', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'open-paste-roster' }));
+  assert.equal(document.getElementById('paste-roster-dialog').hidden, false);
+
+  emit(dom.listeners, 'keydown', document.getElementById('clock-display'), { key: 'Escape' });
+  assert.equal(document.getElementById('paste-roster-dialog').hidden, true);
+});
+
+test('a picked CSV file imports through the same confirmation', async () => {
+  const dom = await startApp();
+
+  const csv = 'Player,Group,Number\n陳大文,U14,55\n李小明,U17,4\n';
+  const input = document.getElementById('team-file-input');
+  input.files = [{ name: 'Sunrise-2026_roster.csv', text: () => csv }];
+  emit(dom.listeners, 'change', input);
+  await settle();
+
+  assert.equal(document.getElementById('load-team-dialog').hidden, false, 'CSV opens the dialog');
+  const summary = document.getElementById('load-team-target').textContent;
+  assert.match(summary, /Sunrise-2026_roster\.csv/);
+  assert.match(summary, /Read as a header row, comma-separated columns/);
+  assert.match(summary, /ignored Group/);
+
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-load-team' }));
+  await settle();
+
+  assert.match(document.getElementById('player-cards').innerHTML, /陳大文/);
+  assert.equal(document.getElementById('score-home-name').textContent, 'Northside');
+});
+
+test('a CSV with no header is read by finding the number column', async () => {
+  const dom = await startApp();
+
+  const input = document.getElementById('team-file-input');
+  input.files = [{ name: 'roster.csv', text: () => '陳大文,U14,55\n李小明,U17,4' }];
+  emit(dom.listeners, 'change', input);
+  await settle();
+
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-load-team' }));
+  await settle();
+
+  const cards = document.getElementById('player-cards').innerHTML;
+  assert.match(cards, /陳大文/);
+  // The jersey numbers are the third column, not the group codes.
+  assert.match(cards, /55/);
+  assert.equal(cards.includes('U14'), false);
 });
 
 test('the save button is disabled until the team has a player', async () => {
