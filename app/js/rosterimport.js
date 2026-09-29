@@ -98,7 +98,47 @@ function delimitedQuote(delimiter, char) {
   return delimiter === ',' && char === '"';
 }
 
-/** Pick the separator this text seems to use: tab beats comma beats spaces. */
+/** Anything that reads as a jersey number rather than a name. */
+const NUMBER_CELL = /^\d+[a-zA-Z]?$/;
+
+/**
+ * One row of `player` + `number` with a single space between them.
+ *
+ * A single space is a terrible delimiter in general — plenty of names contain
+ * one — so it is only used when the line looks exactly like a name followed by
+ * a jersey number. This matters because a copy out of a rendered table, a
+ * terminal or a chat message often collapses a tab to one space, and refusing
+ * that paste looks to the scorer like the importer is broken.
+ */
+/**
+ * A single-space line whose last word reads as a jersey number.
+ *
+ * Any single space can be a delimiter once the line *ends* in a number: the
+ * name is everything before it, which is how `J. Reed 4` and `D. Okafor 11`
+ * keep their given names. The earlier tokens are rejoined by the caller.
+ */
+function looksLikeSpacedRow(line) {
+  const tokens = line.split(/\s+/).filter(Boolean);
+  if (tokens.length < 2) return false;
+  return NUMBER_CELL.test(cleanNumber(tokens[tokens.length - 1]));
+}
+
+/** A single-space line whose two words really are the column headings. */
+function looksLikeSpacedHeader(line) {
+  const tokens = line.split(/\s+/).filter(Boolean);
+  if (tokens.length !== 2) return false;
+  const named = NAME_HEADERS.has(normalizeHeader(tokens[0]));
+  const numbered = NUMBER_HEADERS.has(normalizeHeader(tokens[1]));
+  return named && numbered;
+}
+
+/**
+ * Pick the separator this text seems to use: tab beats comma beats spaces.
+ *
+ * A single space is only accepted when a line looks exactly like a heading pair
+ * or a name followed by a jersey number, because it is the one separator that
+ * also occurs inside ordinary data.
+ */
 function detectDelimiter(lines) {
   const scored = [
     { delimiter: '\t', hits: lines.filter((line) => line.includes('\t')).length },
@@ -106,12 +146,37 @@ function detectDelimiter(lines) {
   ];
 
   const best = scored.sort((a, b) => b.hits - a.hits)[0];
-  if (best.hits > 0) return best.delimiter;
+  if (best.hits > 0) {
+    return { delimiter: best.delimiter, name: best.delimiter === '\t' ? 'tab' : 'comma' };
+  }
 
   // Space-aligned columns: two or more spaces between fields.
-  if (lines.some((line) => /\S {2,}\S/.test(line))) return / {2,}/;
+  if (lines.some((line) => /\S {2,}\S/.test(line))) {
+    return { delimiter: / {2,}/, name: 'spaces' };
+  }
 
-  return '\t';
+  if (lines.some((line) => looksLikeSpacedRow(line) || looksLikeSpacedHeader(line))) {
+    return { delimiter: / +/, name: 'space' };
+  }
+
+  return { delimiter: '\t', name: 'tab' };
+}
+
+/** Rows that arrived as one cell but are really `player<space>number`. */
+function splitUndividedRows(rows) {
+  let changed = 0;
+  const split = rows.map((row) => {
+    if (row.length !== 1) return row;
+    const tokens = row[0].split(/\s+/).filter(Boolean);
+    if (tokens.length < 2) return row;
+    const tail = tokens[tokens.length - 1];
+    if (!NUMBER_CELL.test(cleanNumber(tail))) return row;
+    changed += 1;
+    return [tokens.slice(0, -1).join(' '), tail];
+  });
+  // Only accept the reading if it explains most of the rows; one lucky match in
+  // a single column of names is not enough to invent a number column.
+  return changed >= Math.ceil(rows.length / 2) ? split : rows;
 }
 
 function splitRows(line, delimiter) {
@@ -211,16 +276,22 @@ export function parseRosterText(text) {
     return { ...empty, error: 'The roster is empty.' };
   }
 
-  const delimiter = detectDelimiter(lines);
-  const rows = lines.map((line) => splitRows(line, delimiter));
+  const { delimiter, name: delimiterName } = detectDelimiter(lines);
+  let rows = lines.map((line) => splitRows(line, delimiter));
+
+  // `陳大文 55` arrives as one cell when a single space separates the two,
+  // because a single space is not otherwise safe to split on.
+  if (delimiter.source === ' +') {
+    rows = splitUndividedRows(rows);
+  }
 
   if (rows[0].length < 2) {
     return {
       ...empty,
-      delimiter: delimiter instanceof RegExp ? 'spaces' : delimiter === '\t' ? 'tab' : 'comma',
+      delimiter: delimiterName,
       error:
-        'Each line needs a player and a number, separated by a tab or a comma — ' +
-        'for example "陳大文,55".',
+        'Each line needs a player and a number, separated by a tab, a comma or a ' +
+        'space — for example "陳大文,55" or "陳大文 55".',
     };
   }
 
@@ -240,6 +311,19 @@ export function parseRosterText(text) {
     if (named !== -1) nameAt = named;
     if (numbered !== -1 && numbered !== named) numberAt = numbered;
     else if (numbered === -1 && named === 0) numberAt = 1;
+
+    // A single space splits a name into several cells, so the heading can point
+    // at a cell that is not the number after all (`J. Reed` under "Player
+    // Number" makes cell 1 "Reed"). Where the data disagrees with the heading,
+    // the data wins: find the column that really holds numbers.
+    if (delimiter.source === ' +' && !columnLooksNumeric(body, numberAt)) {
+      const width = Math.max(...body.map((row) => row.length));
+      const numeric = Math.max(
+        0,
+        ...Array.from({ length: width }, (_, index) => (columnLooksNumeric(body, index) ? index + 1 : 0)),
+      );
+      if (numeric > 0 && numeric - 1 !== nameAt) numberAt = numeric - 1;
+    }
   } else {
     // No header to go by, so find the numbers instead of assuming column two.
     // A paste of `陳大文,U14,55` must not read "U14" as the jersey number.
@@ -256,9 +340,14 @@ export function parseRosterText(text) {
 
   const players = [];
   const warnings = [];
+  // With a single space as the separator, `J. Reed 4` splits into three cells.
+  // The name is every cell before the number column, so they are rejoined.
+  const joinName = delimiter.source === ' +' && numberAt >= 1;
 
   for (const row of body) {
-    const name = cleanName(row[nameAt]);
+    const name = cleanName(
+      joinName ? row.slice(0, numberAt).filter(Boolean).join(' ') : row[nameAt],
+    );
     const number = cleanNumber(row[numberAt]);
 
     if (!name && !number) continue; // A stray blank line, already harmless.
@@ -273,7 +362,7 @@ export function parseRosterText(text) {
   if (players.length === 0) {
     return {
       ...empty,
-      delimiter: delimiter instanceof RegExp ? 'spaces' : delimiter === '\t' ? 'tab' : 'comma',
+      delimiter: delimiterName,
       warnings,
       error: 'No players were found in that roster.',
     };
@@ -314,7 +403,7 @@ export function parseRosterText(text) {
 
   return {
     players,
-    delimiter: delimiter instanceof RegExp ? 'spaces' : delimiter === '\t' ? 'tab' : 'comma',
+    delimiter: delimiterName,
     hasHeader,
     ignoredColumns,
     warnings,

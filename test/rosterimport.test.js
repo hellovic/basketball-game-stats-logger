@@ -221,6 +221,57 @@ test('rejects a header with no rows under it', () => {
   assert.equal(result.error, 'No players were found in that roster.');
 });
 
+// A copy out of a rendered table, a terminal or a chat message collapses the
+// tab between the name and the number down to one space, so a single space has
+// to read as a separator or the scorer sees "the importer is broken".
+test('parses a single space between the name and the number', () => {
+  const { players, delimiter, error } = parseRosterText('陳大文 55\n李小明 4\n王小美 32');
+
+  assert.equal(error, null);
+  assert.equal(delimiter, 'space');
+  assert.deepEqual(players[0], { number: '55', name: '陳大文', active: true });
+  assert.equal(players.length, 3);
+});
+
+test('parses a single space under a single-space header', () => {
+  // "Player Number" is itself two words, so the heading must not be mistaken
+  // for a data row or quietly shift the number column.
+  const { players, hasHeader, error } = parseRosterText('Player Number\n陳大文 55\n李小明 4');
+
+  assert.equal(error, null);
+  assert.equal(hasHeader, true);
+  assert.deepEqual(players[0], { number: '55', name: '陳大文', active: true });
+  assert.equal(players.length, 2);
+});
+
+test('keeps a name that contains a space when parsing single spaces', () => {
+  const { players, error } = parseRosterText('J. Reed 4\nA. Cole 7\nD. Okafor 11');
+
+  assert.equal(error, null);
+  assert.deepEqual(players[0], { number: '4', name: 'J. Reed', active: true });
+  assert.deepEqual(players[2], { number: '11', name: 'D. Okafor', active: true });
+});
+
+test('keeps a name that contains a space under a header', () => {
+  // The heading says the number is cell 1, but "J. Reed" makes cell 1 "Reed";
+  // the data has to win.
+  const { players, error } = parseRosterText('Player Number\nJ. Reed 4\nA. Cole 7');
+
+  assert.equal(error, null);
+  assert.deepEqual(players[0], { number: '4', name: 'J. Reed', active: true });
+  assert.equal(players.length, 2);
+});
+
+test('does not treat a column of spaced names as two columns', () => {
+  // The guard for the single-space rule: nothing here ends in a number, so
+  // these are three one-column names, not a name/number grid.
+  for (const text of ['Mary Jane\nJohn Smith\nAnn Lee', 'J. Reed']) {
+    const { players } = parseRosterText(text);
+
+    assert.equal(players.length, 0, `expected no players from ${JSON.stringify(text)}`);
+  }
+});
+
 test('parses every player from the sample into the shape mergeRoster expects', () => {
   const { players } = parseRosterText(SAMPLE);
 
