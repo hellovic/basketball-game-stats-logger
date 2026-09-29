@@ -1,0 +1,1370 @@
+/* ==========================================================================
+   Game Stats Logger — "official scoresheet" design system
+
+   Design intent: a clean, light, paper-like scoresheet. High legibility under
+   gym lighting, all figures tabular so columns line up and numbers never
+   jitter as they change, and one restrained accent per team. Amber is reserved
+   for correction and warning states so "something needs attention" is never
+   confused with "this is a team colour".
+
+   Responsive: three panes at laptop width, a single column on phones.
+   ========================================================================== */
+
+:root {
+  /* Surfaces */
+  --base: #f4f5f7;
+  --surface: #ffffff;
+  --surface-sunken: #fafbfc;
+  --surface-hover: #f1f3f5;
+
+  /* Ink */
+  --ink: #16191d;
+  --ink-muted: #646c76;
+  --ink-faint: #98a1ab;
+  --ink-invert: #ffffff;
+
+  /* Rules — a scoresheet is mostly rules and numbers */
+  --border: #dfe3e8;
+  --border-strong: #c3cad2;
+
+  /* Teams. Deliberately restrained: two accents, no gradients. */
+  --accent: #1f5fa9;
+  --accent-hover: #17497f;
+  --accent-soft: #eaf1f9;
+  --accent-rgb: 31, 95, 169;
+
+  --away-accent: #1f5fa9;
+  --away-soft: #eaf1f9;
+  --home-accent: #b23c3c;
+  --home-soft: #fbeeee;
+
+  /* Correction / attention. Reserved. */
+  --warn: #9a6b00;
+  --warn-soft: #fdf5e3;
+  --warn-border: #e8cf94;
+
+  /* Type */
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-num: "SF Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* Space */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* Shape */
+  --radius: 8px;
+  --radius-sm: 5px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
+
+  --tap: 44px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--base);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+  /* Pin numerals to tabular figures everywhere: a changing score must not
+     shift the layout around it. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hint {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink-muted);
+  font-size: 13px;
+  max-width: 68ch;
+}
+
+/* ==========================================================================
+   Banners
+   ========================================================================== */
+
+/* A slim advisory strip. It is a persistent reminder, not a headline, so it is
+   kept to roughly one short line — the scoring area below is what matters. */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 2px var(--sp-3);
+  font-size: 12px;
+  line-height: 1.2;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Truncate rather than wrap: wrapping is what made the strip tall enough to
+   compete with the scoreboard for attention. */
+.banner p {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.banner--notice {
+  background: var(--warn-soft);
+  border-bottom-color: var(--warn-border);
+  color: #5c4708;
+}
+
+.banner__close {
+  flex: 0 0 auto;
+  margin-left: auto;
+  background: none;
+  border: 0;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  padding: 0 var(--sp-1);
+}
+
+/* ==========================================================================
+   Scoreboard
+   ========================================================================== */
+
+.scoreboard {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 2px solid var(--border-strong);
+}
+
+.scoreboard__inner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-4);
+  max-width: 1600px;
+  margin: 0 auto;
+  /* Kept tight: this bar is sticky, so every pixel it takes is permanently
+     gone from the scoring area below. */
+  padding: 2px var(--sp-4);
+}
+
+.scoreboard__team {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.scoreboard__team--away {
+  --accent: var(--away-accent);
+}
+.scoreboard__team--home {
+  --accent: var(--home-accent);
+}
+
+.scoreboard__slot {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.scoreboard__name {
+  font-size: 17px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scoreboard__score {
+  font-size: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--accent);
+  min-width: 2.5ch;
+  text-align: right;
+}
+
+.scoreboard__center {
+  text-align: center;
+  padding: 0 var(--sp-3);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.scoreboard__clock {
+  font-family: var(--font-num);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.1;
+  display: inline-block;
+  padding: 0 var(--sp-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: text;
+  /* A dotted underline is the quietest way to say "this is typeable". */
+  text-decoration: underline dotted var(--ink-faint);
+  text-underline-offset: 4px;
+}
+
+.scoreboard__clock:hover {
+  background: var(--surface-hover);
+  border-color: var(--border);
+}
+
+/* While typing, the face reads as a plain field: no ticking-number styling. */
+.scoreboard__clock[contenteditable='true'] {
+  background: var(--surface);
+  border-color: var(--accent);
+  text-decoration: none;
+  outline: none;
+  cursor: text;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+
+.scoreboard__period {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.scoreboard__controls {
+  display: flex;
+  gap: var(--sp-1);
+  justify-content: center;
+  margin-top: 1px;
+}
+
+/* Override the default button height: these controls live inside the sticky
+   bar, so their height is paid for twice — once here and once as lost scoring
+   space. Phone widths restore a full tap target below. */
+.scoreboard__controls .btn--sm {
+  min-height: 20px;
+  padding: 0 var(--sp-2);
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* ==========================================================================
+   Workspace layout
+   ========================================================================== */
+
+.workspace {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 340px;
+  gap: var(--sp-4);
+  max-width: 1600px;
+  /* Grow to fill the space left between the sticky clock bar and the game
+     details section, so a short roster leaves no gap above the bottom strip. */
+  flex: 1 1 auto;
+  margin: 0 auto;
+  padding: var(--sp-4);
+  align-items: start;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-sunken);
+  min-height: 48px;
+}
+
+.panel__title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  padding: var(--sp-1) 0;
+}
+
+.panel__actions {
+  margin-left: auto;
+}
+
+.panel__body {
+  padding: var(--sp-3);
+}
+
+/* ==========================================================================
+   Tabs
+   ========================================================================== */
+
+.tabs {
+  display: flex;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+}
+
+.tab {
+  border: 1px solid transparent;
+  background: none;
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.tab:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.tab[aria-selected="true"] {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  min-height: 38px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+  background: var(--surface);
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-invert);
+}
+
+.btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn--ghost {
+  background: none;
+  border-color: var(--border);
+  color: var(--ink-muted);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.btn--sm {
+  min-height: 30px;
+  font-size: 12px;
+  padding: 0 var(--sp-2);
+}
+
+.btn--full {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* ==========================================================================
+   Fields
+   ========================================================================== */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.field--short {
+  flex: 0 0 84px;
+}
+
+.field__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.field-row {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-end;
+  margin-bottom: var(--sp-3);
+}
+
+.field-row--team {
+  margin-bottom: var(--sp-3);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  color: var(--ink);
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ==========================================================================
+   Roster
+   ========================================================================== */
+
+.roster {
+  list-style: none;
+  margin: 0 0 var(--sp-3);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.roster__item {
+  display: grid;
+  grid-template-columns: auto 2.5rem 1fr auto;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.roster__item--selected {
+  background: var(--accent-soft);
+}
+
+.roster__check {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* The box stays small, but the label is the hit area: a 16px checkbox is a
+   hard target for a thumb, and the label always toggles the box it wraps. */
+.roster__check-hit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Select all / count / remove, directly above the list it acts on. */
+.roster__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-2);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.roster__toolbar[hidden] {
+  display: none;
+}
+
+.roster__select-all {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.roster__select-all input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Fixed width so the Remove button does not shift as the count changes. */
+.roster__toolbar-count {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.roster__remove-selected {
+  flex: 0 0 auto;
+}
+
+.roster__item:last-child {
+  border-bottom: 0;
+}
+
+.roster__number {
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.roster__name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster__points {
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 3.5ch;
+  text-align: right;
+}
+
+
+.roster__empty {
+  padding: var(--sp-4);
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.add-player {
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  gap: var(--sp-2);
+}
+
+.add-player__number {
+  text-align: center;
+}
+
+/* ==========================================================================
+   Player entry cards
+
+   One compact row per player. At ~60px a row, a full 15-player roster fits on
+   screen at laptop width, so the scorer does not have to scroll between players
+   mid-game — the original stacked card was ~150px and only six fit.
+   ========================================================================== */
+
+.player-cards {
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.player-card {
+  display: grid;
+  /* number | name | running line | stat buttons (greedy) | points.
+     The name and line are fixed and small on purpose: every pixel they take is
+     a pixel the buttons need, and the buttons are what the scorer touches. */
+  grid-template-columns: 1.3rem 4rem 3.5rem minmax(0, 1fr) 1.9rem;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: 34px;
+  padding: 1px var(--sp-1);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: background 0.15s ease;
+}
+
+/* Brief flash confirming the tap registered. */
+.player-card.is-hit {
+  background: var(--accent-soft);
+}
+
+.player-card__number {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  text-align: right;
+}
+
+.player-card__name {
+  font-size: 14px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-card__line {
+  font-size: 10px;
+  font-family: var(--font-num);
+  color: var(--ink-faint);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A clear lane between buttons: at a 2px gap they read as one block, and a
+   mistimed tap lands on a neighbour. The row has the slack for 6px without
+   breaking onto a second line. */
+.player-card__stat-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.player-card__points {
+  font-family: var(--font-num);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: right;
+  color: var(--accent);
+}
+
+.stat-btn {
+  width: 30px;
+  min-height: 24px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.1s ease, border-color 0.1s ease;
+}
+
+.stat-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.stat-btn:active {
+  transform: translateY(1px);
+}
+
+/* Made shots and counting stats read as the primary action… */
+.stat-btn--made {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-invert);
+  width: 33px;
+}
+
+.stat-btn--made:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* …and a miss is a quieter, secondary outline so it is never mistaken for a
+   scoring tap. */
+.stat-btn--miss {
+  color: var(--ink-muted);
+  font-weight: 600;
+  border-style: dashed;
+}
+
+/* ==========================================================================
+   Play-by-play
+   ========================================================================== */
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.log__row {
+  display: grid;
+  grid-template-columns: 3rem 4rem minmax(0, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-1);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.log__row:hover {
+  background: var(--surface-sunken);
+}
+
+.log__time,
+.log__period {
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.log__period {
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.log__who {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* Re-attribution: quiet until hovered, so the list stays scannable. */
+.log__reassign {
+  min-height: 30px;
+  max-width: 140px;
+  font-size: 12px;
+  color: var(--ink-muted);
+  border-color: transparent;
+  background: none;
+}
+
+.log__row:hover .log__reassign,
+.log__reassign:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.log__what {
+  font-size: 13px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.log__points {
+  font-family: var(--font-num);
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 2ch;
+  text-align: right;
+}
+
+.log__delete {
+  border: 0;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius-sm);
+}
+
+.log__delete:hover {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.log__empty,
+.view__empty {
+  padding: var(--sp-5);
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+th,
+td {
+  padding: var(--sp-2);
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  background: var(--surface-sunken);
+  position: sticky;
+  top: 0;
+}
+
+th:first-child,
+td:first-child {
+  text-align: left;
+}
+
+td {
+  font-family: var(--font-num);
+}
+
+td:first-child,
+td.js-name {
+  font-family: var(--font);
+}
+
+tbody tr:hover {
+  background: var(--surface-sunken);
+}
+
+.row--team {
+  font-weight: 700;
+  background: var(--surface-sunken);
+}
+
+.row--team td {
+  border-top: 1px solid var(--border-strong);
+}
+
+.team-heading td {
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Manual corrections are flagged, never silent. */
+
+.sheet__note {
+  margin: var(--sp-3) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+  color: #5c4708;
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   Manual score override
+   ========================================================================== */
+
+
+
+
+
+/* ==========================================================================
+   Footer / game setup
+   ========================================================================== */
+
+/* ==========================================================================
+   Action bar (export + team files)
+   ========================================================================== */
+
+/* Pinned to the bottom, it never competes with the scoring area for height,
+   and it is where every "get data in or out" control lives. */
+.actionbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-3);
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--surface);
+  border-top: 1px solid var(--border-strong);
+}
+
+.actionbar__group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.actionbar__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+/* The explanatory line is the first thing to go when the bar gets tight; the
+   button labels carry the meaning on their own. */
+.actionbar__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.actionbar .btn--sm {
+  min-height: 26px;
+  padding: 0 var(--sp-2);
+  font-size: 12px;
+}
+
+.actionbar__version {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Game details
+   ========================================================================== */
+
+/* A standalone section between the scoring area and the bottom bar. It spans
+   the full width rather than sitting inside a panel, so all six controls fit
+   on one row and none of the panels has to shrink to make space for it. */
+.game-details {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.game-details__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  align-self: center;
+}
+
+/* Columns sized to their content so the whole bar stays one row. */
+.game-details .field {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.game-details .field input,
+.game-details .field select {
+  min-height: 26px;
+  padding: 2px var(--sp-2);
+  font-size: 12px;
+}
+
+.game-details .field input[type='date'] {
+  width: 132px;
+}
+
+.game-details .field input[type='text'] {
+  width: 150px;
+}
+
+.game-details .field select {
+  width: auto;
+  max-width: 160px;
+}
+
+.game-details .btn--sm {
+  min-height: 26px;
+  padding: 0 var(--sp-2);
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   Toast
+   ========================================================================== */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--sp-5);
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--ink);
+  color: var(--ink-invert);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  max-width: min(92vw, 520px);
+}
+
+.toast__undo {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: none;
+  color: inherit;
+  border-radius: var(--radius-pill);
+  padding: var(--sp-1) var(--sp-3);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.toast__undo:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ==========================================================================
+   Dialogs (save / load a saved team)
+   ========================================================================== */
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  background: rgba(16, 24, 40, 0.45);
+}
+
+.dialog[hidden] {
+  display: none;
+}
+
+.dialog__panel {
+  width: 100%;
+  max-width: 420px;
+  max-height: 86vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.28);
+  padding: var(--sp-4);
+}
+
+.dialog__title {
+  font-size: 17px;
+  margin-bottom: var(--sp-2);
+}
+
+.dialog__panel .field {
+  margin-top: var(--sp-2);
+}
+
+.dialog__error {
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+  color: #5c4708;
+  font-size: 13px;
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+/* Below ~1180px the three panes no longer fit; the scoresheet drops under the
+   main view and the roster moves below that. */
+@media (max-width: 1180px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .panel--roster {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .roster {
+    max-height: 30vh;
+  }
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--sp-3);
+    gap: var(--sp-3);
+  }
+
+  .scoreboard__score {
+    font-size: 32px;
+  }
+
+  .scoreboard__name {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  .scoreboard__inner {
+    grid-template-columns: 1fr;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+  }
+
+  /* On a phone the two teams read left-to-right as a compact scoreline. */
+  .scoreboard__team {
+    grid-template-columns: 2.5rem 1fr auto;
+  }
+
+  .scoreboard__team--away {
+    order: 1;
+  }
+
+  .scoreboard__center {
+    order: 3;
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: var(--sp-3);
+    border: 0;
+    border-top: 1px solid var(--border);
+    padding-top: var(--sp-2);
+    align-items: center;
+  }
+
+  .scoreboard__team--home {
+    order: 2;
+  }
+
+  .scoreboard__controls {
+    margin-top: 0;
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  /* Same reasoning as the scoreboard controls: the roster checkbox keeps its
+     size, but the tap area around it grows to a thumb. */
+  .roster__check-hit {
+    min-width: var(--tap);
+    min-height: var(--tap);
+    margin: calc(-1 * var(--sp-2));
+  }
+
+  /* Thumbs need real targets; the compact bar is a desktop affordance. */
+  .scoreboard__controls .btn--sm {
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    font-size: 13px;
+  }
+
+  .scoreboard__score {
+    font-size: 28px;
+  }
+
+  /* Full-width, roomy tap targets are the whole point of using a phone. Two
+     rows per player here: the identity line, then the buttons across the full
+     width, so nothing has to wrap awkwardly. */
+  .player-card {
+    grid-template-columns: 1.6rem minmax(0, 1fr) 2.1rem;
+    grid-template-areas:
+      'number name points'
+      'line line line'
+      'stats stats stats';
+    row-gap: var(--sp-1);
+    padding: var(--sp-2);
+  }
+
+  .player-card__number {
+    grid-area: number;
+  }
+
+  .player-card__name {
+    grid-area: name;
+  }
+
+  .player-card__line {
+    grid-area: line;
+  }
+
+  .player-card__points {
+    grid-area: points;
+  }
+
+  .player-card__stat-line {
+    grid-area: stats;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(46px, 1fr));
+    gap: var(--sp-1);
+  }
+
+  .stat-btn {
+    width: auto;
+    min-height: var(--tap);
+    font-size: 14px;
+  }
+
+  .btn {
+    min-height: var(--tap);
+  }
+
+  .btn--sm {
+    min-height: 34px;
+  }
+
+  .log__row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "who points delete"
+      "what what what"
+      "time period reassign";
+    gap: var(--sp-1) var(--sp-2);
+    padding: var(--sp-2) var(--sp-1);
+  }
+
+  .log__who {
+    grid-area: who;
+  }
+  .log__what {
+    grid-area: what;
+    white-space: normal;
+  }
+  .log__time {
+    grid-area: time;
+  }
+  .log__period {
+    grid-area: period;
+  }
+  .log__points {
+    grid-area: points;
+  }
+  .log__delete {
+    grid-area: delete;
+  }
+  .log__reassign {
+    grid-area: reassign;
+    max-width: none;
+    border-color: var(--border-strong);
+    background: var(--surface);
+  }
+
+  .toast {
+    bottom: var(--sp-3);
+    width: calc(100vw - var(--sp-4));
+    justify-content: space-between;
+  }
+}
+
+/* Respect a reduced-motion preference: the confirm flash is decoration. */
+@media (prefers-reduced-motion: reduce) {
+  .player-card,
+  .stat-btn,
+  .btn {
+    transition: none;
+  }
+}

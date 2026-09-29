@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game Stats Logger</title>
+<meta name="description" content="Manually log basketball game stats: quarter scores and a full player box score, with undo and a play-by-play log.">
+<!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible. -->
+<meta name="app-version" content="0.2.0">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- =====================================================================
+     Data-loss warning. Shown once, because everything lives in this browser.
+     ===================================================================== -->
+<div class="banner banner--notice" id="storage-banner" hidden>
+  <p>
+    <strong>Nothing is synced.</strong> This game is saved only in this browser
+    on this device. Export it if you need a copy.
+  </p>
+  <button type="button" class="banner__close" data-action="dismiss-banner" aria-label="Dismiss">&times;</button>
+</div>
+
+<!-- =====================================================================
+     Scoreboard header
+     ===================================================================== -->
+<header class="scoreboard" id="scoreboard">
+  <div class="scoreboard__inner">
+    <div class="scoreboard__team scoreboard__team--away">
+      <span class="scoreboard__slot">Away</span>
+      <span class="scoreboard__name" id="score-away-name">Away</span>
+      <span class="scoreboard__score" id="score-away">0</span>
+    </div>
+
+    <div class="scoreboard__center">
+      <div class="scoreboard__clock" id="clock-display" contenteditable="false"
+           role="textbox" aria-label="Game clock, editable"
+           title="Click to type a time, e.g. 7:30">00:00</div>
+      <div class="scoreboard__period" id="period-display">Q1</div>
+      <div class="scoreboard__controls">
+        <button type="button" class="btn btn--ghost btn--sm" data-action="toggle-clock" id="clock-toggle">
+          Start clock
+        </button>
+        <button type="button" class="btn btn--ghost btn--sm" data-action="edit-clock"
+                title="Pause and type a clock time, e.g. 7:30">
+          Edit
+        </button>
+        <button type="button" class="btn btn--ghost btn--sm" data-action="reset-clock"
+                title="Reset the clock to the start of this period">
+          Reset
+        </button>
+        <button type="button" class="btn btn--ghost btn--sm" data-action="period-prev" aria-label="Previous period">&minus;</button>
+        <button type="button" class="btn btn--ghost btn--sm" data-action="period-next" aria-label="Next period">+</button>
+      </div>
+    </div>
+
+    <div class="scoreboard__team scoreboard__team--home">
+      <span class="scoreboard__slot">Home</span>
+      <span class="scoreboard__name" id="score-home-name">Home</span>
+      <span class="scoreboard__score" id="score-home">0</span>
+    </div>
+  </div>
+</header>
+
+<main class="workspace">
+
+  <!-- ===================================================================
+       Left: roster and team setup
+       =================================================================== -->
+  <aside class="panel panel--roster" aria-label="Rosters">
+    <div class="panel__header">
+      <div class="tabs" role="tablist" aria-label="Choose a team">
+        <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="away" id="team-tab-away">
+          Away
+        </button>
+        <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="home" id="team-tab-home">
+          Home
+        </button>
+      </div>
+    </div>
+
+    <div class="panel__body">
+      <div class="field-row field-row--team">
+        <label class="field">
+          <span class="field__label">Team name</span>
+          <input type="text" id="team-name-input" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="field field--short">
+          <span class="field__label">Abbrev.</span>
+          <input type="text" id="team-abbrev-input" maxlength="4" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+
+      <!-- Bulk removal. The select-all box and the count are static so a
+           re-render can update them in place instead of replacing them. -->
+      <div class="roster__toolbar" id="roster-toolbar">
+        <label class="roster__select-all">
+          <input type="checkbox" id="roster-select-all" data-action="toggle-all-players">
+          <span>Select all</span>
+        </label>
+        <span class="roster__toolbar-count" id="roster-selection-count"></span>
+        <button type="button" id="roster-remove-selected" class="btn btn--sm roster__remove-selected"
+                data-action="remove-selected-players">Remove</button>
+      </div>
+
+      <ul class="roster" id="roster-list"></ul>
+
+      <form class="add-player" id="add-player-form" autocomplete="off">
+        <input type="text" inputmode="numeric" id="new-number" class="add-player__number"
+               placeholder="No." aria-label="Jersey number" maxlength="3">
+        <input type="text" id="new-name" class="add-player__name"
+               placeholder="Player name" aria-label="Player name">
+        <button type="submit" class="btn btn--primary">Add</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- ===================================================================
+       Center: the working surface
+       =================================================================== -->
+  <section class="panel panel--main" aria-label="Game entry">
+    <div class="panel__header">
+      <div class="tabs" role="tablist" aria-label="Choose a view">
+        <button type="button" class="tab" role="tab" data-action="select-view" data-view="entry" id="view-tab-entry">Live entry</button>
+        <button type="button" class="tab" role="tab" data-action="select-view" data-view="log" id="view-tab-log">Play-by-play</button>
+        <button type="button" class="tab" role="tab" data-action="select-view" data-view="box" id="view-tab-box">Box score</button>
+      </div>
+      <div class="panel__actions">
+        <button type="button" class="btn btn--primary btn--sm" data-action="undo" id="undo-button"
+                title="Undo the last entry (Ctrl/Cmd + Z)" disabled>Undo</button>
+      </div>
+    </div>
+
+    <div class="panel__body">
+      <!-- Live entry -->
+      <div class="view" id="view-entry" role="tabpanel" aria-labelledby="view-tab-entry">
+        <p class="hint">
+          One tap records one stat. Points on the board come from these entries, so the
+          quarter score and the box score can never disagree.
+        </p>
+        <div class="player-cards" id="player-cards"></div>
+      </div>
+
+      <!-- Play-by-play -->
+      <div class="view" id="view-log" role="tabpanel" aria-labelledby="view-tab-log" hidden>
+        <p class="hint">
+          Newest first. Delete an entry here to correct a mistake found later — every total
+          recomputes.
+        </p>
+        <ol class="log" id="log-list"></ol>
+      </div>
+
+      <!-- Box score -->
+      <div class="view" id="view-box" role="tabpanel" aria-labelledby="view-tab-box" hidden>
+        <div class="table-scroll">
+          <table class="box-score" id="box-table"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       Right: the scoresheet
+       =================================================================== -->
+  <aside class="panel panel--sheet" aria-label="Scoresheet">
+    <div class="panel__header">
+      <h2 class="panel__title">Scoresheet</h2>
+    </div>
+    <div class="panel__body">
+      <div class="table-scroll">
+        <table class="sheet" id="sheet-table"></table>
+      </div>
+
+      <p class="sheet__note" id="warning-note" hidden></p>
+    </div>
+  </aside>
+</main>
+
+<!-- =====================================================================
+     Game details: its own section between the scoring area and the bottom
+     bar. Changing the period structure or length changes what the panels
+     above can show, so it is deliberately not nested inside any of them.
+     ===================================================================== -->
+<section class="game-details" aria-label="Game details">
+  <span class="game-details__label">Game</span>
+  <label class="field">
+    <span class="field__label">Date</span>
+    <input type="date" id="game-date">
+  </label>
+  <label class="field">
+    <span class="field__label">Venue</span>
+    <input type="text" id="game-venue" autocomplete="off">
+  </label>
+  <label class="field field--short">
+    <span class="field__label">Periods</span>
+    <select id="game-periods">
+      <option value="4">4 quarters</option>
+      <option value="2">2 halves</option>
+    </select>
+  </label>
+  <label class="field">
+    <span class="field__label">Period length</span>
+    <select id="game-period-length"></select>
+  </label>
+  <button type="button" class="btn btn--ghost btn--sm" data-action="new-game">Start a blank game</button>
+  <button type="button" class="btn btn--ghost btn--sm" data-action="load-sample">Reload the sample game</button>
+</section>
+
+<!-- =====================================================================
+     The bottom strip: everything that gets data in or out of the app.
+     Exports and team files both answer "how do I get this elsewhere?", so
+     they live together in one horizontal bar rather than inside panels.
+     ===================================================================== -->
+<section class="actionbar" aria-label="Export and team files">
+  <div class="actionbar__group actionbar__group--export">
+    <h2 class="actionbar__title"
+        title="The only durable copy — clearing this browser's site data erases the game.">
+      Export
+    </h2>
+    <div class="actionbar__buttons">
+      <button type="button" class="btn btn--primary btn--sm" data-action="export-csv" data-kind="box-score">
+        Box score &mdash; CSV
+      </button>
+      <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="play-by-play">
+        Play-by-play &mdash; CSV
+      </button>
+      <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="summary">
+        Game summary &mdash; CSV
+      </button>
+      <button type="button" class="btn btn--sm" data-action="export-json">Full backup &mdash; JSON</button>
+      <button type="button" class="btn btn--sm btn--ghost" data-action="import-json">
+        Restore from JSON&hellip;
+      </button>
+    </div>
+  </div>
+
+  <div class="actionbar__group actionbar__group--team">
+    <h2 class="actionbar__title" title="This team's name and roster, to reuse or share.">Team file</h2>
+    <div class="actionbar__buttons">
+      <button type="button" class="btn btn--sm btn--ghost" data-action="save-team" id="save-team-button">
+        Save team as file
+      </button>
+      <button type="button" class="btn btn--sm btn--ghost" data-action="open-load-team">
+        Load team from file&hellip;
+      </button>
+    </div>
+  </div>
+
+  <span class="actionbar__version" id="app-version"></span>
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="sr-only" id="live-region" aria-live="polite"></div>
+
+<!-- =====================================================================
+     Team file: hidden file picker and the import confirmation
+     ===================================================================== -->
+<input type="file" id="team-file-input" accept="application/json,.json" hidden>
+
+<div class="dialog" id="load-team-dialog" role="dialog" aria-modal="true"
+     aria-labelledby="load-team-title" hidden>
+  <div class="dialog__panel">
+    <h2 class="dialog__title" id="load-team-title">Load a team from a file</h2>
+    <p class="hint" id="load-team-target"></p>
+    <p class="dialog__error" id="load-team-error" hidden></p>
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--ghost" data-action="close-dialog">Cancel</button>
+      <button type="button" class="btn btn--primary" data-action="confirm-load-team" id="confirm-load-team">
+        Load team
+      </button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

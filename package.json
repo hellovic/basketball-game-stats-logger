@@ -1,0 +1,11 @@
+{
+  "name": "game-stats-logger",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Manual basketball game stat logger — responsive, offline, zero dependencies.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "serve": "node scripts/dev-server.mjs"
+  }
+}

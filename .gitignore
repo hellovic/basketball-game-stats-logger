@@ -1,0 +1,6 @@
+# Nothing here is needed to run the app — it is all local scratch state.
+.cache/
+.superdesign/
+node_modules/
+.DS_Store
+.DS_Store
