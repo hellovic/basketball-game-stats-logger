@@ -73,6 +73,15 @@
   box-sizing: border-box;
 }
 
+/* The `hidden` attribute means "not rendered", but a component's own
+   `display: flex` outranks the browser's built-in `[hidden] { display: none }`.
+   That silently broke hiding twice — the storage banner and the toast both
+   stayed on screen after `.hidden = true`. This restores what the attribute
+   promises, so no component has to remember its own opt-out. */
+[hidden] {
+  display: none !important;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -166,14 +175,6 @@ button {
   cursor: pointer;
   color: inherit;
   padding: 0 var(--sp-1);
-}
-
-/* Load-bearing: `display: flex` above outranks the browser's own
-   `[hidden] { display: none }`, so without this rule setting `.hidden = true`
-   leaves the strip on screen — which is exactly how it used to stick around
-   after being dismissed. */
-.banner[hidden] {
-  display: none;
 }
 
 /* ==========================================================================

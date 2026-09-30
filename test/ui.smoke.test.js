@@ -365,14 +365,26 @@ test('the app boots and renders without throwing', async () => {
   assert.equal(document.getElementById('storage-banner').hidden, true, 'no banner over the board');
 });
 
-test('the storage warning can actually be hidden', async () => {
-  // `display: flex` on .banner outranks the browser's own `[hidden]` rule, so
-  // the strip used to stay on screen no matter what `hidden` was set to. The
-  // explicit rule is what makes both the dismissal and the failure-only
-  // default work; without it the banner is permanently visible.
+test('the hidden attribute really hides, whatever the component sets', async () => {
+  // A component's own `display: flex` outranks the browser's built-in
+  // `[hidden] { display: none }`, so `.hidden = true` silently did nothing —
+  // which is how both the storage banner and the toast ended up stuck on
+  // screen. The global guard is what makes the attribute mean what it says.
   const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
-  const rule = css.slice(css.indexOf('.banner[hidden]'));
-  assert.match(rule.slice(0, rule.indexOf('}')), /display:\s*none/);
+  assert.match(
+    css,
+    /\[hidden\]\s*\{\s*display:\s*none\s*!important/,
+    'the hidden attribute must win over a component display',
+  );
+
+  // The two components that set `display` themselves are the ones that need it.
+  const blockFor = (selector) => {
+    const at = css.indexOf(`\n${selector} {`);
+    assert.ok(at !== -1, `expected a ${selector} rule`);
+    return css.slice(at, css.indexOf('}', at));
+  };
+  assert.match(blockFor('.toast'), /display:\s*flex/);
+  assert.match(blockFor('.banner'), /display:\s*flex/);
 
   const dom = await startApp();
   assert.equal(document.getElementById('storage-banner').hidden, true);
