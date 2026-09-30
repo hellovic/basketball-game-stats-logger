@@ -307,19 +307,27 @@ each importer tells you if you have picked the other one.
 
 ## Hosting on GitHub Pages
 
-It works, and it is the intended deployment — the app is entirely static.
+It works, and it is the intended deployment — the app is entirely static. Every
+path inside `app/` is relative, so the same files run unchanged on localhost, on
+your Wi-Fi, and under a project subpath on Pages.
+
+The repository carries a workflow at `.github/workflows/pages.yml` that
+publishes `app/` whenever `main` moves. It runs the test suite first, so a build
+that fails its own tests never goes live.
 
 ```bash
-git init && git add -A
-git commit -m "Game stats logger"
-git branch -M main
 git remote add origin git@github.com:<you>/game-stats-logger.git
 git push -u origin main
 ```
 
-Then in the repository: **Settings → Pages → Build and deployment → Source:
-Deploy from a branch**, pick `main` and the **`/app`** folder, and save. The app
-appears at `https://<you>.github.io/game-stats-logger/` a minute or so later.
+Then, once, in the repository: **Settings → Pages → Build and deployment →
+Source: GitHub Actions**. The app appears at
+`https://<you>.github.io/game-stats-logger/` after the first run finishes.
+
+Choose **GitHub Actions**, not "Deploy from a branch". The workflow is what
+uploads the site, and it uploads `app/` alone — pointing Pages at a branch would
+publish the repository root instead, putting this file and the test suite on the
+web next to the app.
 
 Two things to know about a hosted copy:
 
@@ -352,6 +360,10 @@ app/
     export.js       CSV and JSON generation
     sample.js       the seeded sample game
     app.js          rendering and event wiring (the only DOM-touching module)
+  .nojekyll         tells Pages to serve the folder as-is
+.github/
+  workflows/
+    pages.yml       publishes app/ on every push to main, after the tests pass
 scripts/
   dev-server.mjs    no-cache server, on your LAN by default, so edits always
                     show on a refresh and other devices can open the app

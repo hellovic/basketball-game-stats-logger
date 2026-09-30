@@ -1,0 +1,50 @@
+name: Publish to GitHub Pages
+
+# Runs on every push to main, and can be triggered by hand from the Actions tab.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Pages needs to read the repo, write a deployment, and mint an OIDC token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A newer push supersedes a run still in flight
+# rather than queueing behind it.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Publishing a build that fails its own tests would be worse than not
+      # publishing at all, so the suite gates the deploy.
+      - name: Test
+        run: npm test
+
+      - uses: actions/configure-pages@v5
+
+      # `app/` is the entire site. The tooling around it — the tests and the
+      # dev server — is not part of what a visitor downloads, so it is not
+      # uploaded. Every path inside is relative, so the app works unchanged at
+      # https://<user>.github.io/<repo>/ as well as on localhost.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
