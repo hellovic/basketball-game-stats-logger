@@ -358,6 +358,28 @@ test('the app boots and renders without throwing', async () => {
   // Home and away names come from the sample teams.
   assert.equal(document.getElementById('score-home-name').textContent, 'Northside');
   assert.equal(document.getElementById('score-away-name').textContent, 'Riverside');
+
+  // No advisory strip across the top: it took a line of the scoring area to say
+  // something the export controls already imply. Storage works under the stub,
+  // so the failure-only warning must stay hidden.
+  assert.equal(document.getElementById('storage-banner').hidden, true, 'no banner over the board');
+});
+
+test('the storage warning can actually be hidden', async () => {
+  // `display: flex` on .banner outranks the browser's own `[hidden]` rule, so
+  // the strip used to stay on screen no matter what `hidden` was set to. The
+  // explicit rule is what makes both the dismissal and the failure-only
+  // default work; without it the banner is permanently visible.
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  const rule = css.slice(css.indexOf('.banner[hidden]'));
+  assert.match(rule.slice(0, rule.indexOf('}')), /display:\s*none/);
+
+  const dom = await startApp();
+  assert.equal(document.getElementById('storage-banner').hidden, true);
+
+  // Dismissing reports success rather than throwing.
+  emit(dom.listeners, 'click', actionable({ action: 'dismiss-banner' }));
+  assert.equal(document.getElementById('storage-banner').hidden, true);
 });
 
 test('every element id referenced by the app exists in the HTML document', async () => {

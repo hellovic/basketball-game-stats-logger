@@ -126,8 +126,9 @@ button {
    Banners
    ========================================================================== */
 
-/* A slim advisory strip. It is a persistent reminder, not a headline, so it is
-   kept to roughly one short line — the scoring area below is what matters. */
+/* A slim warning strip, shown only when storage has failed and nothing is being
+   saved at all. It is a last-resort notice, not a headline, so it is kept to
+   roughly one short line — the scoring area below is what matters. */
 .banner {
   display: flex;
   align-items: center;
@@ -165,6 +166,14 @@ button {
   cursor: pointer;
   color: inherit;
   padding: 0 var(--sp-1);
+}
+
+/* Load-bearing: `display: flex` above outranks the browser's own
+   `[hidden] { display: none }`, so without this rule setting `.hidden = true`
+   leaves the strip on screen — which is exactly how it used to stick around
+   after being dismissed. */
+.banner[hidden] {
+  display: none;
 }
 
 /* ==========================================================================

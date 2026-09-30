@@ -70,26 +70,6 @@ let selectedPlayerIds = new Set();
 
 const $ = (id) => document.getElementById(id);
 
-const STORAGE_WARNING_KEY = 'game-stats-logger/storage-warning-dismissed';
-
-/** localStorage can throw in privacy modes; every read has to be guarded. */
-function storageFlag(key) {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-/** Set a flag, ignoring failure — it only controls whether a notice is shown. */
-function setStorageFlag(key, value) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    /* not important enough to report */
-  }
-}
-
 function save() {
   const result = saveState(game);
   if (!result.ok) showToast('Could not save — the game is only in memory.');
@@ -1287,7 +1267,6 @@ document.addEventListener('click', (event) => {
       break;
     case 'dismiss-banner':
       $('storage-banner').hidden = true;
-      setStorageFlag(STORAGE_WARNING_KEY, '1');
       break;
     default:
       break;
@@ -1427,8 +1406,9 @@ window.addEventListener('beforeunload', () => {
 // ---------------------------------------------------------------------------
 
 function reportStorageAvailability() {
-  // Two things are worth telling the user about, once each: that the data is
-  // local-only, and that storage is actually unusable so nothing is being kept.
+  // The only thing worth interrupting the scorer for is storage being unusable,
+  // because then nothing is being kept at all. That the data is local-only is
+  // already said by the export controls, so it is not repeated as a banner.
   const store = saveState(game);
 
   if (!store.ok) {
@@ -1436,11 +1416,6 @@ function reportStorageAvailability() {
     $('storage-banner').querySelector('p').innerHTML =
       '<strong>This browser is blocking local storage.</strong> Nothing will be ' +
       'saved, so export the game before you close this tab.';
-    return;
-  }
-
-  if (!storageFlag(STORAGE_WARNING_KEY)) {
-    $('storage-banner').hidden = false;
   }
 }
 
