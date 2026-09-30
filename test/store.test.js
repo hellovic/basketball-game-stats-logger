@@ -40,6 +40,20 @@ function fakeStorage() {
 // Period structure and length
 // ---------------------------------------------------------------------------
 
+test('a new game is dated today with the start time left for the scorer', () => {
+  const game = createGame();
+  assert.match(game.date, /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(game.time, '', 'the start time is asked for, not guessed');
+});
+
+test('a save from before the start time existed loads with a blank one', () => {
+  const game = createGame();
+  delete game.time;
+
+  const restored = deserialize(JSON.stringify({ game }));
+  assert.equal(restored.time, '');
+});
+
 test('a quarter game starts with ten-minute periods', () => {
   const game = createGame();
   assert.equal(game.periodsPerGame, 4);

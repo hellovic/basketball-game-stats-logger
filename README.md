@@ -50,6 +50,12 @@ The app opens with a **sample game** so you can see a populated screen right
 away. Use *Game details → Start a blank game* when you are ready to log a real
 one, and *Reload the sample game* to bring it back.
 
+The **Game** bar under the scoreboard carries the game's own details — its date,
+start time and venue — next to the period structure that everything below reads.
+The date names every file you export; the time and venue are part of the saved
+game and travel with a backup. The start time is left blank rather than filled
+in with the current time, so a game is never stamped with a guess.
+
 The four actions that throw work away — starting a blank game, reloading the
 sample, removing players, and restoring a backup — all ask before they act. The
 question names what would be lost (*"36 recorded entries will be discarded"*)

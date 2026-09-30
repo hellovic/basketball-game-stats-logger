@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.5.4">
-<meta name="app-build" content="2026-09-29m">
+<meta name="app-version" content="0.5.5">
+<meta name="app-build" content="2026-09-29n">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -71,10 +71,10 @@
 
 <!-- =====================================================================
      Game details: the settings that decide what everything below shows —
-     the date and venue on the scoresheet, and the period structure and
+     the date, time and venue on the scoresheet, and the period structure and
      length that the quarter strip and every panel read. Placed directly
      under the scoreboard so the game's shape is set before the things that
-     depend on it, and kept out of the panels so all six controls fit on one
+     depend on it, and kept out of the panels so all seven controls fit on one
      row without any panel shrinking to make space.
      ===================================================================== -->
 <section class="game-details" aria-label="Game details">
@@ -82,6 +82,10 @@
   <label class="field">
     <span class="field__label">Date</span>
     <input type="date" id="game-date">
+  </label>
+  <label class="field">
+    <span class="field__label">Time</span>
+    <input type="time" id="game-time">
   </label>
   <label class="field">
     <span class="field__label">Venue</span>

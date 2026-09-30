@@ -1458,8 +1458,29 @@ test('the game settings bar sits between the scoreboard and the quarter totals',
   // The controls must still be wired from their new place: they set the period
   // structure that the strip below and every panel both read.
   assert.equal(document.getElementById('game-date').value, '2026-01-17');
+  assert.equal(document.getElementById('game-time').value, '14:30');
   assert.equal(document.getElementById('game-periods').value, '4');
   assert.ok(document.getElementById('game-period-length').innerHTML.length > 0);
+});
+
+test('the game time sits beside the date and saves as it is set', async () => {
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  const dateAt = html.indexOf('id="game-date"');
+  const timeAt = html.indexOf('id="game-time"');
+  assert.ok(timeAt > dateAt, 'the time field follows the date');
+  assert.ok(
+    timeAt < html.indexOf('id="game-venue"'),
+    'and the pair stays together, ahead of the venue',
+  );
+
+  const dom = await startApp();
+  const field = document.getElementById('game-time');
+  assert.equal(field.value, '14:30', 'the sample game carries a start time');
+
+  field.value = '18:45';
+  emit(dom.listeners, 'change', field);
+
+  assert.equal(storedGame().time, '18:45');
 });
 
 test('undo lives on the sticky scoreboard', async () => {

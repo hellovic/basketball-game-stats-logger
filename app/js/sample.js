@@ -109,6 +109,7 @@ export function sampleGame() {
   const game = createGame({
     id: 'game_sample',
     date: '2026-01-17',
+    time: '14:30',
     venue: 'Riverside Gymnasium',
     periodsPerGame: 4,
     currentPeriod: 3,

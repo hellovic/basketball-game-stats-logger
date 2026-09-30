@@ -40,6 +40,9 @@ export function createGame(overrides = {}) {
     schemaVersion: SCHEMA_VERSION,
     id: makeId('game'),
     date: new Date(now).toISOString().slice(0, 10),
+    /** Start time as HH:MM. Blank until the scorer sets it: a wrong-looking
+     *  default is worse than an empty field, which asks to be filled in. */
+    time: '',
     venue: '',
     periodsPerGame: 4,
     /** Regulation period length in seconds; the clock refills from it. */
@@ -380,6 +383,7 @@ export function deserialize(raw) {
     // manually corrected period now reports only its logged events.
     delete game.scoreOverrides;
     game.teams ??= {};
+    game.time ??= '';
     game.clock ??= { running: false, seconds: 0 };
     game.currentPeriod ??= 1;
     game.periodsPerGame ??= 4;

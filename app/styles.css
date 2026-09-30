@@ -1110,6 +1110,11 @@ tbody tr:hover {
   width: 132px;
 }
 
+/* Sized like the date beside it, so the pair reads as one stamp. */
+.game-details .field input[type='time'] {
+  width: 104px;
+}
+
 .game-details .field input[type='text'] {
   width: 150px;
 }

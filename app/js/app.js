@@ -533,6 +533,7 @@ function escapedNumber(value) {
 
 function renderFooter() {
   $('game-date').value = safeText(game.date);
+  $('game-time').value = safeText(game.time);
   $('game-venue').value = safeText(game.venue);
   $('game-periods').value = String(game.periodsPerGame);
 
@@ -1049,7 +1050,8 @@ function startNewGame() {
       `with it. ${atStake()} Export the game first if you need a copy.`,
     confirmLabel: 'Start a blank game',
     run: () => {
-      game = createGame({ date: game.date, periodsPerGame: game.periodsPerGame });
+      // A new game is usually the same day, so the date and time carry over.
+      game = createGame({ date: game.date, time: game.time, periodsPerGame: game.periodsPerGame });
       detailTeamSlot = 'home';
       save();
       render();
@@ -1435,6 +1437,12 @@ document.addEventListener('change', (event) => {
     return;
   }
 
+  if (id === 'game-time') {
+    game.time = event.target.value;
+    save();
+    return;
+  }
+
   if (id === 'game-venue') {
     game.venue = event.target.value;
     save();
@@ -1461,9 +1469,10 @@ document.addEventListener('change', (event) => {
 });
 
 document.addEventListener('input', (event) => {
-  // Let the date and venue fields update the model as they are typed, so an
-  // export mid-edit still carries the current values.
+  // Let the date, time and venue fields update the model as they are typed, so
+  // an export mid-edit still carries the current values.
   if (event.target.id === 'game-date') game.date = event.target.value;
+  if (event.target.id === 'game-time') game.time = event.target.value;
   if (event.target.id === 'game-venue') game.venue = event.target.value;
 });
 
