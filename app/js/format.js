@@ -32,12 +32,16 @@ export function clock(totalSeconds) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-/** A short local time for an event row, e.g. "19:42:07". */
-export function eventTime(ts) {
-  if (!ts) return '';
-  const date = new Date(ts);
-  if (isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString([], { hour12: false });
+/**
+ * The game clock at the moment of an entry, e.g. "07:32".
+ *
+ * Blank when the value is missing, which is the case for a game saved before
+ * the clock was recorded. An empty cell is honest; "00:00" would claim the play
+ * happened on the buzzer.
+ */
+export function eventClock(seconds) {
+  if (typeof seconds !== 'number' || !isFinite(seconds)) return '';
+  return clock(seconds);
 }
 
 /** Guard against undefined/empty values reaching the DOM as "undefined". */

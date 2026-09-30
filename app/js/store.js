@@ -229,14 +229,22 @@ export function validateEvent(event, game = null) {
  *
  * `ts` is accepted so a seeded sample game can produce a believable, stable
  * play-by-play timeline instead of every event sharing one timestamp.
+ *
+ * `clockSeconds` is the game clock at the moment of the tap. It is captured
+ * from the running clock by default, so the play-by-play reads in game time.
+ * The sample passes its own value, because it builds the whole game up front,
+ * before the clock has ever moved.
  */
 export function addEvent(
   game,
-  { teamId, playerId, stat, result = null, period, source = 'entry', ts, id },
+  { teamId, playerId, stat, result = null, period, source = 'entry', ts, id, clockSeconds },
 ) {
   const event = {
     id: id || makeId('event'),
     ts: ts ?? Date.now(),
+    // The clock, not the wall clock: a scorer needs to know when in the game
+    // the play happened, and the real-world time of the tap says nothing.
+    clockSeconds: clockSeconds ?? game.clock?.seconds ?? 0,
     period: period || game.currentPeriod || 1,
     teamId,
     playerId: playerId || null,

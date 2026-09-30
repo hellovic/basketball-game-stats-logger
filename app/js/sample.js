@@ -10,6 +10,7 @@
  */
 
 import { addEvent, createGame, updateTeam } from './store.js';
+import { periodLength } from './clock.js';
 
 const BASE_TIME = Date.UTC(2026, 0, 17, 19, 30, 0);
 
@@ -79,9 +80,24 @@ const TIMELINE = [
   { t: 29.7, team: 'away', player: 'player_a34', stat: '2PT', result: 'made' },
 ];
 
+/** The timeline is written against ten-minute periods. */
+const PERIOD_MINUTES = 10;
+
 /** Which period a timeline entry belongs to. */
 function periodOf(offsetMinutes) {
-  return Math.floor(offsetMinutes / 10) + 1;
+  return Math.floor(offsetMinutes / PERIOD_MINUTES) + 1;
+}
+
+/**
+ * Seconds left on the game clock at a timeline offset.
+ *
+ * The sample records a real clock value per event so its play-by-play reads in
+ * game time like a live game, instead of every row showing the single clock the
+ * game happened to be created with.
+ */
+function clockAt(game, offsetMinutes) {
+  const elapsed = (offsetMinutes % PERIOD_MINUTES) * 60;
+  return Math.max(0, Math.round(periodLength(game) - elapsed));
 }
 
 /**
@@ -128,6 +144,7 @@ export function sampleGame() {
       result: entry.result,
       period,
       ts,
+      clockSeconds: clockAt(game, entry.t),
     });
 
     // An assist is a separate one-tap entry in the real app, so record it as
@@ -140,6 +157,7 @@ export function sampleGame() {
         result: null,
         period,
         ts: ts + 1000,
+        clockSeconds: clockAt(game, entry.t),
       });
     }
   }

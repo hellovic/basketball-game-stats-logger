@@ -201,6 +201,26 @@ test('periods beyond the schedule still score, so overtime works', () => {
   assert.equal(playersOf(game, game.homeTeamId).length, 1);
 });
 
+test('a new event records the game clock it was logged against', () => {
+  const game = createGame();
+  const scorer = addPlayer(game, game.homeTeamId, { number: '4', name: 'J. Reed' });
+  game.clock = { running: true, seconds: 132 };
+
+  const { event } = addEvent(game, {
+    teamId: game.homeTeamId,
+    playerId: scorer.id,
+    stat: '2PT',
+    result: 'made',
+    period: 1,
+  });
+
+  assert.equal(
+    event.clockSeconds,
+    132,
+    'the play-by-play reads in game time, so every event needs the clock it was logged at',
+  );
+});
+
 test('a serialised game round trips with all settings intact', () => {
   const game = createGame();
   setPeriodsPerGame(game, 2);

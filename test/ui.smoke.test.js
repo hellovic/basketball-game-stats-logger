@@ -470,6 +470,22 @@ test('the play-by-play lists the seeded entries newest first', async () => {
   );
 });
 
+test('the play-by-play shows game time, not the time of day', async () => {
+  await startApp();
+
+  const log = document.getElementById('log-list').innerHTML;
+  const times = [...log.matchAll(/class="log__time">([^<]*)</g)].map((match) => match[1]);
+  assert.ok(times.length > 0, 'every entry should render a time');
+
+  for (const time of times) {
+    assert.match(time, /^\d{2}:\d{2}$/, `"${time}" should be MM:SS on the game clock`);
+  }
+
+  // Tip-off is 10:00, so the opening entries read in the nine-minute range. A
+  // time of day such as "20:58:52" fails the shape check above.
+  assert.ok(times.some((time) => time.startsWith('09:')), 'early entries read around 09:xx');
+});
+
 test('a logged stat updates the scoreboard, roster and box score together', async () => {
   const dom = await startApp();
 

@@ -11,7 +11,7 @@
 
 import { STATS, describeEvent } from './stats.js';
 import { computeGame } from './derive.js';
-import { eventTime, periodLabel, safeText } from './format.js';
+import { eventClock, periodLabel, safeText } from './format.js';
 import { eventsInOrder, deserialize, serialize } from './store.js';
 
 /**
@@ -133,7 +133,7 @@ function playerRow(teamName, number, playerName, line) {
  * trail — it can be used to rebuild a game even if a total is disputed.
  */
 export function playByPlayCsv(game) {
-  const header = ['#', 'Time', 'Period', 'Team', 'Player', 'Event', 'Result', 'Points'];
+  const header = ['#', 'Game time', 'Period', 'Team', 'Player', 'Event', 'Result', 'Points'];
 
   const rows = [header];
 
@@ -151,7 +151,7 @@ export function playByPlayCsv(game) {
 
     rows.push([
       index + 1,
-      eventTime(event.ts),
+      eventClock(event.clockSeconds),
       periodLabel(event.period, game.periodsPerGame),
       team.name || team.abbreviation || '',
       player ? `${player.number ? `#${player.number} ` : ''}${player.name}` : 'TEAM',
