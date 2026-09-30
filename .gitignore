@@ -3,4 +3,11 @@
 .superdesign/
 node_modules/
 .DS_Store
-.DS_Store
+
+# Real team and game data. These are somebody's actual roster, so they stay on
+# this machine: the repo is public, and a game belongs in the browser that
+# scored it rather than in the source tree.
+*_roster.csv
+*_team.json
+*.local.json
+*.local.csv
