@@ -84,9 +84,9 @@ a game, and a **team file** backs up a roster. See below.
 
 ## Using it during a game
 
-Set up two teams and their rosters in the **roster bar** at the bottom, then work
-straight down the page. All three views are on screen at once — there is nothing
-to switch between.
+Set up two teams and their rosters in the **roster bar**, which sits just above
+the entry rows, then work straight down the page. All three views are on screen
+at once — there is nothing to switch between.
 
 1. **Quarter totals** — a thin strip under the scoreboard, so the per-quarter
    score is always in view without taking over the screen. It scrolls away with
@@ -338,8 +338,8 @@ and no way for the app to leak a game — the tradeoff is that backup is on you.
 
 ```
 app/
-  index.html        the document: scoreboard, quarter strip, the three views,
-                    the roster bar
+  index.html        the document: scoreboard, quarter strip, the roster bar,
+                    then the three views
   styles.css        design tokens and all responsive rules
   js/
     stats.js        the stat catalog — add a stat here to record it

@@ -379,16 +379,18 @@ button {
    Roster bar — the roster as a horizontal strip rather than a column
    ========================================================================== */
 
+/* Sits inside the workspace grid, directly above the entry rows, so it lines
+   up with the panels either side of it without carrying its own width. */
 .rosterbar {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--sp-2) var(--sp-4);
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: var(--sp-2) var(--sp-4);
-  border-top: 1px solid var(--border);
+  padding: var(--sp-2) var(--sp-3);
   background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
 
 .rosterbar__group {

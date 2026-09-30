@@ -382,6 +382,24 @@ test('the storage warning can actually be hidden', async () => {
   assert.equal(document.getElementById('storage-banner').hidden, true);
 });
 
+test('the roster bar sits directly above the entry rows', async () => {
+  // Setting up the two teams is the first thing a scorer does, so the bar
+  // belongs next to the entry rows rather than below the box score.
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  const main = html.slice(html.indexOf('<main class="workspace">'), html.indexOf('</main>'));
+  const rosterAt = main.indexOf('class="rosterbar"');
+  const entryAt = main.indexOf('panel--entry');
+  assert.ok(rosterAt !== -1, 'the roster bar should be inside the workspace');
+  assert.ok(entryAt !== -1, 'live entry should be inside the workspace');
+  assert.ok(rosterAt < entryAt, 'the roster bar should come before live entry');
+
+  // And the team controls still work from their new home.
+  const dom = await startApp();
+  emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
+  assert.equal(document.getElementById('team-tab-away').getAttribute('aria-selected'), 'true');
+  assert.equal(document.getElementById('team-name-input').value, 'Riverside');
+});
+
 test('every element id referenced by the app exists in the HTML document', async () => {
   // Read the ids straight from the markup and check the app's lookups against
   // them, so a renamed or removed id fails here rather than at runtime.
