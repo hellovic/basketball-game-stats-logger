@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.5.0">
-<meta name="app-build" content="2026-09-29i">
+<meta name="app-version" content="0.5.1">
+<meta name="app-build" content="2026-09-29j">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -68,6 +68,39 @@
     </div>
   </div>
 </header>
+
+<!-- =====================================================================
+     Game details: the settings that decide what everything below shows —
+     the date and venue on the scoresheet, and the period structure and
+     length that the quarter strip and every panel read. Placed directly
+     under the scoreboard so the game's shape is set before the things that
+     depend on it, and kept out of the panels so all six controls fit on one
+     row without any panel shrinking to make space.
+     ===================================================================== -->
+<section class="game-details" aria-label="Game details">
+  <span class="game-details__label">Game</span>
+  <label class="field">
+    <span class="field__label">Date</span>
+    <input type="date" id="game-date">
+  </label>
+  <label class="field">
+    <span class="field__label">Venue</span>
+    <input type="text" id="game-venue" autocomplete="off">
+  </label>
+  <label class="field field--short">
+    <span class="field__label">Periods</span>
+    <select id="game-periods">
+      <option value="4">4 quarters</option>
+      <option value="2">2 halves</option>
+    </select>
+  </label>
+  <label class="field">
+    <span class="field__label">Period length</span>
+    <select id="game-period-length"></select>
+  </label>
+  <button type="button" class="btn btn--ghost btn--sm" data-action="new-game">Start a blank game</button>
+  <button type="button" class="btn btn--ghost btn--sm" data-action="load-sample">Reload the sample game</button>
+</section>
 
 <!-- =====================================================================
      Quarter totals: a thin strip under the scoreboard, deliberately NOT
@@ -180,36 +213,6 @@
     </div>
   </section>
 </main>
-
-<!-- =====================================================================
-     Game details: its own section between the scoring area and the bottom
-     bar. Changing the period structure or length changes what the panels
-     above can show, so it is deliberately not nested inside any of them.
-     ===================================================================== -->
-<section class="game-details" aria-label="Game details">
-  <span class="game-details__label">Game</span>
-  <label class="field">
-    <span class="field__label">Date</span>
-    <input type="date" id="game-date">
-  </label>
-  <label class="field">
-    <span class="field__label">Venue</span>
-    <input type="text" id="game-venue" autocomplete="off">
-  </label>
-  <label class="field field--short">
-    <span class="field__label">Periods</span>
-    <select id="game-periods">
-      <option value="4">4 quarters</option>
-      <option value="2">2 halves</option>
-    </select>
-  </label>
-  <label class="field">
-    <span class="field__label">Period length</span>
-    <select id="game-period-length"></select>
-  </label>
-  <button type="button" class="btn btn--ghost btn--sm" data-action="new-game">Start a blank game</button>
-  <button type="button" class="btn btn--ghost btn--sm" data-action="load-sample">Reload the sample game</button>
-</section>
 
 <!-- =====================================================================
      The bottom strip: everything that gets data in or out of the app.

@@ -349,8 +349,8 @@ and no way for the app to leak a game — the tradeoff is that backup is on you.
 
 ```
 app/
-  index.html        the document: scoreboard, quarter strip, the roster bar,
-                    then the three views
+  index.html        the document: scoreboard, game settings bar, quarter strip,
+                    the roster bar, then the three views
   styles.css        design tokens and all responsive rules
   js/
     stats.js        the stat catalog — add a stat here to record it

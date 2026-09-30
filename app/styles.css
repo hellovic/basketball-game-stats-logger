@@ -1056,7 +1056,7 @@ tbody tr:hover {
    Game details
    ========================================================================== */
 
-/* A standalone section between the scoring area and the bottom bar. It spans
+/* A standalone strip under the scoreboard, above the quarter totals. It spans
    the full width rather than sitting inside a panel, so all six controls fit
    on one row and none of the panels has to shrink to make space for it. */
 .game-details {
@@ -1068,7 +1068,7 @@ tbody tr:hover {
   margin: 0 auto;
   padding: var(--sp-2) var(--sp-4);
   background: var(--surface);
-  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .game-details__label {

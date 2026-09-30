@@ -1375,6 +1375,24 @@ test('quarter totals render in a strip below the scoreboard, not in a side panel
   assert.doesNotMatch(block.slice(0, block.indexOf('}')), /sticky/);
 });
 
+test('the game settings bar sits between the scoreboard and the quarter totals', async () => {
+  await startApp();
+
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  const detailsAt = html.indexOf('class="game-details"');
+  assert.ok(detailsAt > html.indexOf('</header>'), 'the settings bar belongs under the scoreboard');
+  assert.ok(
+    detailsAt < html.indexOf('class="quarters"'),
+    'the settings bar belongs above the quarter totals it decides the shape of',
+  );
+
+  // The controls must still be wired from their new place: they set the period
+  // structure that the strip below and every panel both read.
+  assert.equal(document.getElementById('game-date').value, '2026-01-17');
+  assert.equal(document.getElementById('game-periods').value, '4');
+  assert.ok(document.getElementById('game-period-length').innerHTML.length > 0);
+});
+
 test('undo lives on the sticky scoreboard', async () => {
   const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
   const scoreboard = html.slice(html.indexOf('id="scoreboard"'));
