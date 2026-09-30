@@ -36,7 +36,12 @@ jobs:
       - name: Test
         run: npm test
 
+      # `enablement` lets the first run switch Pages on by itself, so the
+      # deploy does not depend on remembering to flip a setting in the
+      # repository first. The token already carries pages: write for it.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       # `app/` is the entire site. The tooling around it — the tests and the
       # dev server — is not part of what a visitor downloads, so it is not
