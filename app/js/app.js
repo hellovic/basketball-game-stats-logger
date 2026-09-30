@@ -53,7 +53,6 @@ import { sampleGame } from './sample.js';
 let game = loadState();
 if (!game) game = sampleGame();
 
-let view = 'entry';
 let detailTeamSlot = 'home';
 let toastTimer = null;
 let clockTimer = null;
@@ -152,7 +151,7 @@ function render() {
 
   renderScoreboard(derived);
   renderRoster(derived);
-  renderTabs();
+  renderTeamFields();
   renderEntry(derived);
   renderLog(derived);
   renderBox(derived);
@@ -191,15 +190,11 @@ function renderScoreboard(derived) {
   $('period-display').textContent = periodLabel(game.currentPeriod, game.periodsPerGame);
 }
 
-function renderTabs() {
-  for (const name of ['entry', 'log', 'box']) {
-    const tab = $(`view-tab-${name}`);
-    tab.setAttribute('aria-selected', String(view === name));
-  }
-  $('view-entry').hidden = view !== 'entry';
-  $('view-log').hidden = view !== 'log';
-  $('view-box').hidden = view !== 'box';
-
+/**
+ * The team tabs and the name/abbreviation fields, which live on the roster bar
+ * now that the roster no longer owns a column of its own.
+ */
+function renderTeamFields() {
   for (const slot of ['home', 'away']) {
     $(`team-tab-${slot}`).setAttribute('aria-selected', String(detailTeamSlot === slot));
   }
@@ -208,7 +203,7 @@ function renderTabs() {
   $('team-abbrev-input').value = safeText(teamFor(detailTeamSlot)?.abbreviation);
 }
 
-function renderRoster(derived) {
+function renderRoster() {
   const teamId = teamIdFor(detailTeamSlot);
   const roster = playersOf(game, teamId);
 
@@ -217,33 +212,6 @@ function renderRoster(derived) {
   // rather than left armed for deletion.
   pruneSelection(roster);
   renderRosterToolbar(roster);
-
-  const list = $('roster-list');
-
-  if (roster.length === 0) {
-    list.innerHTML = '<li class="roster__empty">No players yet. Add one below.</li>';
-    return;
-  }
-
-  list.innerHTML = roster
-    .map((player) => {
-      const line = derived.playerLines[player.id] || playerLine(game, player.id);
-      const selected = selectedPlayerIds.has(player.id);
-      const name = escapeHtml(player.name);
-      return `
-        <li class="roster__item${selected ? ' roster__item--selected' : ''}"
-            style="--accent: ${accentFor(player.teamId)}">
-          <label class="roster__check-hit">
-            <input type="checkbox" class="roster__check" data-action="toggle-player"
-                   data-player-id="${escapeHtml(player.id)}"
-                   aria-label="Select ${name}"${selected ? ' checked' : ''}>
-          </label>
-          <span class="roster__number">${escapeHtml(player.number) || '—'}</span>
-          <span class="roster__name">${escapeHtml(player.name)}</span>
-          <span class="roster__points">${line.points}</span>
-        </li>`;
-    })
-    .join('');
 }
 
 /** Drop selected ids that are no longer on the roster being viewed. */
@@ -341,7 +309,7 @@ function renderEntry(derived) {
 
   if (roster.length === 0) {
     container.innerHTML =
-      '<p class="view__empty">Add players to this team in the roster panel to start logging.</p>';
+      '<p class="view__empty">No players yet — add one in the roster bar below.</p>';
     return;
   }
 
@@ -353,9 +321,34 @@ function renderEntry(derived) {
   // were worth. The full stat catalog stays available as tooltips.
   const buttons = entryButtons();
 
+  // The entry row carries the box-score columns inline, so one glance shows the
+  // player's line and the buttons that change it. Percentages are the two
+  // columns left out: the made-attempted pair ("5-9") already reads as a
+  // percentage, and both values stay in the CSV and JSON exports.
+  const columns = [
+    ['PTS', (l) => l.points],
+    ['FG', (l) => madeAttempted(l.fgMade, l.fgAtt)],
+    ['3P', (l) => madeAttempted(l['3PT'].made, l['3PT'].made + l['3PT'].missed)],
+    ['FT', (l) => madeAttempted(l.ftMade, l.ftAtt)],
+    ['REB', (l) => l.reb],
+    ['OREB', (l) => l.rebOff],
+    ['DREB', (l) => l.rebDef],
+    ['AST', (l) => l.ast],
+    ['STL', (l) => l.stl],
+    ['BLK', (l) => l.blk],
+    ['TO', (l) => l.to],
+    ['PF', (l) => l.pf],
+  ];
+
+  const header = columns
+    .map(([label]) => `<span class="player-card__col-label">${label}</span>`)
+    .join('');
+
   container.innerHTML = roster
     .map((player) => {
       const line = derived.playerLines[player.id] || playerLine(game, player.id);
+      const selected = selectedPlayerIds.has(player.id);
+      const name = escapeHtml(player.name);
 
       const statButtons = buttons
         .map(
@@ -371,20 +364,27 @@ function renderEntry(derived) {
         )
         .join('');
 
-      // A compact running line: enough context to trust the buttons without
-      // pushing the row onto a second line. The box score carries the detail.
-      const summary = `${line.reb} REB · ${line.ast} AST · FG ${madeAttempted(line.fgMade, line.fgAtt)}`.replace(
-        / · $/,
-        '',
-      );
+      const statValues = columns
+        .map(([, get]) => `<span class="player-card__col">${escapeHtml(String(get(line)))}</span>`)
+        .join('');
 
       return `
-        <article class="player-card" style="--accent: ${accent}" data-player-id="${escapeHtml(player.id)}">
-          <span class="player-card__number">${escapeHtml(player.number) || '—'}</span>
-          <span class="player-card__name" title="${escapeHtml(player.name)}">${escapeHtml(player.name)}</span>
-          <span class="player-card__line" title="${escapeHtml(summary)}">${summary}</span>
-          <span class="player-card__stat-line">${statButtons}</span>
-          <span class="player-card__points">${line.points}</span>
+        <article class="player-card${selected ? ' player-card--selected' : ''}"
+                 style="--accent: ${accent}" data-action="player-row"
+                 data-player-id="${escapeHtml(player.id)}">
+          <div class="player-card__row player-card__row--info">
+            <label class="roster__check-hit">
+              <input type="checkbox" class="roster__check" data-action="toggle-player"
+                     data-player-id="${escapeHtml(player.id)}"
+                     aria-label="Select ${name}"${selected ? ' checked' : ''}>
+            </label>
+            <span class="player-card__number">${escapeHtml(player.number) || '—'}</span>
+            <span class="player-card__name" title="${name}">${name}</span>
+            <div class="player-card__stats">${header}${statValues}</div>
+          </div>
+          <div class="player-card__row player-card__row--buttons">
+            <span class="player-card__stat-line">${statButtons}</span>
+          </div>
         </article>`;
     })
     .join('');
@@ -1205,10 +1205,6 @@ document.addEventListener('click', (event) => {
       break;
     case 'select-team':
       detailTeamSlot = target.dataset.teamSlot;
-      render();
-      break;
-    case 'select-view':
-      view = target.dataset.view;
       render();
       break;
     case 'period-next':

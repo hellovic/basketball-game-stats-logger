@@ -301,14 +301,16 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr) 340px;
-  gap: var(--sp-4);
+  /* One column. Live entry, the play-by-play and the box score are all wanted
+     on screen at once, so there is no tabbed panel to make room for. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
   max-width: 1600px;
   /* Grow to fill the space left between the sticky clock bar and the game
      details section, so a short roster leaves no gap above the bottom strip. */
   flex: 1 1 auto;
   margin: 0 auto;
-  padding: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
   align-items: start;
 }
 
@@ -339,12 +341,60 @@ button {
   padding: var(--sp-1) 0;
 }
 
-.panel__actions {
+.panel__body {
+  padding: var(--sp-3);
+}
+
+/* ==========================================================================
+   Quarter totals — a thin strip under the sticky scoreboard
+   ========================================================================== */
+
+/* Deliberately outside the sticky bar: that bar is pinned, so any height it
+   gains is permanently subtracted from the scoring area. This scrolls away. */
+.quarters {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--sp-1) var(--sp-4) 0;
+}
+
+.quarters .sheet {
+  font-size: 12px;
+}
+
+.quarters .sheet th,
+.quarters .sheet td {
+  padding: 2px var(--sp-2);
+}
+
+/* ==========================================================================
+   Roster bar — the roster as a horizontal strip rather than a column
+   ========================================================================== */
+
+.rosterbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-2) var(--sp-4);
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--sp-2) var(--sp-4);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.rosterbar__group {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.rosterbar__group--bulk {
   margin-left: auto;
 }
 
-.panel__body {
-  padding: var(--sp-3);
+.rosterbar__group .field {
+  margin: 0;
 }
 
 /* ==========================================================================
@@ -512,28 +562,8 @@ summary:focus-visible {
    Roster
    ========================================================================== */
 
-.roster {
-  list-style: none;
-  margin: 0 0 var(--sp-3);
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  max-height: 46vh;
-  overflow-y: auto;
-}
-
-.roster__item {
-  display: grid;
-  grid-template-columns: auto 2.5rem 1fr auto;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2);
-  border-bottom: 1px solid var(--border);
-}
-
-.roster__item--selected {
-  background: var(--accent-soft);
-}
+/* The roster lives in a horizontal bar now, so only the selection controls
+   keep their "roster" names; the list itself is gone. */
 
 .roster__check {
   width: 16px;
@@ -593,43 +623,6 @@ summary:focus-visible {
   flex: 0 0 auto;
 }
 
-.roster__item:last-child {
-  border-bottom: 0;
-}
-
-.roster__number {
-  font-family: var(--font-num);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink-muted);
-  text-align: center;
-}
-
-.roster__name {
-  font-size: 14px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.roster__points {
-  font-family: var(--font-num);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent);
-  min-width: 3.5ch;
-  text-align: right;
-}
-
-
-.roster__empty {
-  padding: var(--sp-4);
-  text-align: center;
-  color: var(--ink-faint);
-  font-size: 13px;
-}
-
 .add-player {
   display: grid;
   grid-template-columns: 60px 1fr auto;
@@ -643,31 +636,48 @@ summary:focus-visible {
 /* ==========================================================================
    Player entry cards
 
-   One compact row per player. At ~60px a row, a full 15-player roster fits on
-   screen at laptop width, so the scorer does not have to scroll between players
-   mid-game — the original stacked card was ~150px and only six fit.
+   Two lines per player. Line one carries the identity and the box-score
+   columns, line two the buttons. The single-line version needed ~1240px to keep
+   44px touch targets, which does not fit the 1148px an iPad gives us in
+   landscape; splitting the row costs ~38px of height and fits with room to
+   spare, so the buttons can stay thumb-sized.
    ========================================================================== */
 
 .player-cards {
   display: grid;
+  /* minmax(0, 1fr), not the default auto: an auto track grows to the widest
+     row's max-content, which the 12 stat columns push past a phone's width.
+     The panel clips overflow, so the card would be cut off with no scrollbar. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-1);
 }
 
 .player-card {
   display: grid;
-  /* number | name | running line | stat buttons (greedy) | points.
-     The name and line are fixed and small on purpose: every pixel they take is
-     a pixel the buttons need, and the buttons are what the scorer touches. */
-  grid-template-columns: 1.3rem 4rem 3.5rem minmax(0, 1fr) 1.9rem;
-  align-items: center;
-  gap: var(--sp-1);
-  min-height: 34px;
-  padding: 1px var(--sp-1);
+  /* An explicit minmax(0, 1fr) column, not the implicit auto one: auto sizes to
+     the widest row's max-content, so the button line would push the card wider
+     than the panel and the overflow would be clipped away silently. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 2px var(--sp-2) 3px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius-sm);
   background: var(--surface);
   transition: background 0.15s ease;
+}
+
+/* Ticked for bulk removal; the same accent wash the roster rows used. */
+.player-card--selected {
+  background: var(--accent-soft);
+}
+
+.player-card__row--info {
+  display: grid;
+  grid-template-columns: auto 1.5rem minmax(0, 12rem) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
 }
 
 /* Brief flash confirming the tap registered. */
@@ -691,44 +701,56 @@ summary:focus-visible {
   white-space: nowrap;
 }
 
-.player-card__line {
-  font-size: 10px;
+/* The box-score columns, inline on line one. Two rows of labels and values so
+   each column reads as a pair without repeating the header per player. */
+.player-card__stats {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(24px, max-content));
+  justify-content: end;
+  align-items: baseline;
+  column-gap: var(--sp-3);
+  row-gap: 1px;
   font-family: var(--font-num);
-  color: var(--ink-faint);
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 11px;
+  min-width: 0;
 }
 
-/* A clear lane between buttons: at a 2px gap they read as one block, and a
-   mistimed tap lands on a neighbour. The row has the slack for 6px without
-   breaking onto a second line. */
+.player-card__col-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+.player-card__col {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Line two. A clear lane between buttons: at a 2px gap they read as one block,
+   and a mistimed tap lands on a neighbour. */
 .player-card__stat-line {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-start;
   gap: 6px;
   min-width: 0;
 }
 
-.player-card__points {
-  font-family: var(--font-num);
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1;
-  text-align: right;
-  color: var(--accent);
-}
-
+/* Thumb-sized: the scorer taps these at speed, often on glass. */
 .stat-btn {
-  width: 30px;
-  min-height: 24px;
+  width: 44px;
+  min-height: var(--tap);
   padding: 0;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   line-height: 1;
   cursor: pointer;
@@ -745,11 +767,12 @@ summary:focus-visible {
 }
 
 /* Made shots and counting stats read as the primary action… */
+/* Made shots read as the primary action through colour alone — the width stays
+   uniform with every other button so the row cannot break its even rhythm. */
 .stat-btn--made {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--ink-invert);
-  width: 33px;
 }
 
 .stat-btn--made:hover {
@@ -1238,24 +1261,8 @@ tbody tr:hover {
 
 /* Below ~1180px the three panes no longer fit; the scoresheet drops under the
    main view and the roster moves below that. */
-@media (max-width: 1180px) {
-  .workspace {
-    grid-template-columns: minmax(0, 1fr) 300px;
-  }
-
-  .panel--roster {
-    grid-column: 1 / -1;
-    order: 3;
-  }
-
-  .roster {
-    max-height: 30vh;
-  }
-}
-
 @media (max-width: 900px) {
   .workspace {
-    grid-template-columns: minmax(0, 1fr);
     padding: var(--sp-3);
     gap: var(--sp-3);
   }
@@ -1266,6 +1273,17 @@ tbody tr:hover {
 
   .scoreboard__name {
     font-size: 16px;
+  }
+
+  /* The roster controls drop to their own line rather than being squeezed. */
+  .rosterbar__group--bulk {
+    margin-left: 0;
+  }
+
+  /* 12 stat columns plus 13 buttons cannot share a line at this width; let the
+     button line take a second row. */
+  .player-card__stat-line {
+    flex-wrap: wrap;
   }
 }
 
@@ -1329,37 +1347,29 @@ tbody tr:hover {
     font-size: 28px;
   }
 
-  /* Full-width, roomy tap targets are the whole point of using a phone. Two
-     rows per player here: the identity line, then the buttons across the full
-     width, so nothing has to wrap awkwardly. */
+  /* Phone: identity on one line, the stat columns scrollable below it (a phone
+     cannot show twelve columns), and the buttons in an even grid — the whole
+     point of a phone here is full-width thumb targets. */
   .player-card {
-    grid-template-columns: 1.6rem minmax(0, 1fr) 2.1rem;
-    grid-template-areas:
-      'number name points'
-      'line line line'
-      'stats stats stats';
     row-gap: var(--sp-1);
     padding: var(--sp-2);
   }
 
-  .player-card__number {
-    grid-area: number;
+  .player-card__row--info {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: var(--sp-2);
   }
 
-  .player-card__name {
-    grid-area: name;
-  }
-
-  .player-card__line {
-    grid-area: line;
-  }
-
-  .player-card__points {
-    grid-area: points;
+  /* Twelve columns cannot fit a phone. Give them a line of their own that
+     scrolls, rather than letting them widen the card and get clipped. */
+  .player-card__stats {
+    grid-column: 1 / -1;
+    justify-content: start;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
 
   .player-card__stat-line {
-    grid-area: stats;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(46px, 1fr));
     gap: var(--sp-1);

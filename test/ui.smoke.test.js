@@ -368,9 +368,9 @@ test('every element id referenced by the app exists in the HTML document', async
   const appSource = readFileSync(resolve(appDir, 'js', 'app.js'), 'utf8');
 
   const lookedUp = new Set([...appSource.matchAll(/\$\('([^']+)'\)/g)].map((m) => m[1]));
-  // Template lookups like $(`view-tab-${name}`) are expanded against the domain
+  // Template lookups like $(`team-tab-${slot}`) are expanded against the domain
   // of their own variable, so the expansion has to match the variable used.
-  const domains = { name: ['entry', 'log', 'box'], slot: ['home', 'away'] };
+  const domains = { slot: ['home', 'away'] };
   for (const m of appSource.matchAll(/\$\(`([^`]+)`\)/g)) {
     const variable = m[1].match(/\$\{(\w+)\}/)?.[1];
     for (const value of domains[variable] ?? []) {
@@ -459,13 +459,8 @@ test('undo restores the previous score', async () => {
   assert.equal(Number(document.getElementById('score-home').textContent), before);
 });
 
-test('switching views and teams re-renders without throwing', async () => {
+test('switching teams re-renders without throwing', async () => {
   const dom = await startApp();
-
-  for (const view of ['log', 'box', 'entry']) {
-    emit(dom.listeners, 'click', actionable({ action: 'select-view', view }));
-    assert.equal(document.getElementById('view-tab-' + view).getAttribute('aria-selected'), 'true');
-  }
 
   for (const slot of ['away', 'home']) {
     emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: slot }));
@@ -784,23 +779,25 @@ function checkbox(dataset, checked) {
   return el;
 }
 
-/** Player ids as rendered in the roster list, in row order. */
+/** Player ids as rendered in the Live entry cards, in row order. */
 function rosterIds() {
-  return [...document.getElementById('roster-list').innerHTML.matchAll(
-    /data-player-id="([^"]+)"/g,
-  )].map((match) => match[1]);
+  return [
+    ...document.getElementById('player-cards').innerHTML.matchAll(
+      /data-action="player-row"\s+data-player-id="([^"]+)"/g,
+    ),
+  ].map((match) => match[1]);
 }
 
-test('the roster offers a checkbox per player and a disabled remove button', async () => {
+test('the entry rows carry a checkbox per player and a disabled remove button', async () => {
   await startApp();
 
   const ids = rosterIds();
   assert.ok(ids.length > 0, 'the seeded game should render a roster');
   assert.equal(
-    (document.getElementById('roster-list').innerHTML.match(/data-action="toggle-player"/g) || [])
+    (document.getElementById('player-cards').innerHTML.match(/data-action="toggle-player"/g) || [])
       .length,
     ids.length,
-    'every roster row should carry a checkbox',
+    'every entry row should carry a checkbox',
   );
 
   const master = document.getElementById('roster-select-all');
@@ -1147,7 +1144,7 @@ test('a typed value cannot be overwritten by a re-render while editing', async (
   // A re-render from elsewhere in the app must not clobber the typed text.
   const face = document.getElementById('clock-display');
   face.textContent = '3:1';
-  emit(dom.listeners, 'click', actionable({ action: 'select-view', view: 'box' }));
+  emit(dom.listeners, 'click', actionable({ action: 'period-next' }));
   assert.equal(face.textContent, '3:1', 'the typed text survives a re-render');
 
   emit(dom.listeners, 'blur', face);
@@ -1220,3 +1217,101 @@ test('clicking the clock face starts editing', async () => {
 
   assert.equal(face.getAttribute('contenteditable'), 'true');
 });
+
+test('all three views are on screen at once, with no tab switcher', async () => {
+  await startApp();
+
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+
+  // One panel per view, and none of them may be hidden or switched.
+  for (const label of ['Live entry', 'Play-by-play', 'Box score']) {
+    assert.match(html, new RegExp(`<section class="panel[^"]*" aria-label="${label}"`));
+  }
+
+  // The tabs used to hide two of the three, and nothing may hide them now.
+  for (const childId of ['player-cards', 'log-list', 'box-table']) {
+    assert.equal(document.getElementById(childId).hidden, false, `#${childId} should be visible`);
+  }
+  assert.doesNotMatch(html, /hidden[^>]*id="(player-cards|log-list|box-table)"/);
+
+  // The switcher itself is gone, so there is no way back to one-view-at-a-time.
+  assert.doesNotMatch(html, /view-tab-/, 'the view tabs should be removed');
+  assert.doesNotMatch(html, /select-view/, 'the view switcher action should be removed');
+});
+
+test('an entry row combines the box-score columns with the stat buttons', async () => {
+  await startApp();
+
+  const cards = document.getElementById('player-cards').innerHTML;
+  assert.ok((cards.match(/data-action="log-stat"/g) || []).length > 0, 'the buttons render');
+
+  const labels = [...cards.matchAll(/player-card__col-label">([^<]+)</g)].map((m) => m[1]);
+  assert.deepEqual(
+    labels.slice(0, 12),
+    ['PTS', 'FG', '3P', 'FT', 'REB', 'OREB', 'DREB', 'AST', 'STL', 'BLK', 'TO', 'PF'],
+    'line one should carry the box-score columns',
+  );
+
+  // The made-attempted pair already reads as a percentage, so the two derived
+  // columns stay out of the row even though they remain in the exports.
+  assert.ok(!labels.includes('FG%'), 'FG% should not be a column');
+  assert.ok(!labels.includes('FT%'), 'FT% should not be a column');
+
+  // Two lines per player: identity + columns, then the buttons.
+  assert.match(cards, /player-card__row--info/);
+  assert.match(cards, /player-card__row--buttons/);
+});
+
+test('quarter totals render in a strip below the scoreboard, not in a side panel', async () => {
+  await startApp();
+
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  const stripAt = html.indexOf('class="quarters"');
+  assert.ok(stripAt > 0, 'the quarter strip should exist');
+  assert.ok(
+    stripAt > html.indexOf('</header>'),
+    'the strip should sit below the scoreboard it reports on',
+  );
+  // The right-hand scoresheet panel is gone; the table moved into the strip.
+  assert.equal((html.match(/id="sheet-table"/g) || []).length, 1);
+  assert.doesNotMatch(html, /panel--sheet/);
+
+  const sheet = document.getElementById('sheet-table').innerHTML;
+  assert.match(sheet, />Q1</);
+  assert.match(sheet, />Q4</);
+
+  // It is not sticky any more: it scrolls away with the page, which is what
+  // keeps the pinned scoreboard from growing.
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  const block = css.slice(css.indexOf('.quarters {'));
+  assert.doesNotMatch(block.slice(0, block.indexOf('}')), /sticky/);
+});
+
+test('undo lives on the sticky scoreboard', async () => {
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  const scoreboard = html.slice(html.indexOf('id="scoreboard"'));
+  const beforeClose = scoreboard.slice(0, scoreboard.indexOf('</header>'));
+  assert.match(beforeClose, /id="undo-button"/, 'undo should sit inside the scoreboard bar');
+
+  const dom = await startApp();
+  const before = storedGame().events.length;
+  emit(dom.listeners, 'click', actionable({ action: 'undo' }));
+  assert.equal(storedGame().events.length, before - 1, 'the sticky undo still works');
+});
+
+test('an entry-row checkbox bulk-removes the player and their entries', async () => {
+  const dom = await startApp();
+  const ids = rosterIds();
+  const target = ids[0];
+
+  emit(dom.listeners, 'click', checkbox({ action: 'toggle-player', playerId: target }, true));
+  assert.equal(document.getElementById('roster-selection-count').textContent, '1 selected');
+
+  emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+
+  const after = storedGame();
+  assert.equal(after.players.some((player) => player.id === target), false);
+  assert.equal(after.events.some((event) => event.playerId === target), false);
+  assert.equal(rosterIds().length, ids.length - 1);
+});
+

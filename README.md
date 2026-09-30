@@ -1,7 +1,7 @@
 # Basketball Game Stats Logger
 
 A responsive web app for manually logging basketball game stats courtside.
-Tap a stat, and the quarter score, running total, scoresheet and player box
+Tap a stat, and the quarter score, running total, quarter strip and player box
 score all stay in agreement — because they are all calculated from the same
 list of entries.
 
@@ -84,16 +84,24 @@ a game, and a **team file** backs up a roster. See below.
 
 ## Using it during a game
 
-Set up two teams and their rosters in the left panel, then work in the middle
-panel.
+Set up two teams and their rosters in the **roster bar** at the bottom, then work
+straight down the page. All three views are on screen at once — there is nothing
+to switch between.
 
-1. **Live entry** — one tap records one stat. Pick the team with the
-   *Away / Home* tabs first; a scorer enters one team's events at a time.
-2. **Undo** — the button, or `Ctrl`/`Cmd` + `Z`. The toast after each entry also
-   offers a one-tap undo.
-3. **Play-by-play** — every entry, newest first. Delete a wrong entry, or use the
+1. **Quarter totals** — a thin strip under the scoreboard, so the per-quarter
+   score is always in view without taking over the screen. It scrolls away with
+   the page; only the scoreboard itself is pinned.
+2. **Live entry** — one tap records one stat. Pick the team with the *Away /
+   Home* tabs in the roster bar first; a scorer enters one team's events at a
+   time. Each player gets two lines: their number, name and box-score columns on
+   the first, the stat buttons on the second.
+3. **Undo** — the button on the scoreboard (it stays pinned, so it is always in
+   reach), or `Ctrl`/`Cmd` + `Z`. The toast after each entry also offers a
+   one-tap undo.
+4. **Play-by-play** — every entry, newest first. Delete a wrong entry, or use the
    dropdown on a row to move it to a different player on the same team.
-4. **Box score** — per-player totals with a team totals row.
+5. **Box score** — per-player totals with a team totals row, including the
+   shooting percentages that would crowd the entry rows.
 
 ### Scoring from a phone or tablet
 
@@ -258,11 +266,11 @@ makes the percentage columns real. A game logged with only made shots shows
 ### How the score is calculated
 
 There is no separate "type the quarter score" box, because a score typed by hand
-can drift away from the player stats and nobody notices until the scoresheet is
-wrong.
+can drift away from the player stats and nobody notices until the quarter totals
+are wrong.
 
 Instead, **every point is an entry attributed to a player and a quarter**, and
-the scoreboard is the sum of those entries. The scoresheet's quarter grid and
+the scoreboard is the sum of those entries. The quarter-total strip and
 the box score are the same events sliced two ways, so they cannot disagree.
 
 Every entry names a player on the team it belongs to. There is deliberately no
@@ -330,7 +338,8 @@ and no way for the app to leak a game — the tradeoff is that backup is on you.
 
 ```
 app/
-  index.html        the document: scoreboard, roster, views, scoresheet
+  index.html        the document: scoreboard, quarter strip, the three views,
+                    the roster bar
   styles.css        design tokens and all responsive rules
   js/
     stats.js        the stat catalog — add a stat here to record it
@@ -366,8 +375,9 @@ lets the tests exercise them directly.
 Append an entry to the `STATS` array in `app/js/stats.js` with its `key`, `kind`
 (`shooting`, `rebound` or `counting`) and, for shots, its `points`. The entry
 buttons, the box score plumbing and the derivation logic all follow from that
-table. Adding a column to the box score display is a one-line change in the
-`columns` list in `app.js`.
+table. Adding a column to the display is a one-line change in the `columns`
+list in `app.js` — `renderEntry` builds the columns shown on each player's entry
+row, and `renderBox` builds the fuller box score table below it.
 
 ---
 

@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.3.1">
-<meta name="app-build" content="2026-09-29b">
+<meta name="app-version" content="0.4.0">
+<meta name="app-build" content="2026-09-29c">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -55,6 +55,11 @@
         </button>
         <button type="button" class="btn btn--ghost btn--sm" data-action="period-prev" aria-label="Previous period">&minus;</button>
         <button type="button" class="btn btn--ghost btn--sm" data-action="period-next" aria-label="Next period">+</button>
+        <!-- Undo lives here rather than beside the entry rows: the bar is
+             sticky, so the correction for a mis-tap is always in reach no
+             matter how far the page is scrolled. -->
+        <button type="button" class="btn btn--primary btn--sm" data-action="undo" id="undo-button"
+                title="Undo the last entry (Ctrl/Cmd + Z)" disabled>Undo</button>
       </div>
     </div>
 
@@ -66,119 +71,116 @@
   </div>
 </header>
 
+<!-- =====================================================================
+     Quarter totals: a thin strip under the scoreboard, deliberately NOT
+     sticky. The HOME/AWAY bar is sticky, so every pixel it takes is gone
+     from the scoring area below forever; this scrolls away instead.
+     ===================================================================== -->
+<section class="quarters" aria-label="Quarter scores">
+  <div class="table-scroll">
+    <table class="sheet" id="sheet-table"></table>
+  </div>
+  <p class="sheet__note" id="warning-note" hidden></p>
+</section>
+
 <main class="workspace">
 
   <!-- ===================================================================
-       Left: roster and team setup
+       Live entry. All three panels are always on screen — the tabs that
+       used to hide two of them are gone, because a scorer needs the log and
+       the box score visible while tapping.
        =================================================================== -->
-  <aside class="panel panel--roster" aria-label="Rosters">
+  <section class="panel panel--entry" aria-label="Live entry">
     <div class="panel__header">
-      <div class="tabs" role="tablist" aria-label="Choose a team">
-        <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="away" id="team-tab-away">
-          Away
-        </button>
-        <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="home" id="team-tab-home">
-          Home
-        </button>
-      </div>
+      <h2 class="panel__title">Live entry</h2>
     </div>
-
     <div class="panel__body">
-      <div class="field-row field-row--team">
-        <label class="field">
-          <span class="field__label">Team name</span>
-          <input type="text" id="team-name-input" autocomplete="off" spellcheck="false">
-        </label>
-        <label class="field field--short">
-          <span class="field__label">Abbrev.</span>
-          <input type="text" id="team-abbrev-input" maxlength="4" autocomplete="off" spellcheck="false">
-        </label>
-      </div>
-
-      <!-- Bulk removal. The select-all box and the count are static so a
-           re-render can update them in place instead of replacing them. -->
-      <div class="roster__toolbar" id="roster-toolbar">
-        <label class="roster__select-all">
-          <input type="checkbox" id="roster-select-all" data-action="toggle-all-players">
-          <span>Select all</span>
-        </label>
-        <span class="roster__toolbar-count" id="roster-selection-count"></span>
-        <button type="button" id="roster-remove-selected" class="btn btn--sm roster__remove-selected"
-                data-action="remove-selected-players">Remove</button>
-      </div>
-
-      <ul class="roster" id="roster-list"></ul>
-
-      <form class="add-player" id="add-player-form" autocomplete="off">
-        <input type="text" inputmode="numeric" id="new-number" class="add-player__number"
-               placeholder="No." aria-label="Jersey number" maxlength="3">
-        <input type="text" id="new-name" class="add-player__name"
-               placeholder="Player name" aria-label="Player name">
-        <button type="submit" class="btn btn--primary">Add</button>
-      </form>
-    </div>
-  </aside>
-
-  <!-- ===================================================================
-       Center: the working surface
-       =================================================================== -->
-  <section class="panel panel--main" aria-label="Game entry">
-    <div class="panel__header">
-      <div class="tabs" role="tablist" aria-label="Choose a view">
-        <button type="button" class="tab" role="tab" data-action="select-view" data-view="entry" id="view-tab-entry">Live entry</button>
-        <button type="button" class="tab" role="tab" data-action="select-view" data-view="log" id="view-tab-log">Play-by-play</button>
-        <button type="button" class="tab" role="tab" data-action="select-view" data-view="box" id="view-tab-box">Box score</button>
-      </div>
-      <div class="panel__actions">
-        <button type="button" class="btn btn--primary btn--sm" data-action="undo" id="undo-button"
-                title="Undo the last entry (Ctrl/Cmd + Z)" disabled>Undo</button>
-      </div>
-    </div>
-
-    <div class="panel__body">
-      <!-- Live entry -->
-      <div class="view" id="view-entry" role="tabpanel" aria-labelledby="view-tab-entry">
-        <p class="hint">
-          One tap records one stat. Points on the board come from these entries, so the
-          quarter score and the box score can never disagree.
-        </p>
-        <div class="player-cards" id="player-cards"></div>
-      </div>
-
-      <!-- Play-by-play -->
-      <div class="view" id="view-log" role="tabpanel" aria-labelledby="view-tab-log" hidden>
-        <p class="hint">
-          Newest first. Delete an entry here to correct a mistake found later — every total
-          recomputes.
-        </p>
-        <ol class="log" id="log-list"></ol>
-      </div>
-
-      <!-- Box score -->
-      <div class="view" id="view-box" role="tabpanel" aria-labelledby="view-tab-box" hidden>
-        <div class="table-scroll">
-          <table class="box-score" id="box-table"></table>
-        </div>
-      </div>
+      <p class="hint">
+        One tap records one stat. Points on the board come from these entries, so the
+        quarter score and the box score can never disagree.
+      </p>
+      <div class="player-cards" id="player-cards"></div>
     </div>
   </section>
 
-  <!-- ===================================================================
-       Right: the scoresheet
-       =================================================================== -->
-  <aside class="panel panel--sheet" aria-label="Scoresheet">
+  <!-- =================================================================== -->
+  <section class="panel panel--log" aria-label="Play-by-play">
     <div class="panel__header">
-      <h2 class="panel__title">Scoresheet</h2>
+      <h2 class="panel__title">Play-by-play</h2>
+    </div>
+    <div class="panel__body">
+      <p class="hint">
+        Newest first. Delete an entry here to correct a mistake found later — every total
+        recomputes.
+      </p>
+      <ol class="log" id="log-list"></ol>
+    </div>
+  </section>
+
+  <!-- =================================================================== -->
+  <section class="panel panel--box" aria-label="Box score">
+    <div class="panel__header">
+      <h2 class="panel__title">Box score</h2>
     </div>
     <div class="panel__body">
       <div class="table-scroll">
-        <table class="sheet" id="sheet-table"></table>
+        <table class="box-score" id="box-table"></table>
       </div>
-
-      <p class="sheet__note" id="warning-note" hidden></p>
     </div>
-  </aside>
+  </section>
 </main>
+
+<!-- =====================================================================
+     Roster bar. The roster used to hold a permanent 320px column, which was
+     width the entry row and the box score needed more. It is now a
+     horizontal strip below the working area.
+     ===================================================================== -->
+<section class="rosterbar" aria-label="Roster">
+  <div class="rosterbar__group rosterbar__group--team">
+    <div class="tabs" role="tablist" aria-label="Choose a team">
+      <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="away" id="team-tab-away">
+        Away
+      </button>
+      <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="home" id="team-tab-home">
+        Home
+      </button>
+    </div>
+
+    <label class="field">
+      <span class="field__label">Team name</span>
+      <input type="text" id="team-name-input" autocomplete="off" spellcheck="false">
+    </label>
+    <label class="field field--short">
+      <span class="field__label">Abbrev.</span>
+      <input type="text" id="team-abbrev-input" maxlength="4" autocomplete="off" spellcheck="false">
+    </label>
+  </div>
+
+  <!-- Bulk removal. The select-all box and the count are static so a
+       re-render can update them in place instead of replacing them. The
+       per-player boxes live on the entry rows, where the players are. -->
+  <div class="rosterbar__group rosterbar__group--bulk">
+    <div class="roster__toolbar" id="roster-toolbar">
+      <label class="roster__select-all">
+        <input type="checkbox" id="roster-select-all" data-action="toggle-all-players">
+        <span>Select all</span>
+      </label>
+      <span class="roster__toolbar-count" id="roster-selection-count"></span>
+      <button type="button" id="roster-remove-selected" class="btn btn--sm roster__remove-selected"
+              data-action="remove-selected-players">Remove</button>
+    </div>
+  </div>
+
+  <div class="rosterbar__group rosterbar__group--add">
+    <form class="add-player" id="add-player-form" autocomplete="off">
+      <input type="text" inputmode="numeric" id="new-number" class="add-player__number"
+             placeholder="No." aria-label="Jersey number" maxlength="3">
+      <input type="text" id="new-name" class="add-player__name"
+             placeholder="Player name" aria-label="Player name">
+      <button type="submit" class="btn btn--primary">Add</button>
+    </form>
+  </div>
+</section>
 
 <!-- =====================================================================
      Game details: its own section between the scoring area and the bottom
