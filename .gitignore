@@ -9,6 +9,13 @@ node_modules/
 # scored it rather than in the source tree. Matched by shape rather than by
 # name, so this file does not itself give the team away.
 *_roster.csv
-*_team.json
+*_team*.json
 *.local.json
 *.local.csv
+
+# A file saved from the browser lands here under whatever name it was given, so
+# anything at the top level that is not the project's own is data. package.json
+# is the only JSON the project keeps at its root.
+/*.csv
+/*.json
+!/package.json
