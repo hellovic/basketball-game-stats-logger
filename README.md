@@ -74,7 +74,8 @@ The consequences are worth being explicit about:
 - Clearing your browser's site data or cookies **erases the game**.
 - Private/incognito windows discard it when the window closes.
 - It is tied to the exact address. `localhost:8080` and
-  `vicshek.github.io/game-stats-logger` are different storage buckets and do
+  `<you>.github.io/basketball-game-stats-logger` are different storage
+  buckets and do
   not see each other's games.
 
 That is why both exports matter: the **Export** group in the bottom bar backs up
@@ -316,13 +317,14 @@ publishes `app/` whenever `main` moves. It runs the test suite first, so a build
 that fails its own tests never goes live.
 
 ```bash
-git remote add origin git@github.com:<you>/game-stats-logger.git
+git remote add origin git@github.com:<you>/basketball-game-stats-logger.git
 git push -u origin main
 ```
 
 Then, once, in the repository: **Settings → Pages → Build and deployment →
 Source: GitHub Actions**. The app appears at
-`https://<you>.github.io/game-stats-logger/` after the first run finishes.
+`https://<you>.github.io/basketball-game-stats-logger/` after the first run
+finishes.
 
 Choose **GitHub Actions**, not "Deploy from a branch". The workflow is what
 uploads the site, and it uploads `app/` alone — pointing Pages at a branch would
