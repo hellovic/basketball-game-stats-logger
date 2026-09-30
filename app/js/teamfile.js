@@ -117,7 +117,7 @@ export function parseTeamFile(text) {
     return {
       team: null,
       error:
-        'That is a full game backup, not a team. Use "Restore from JSON…" in the ' +
+        'That is a full game backup, not a team. Use "Restore JSON…" in the ' +
         'bottom bar for that file.',
     };
   }

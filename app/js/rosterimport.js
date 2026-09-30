@@ -261,7 +261,7 @@ export function parseRosterText(text) {
   if (trimmed.startsWith('{') || trimmed.startsWith('[') || /"players"\s*:/.test(trimmed)) {
     return {
       ...empty,
-      error: 'That looks like JSON. Use "Load team from file… (JSON or CSV)" for a team file.',
+      error: 'That looks like JSON. Use "Load team…" for a team file.',
     };
   }
 

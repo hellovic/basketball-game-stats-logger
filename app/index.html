@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.5.2">
-<meta name="app-build" content="2026-09-29k">
+<meta name="app-version" content="0.5.3">
+<meta name="app-build" content="2026-09-29l">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -226,18 +226,23 @@
       Export
     </h2>
     <div class="actionbar__buttons">
-      <button type="button" class="btn btn--primary btn--sm" data-action="export-csv" data-kind="box-score">
-        Box score &mdash; CSV
+      <button type="button" class="btn btn--primary btn--sm" data-action="export-csv" data-kind="box-score"
+              title="One row per player, plus a team totals row.">
+        Box score CSV
       </button>
-      <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="play-by-play">
-        Play-by-play &mdash; CSV
+      <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="play-by-play"
+              title="The full entry log, oldest first.">
+        Play-by-play CSV
       </button>
-      <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="summary">
-        Game summary &mdash; CSV
+      <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="summary"
+              title="The quarter grid plus the leading scorers.">
+        Game summary CSV
       </button>
-      <button type="button" class="btn btn--sm" data-action="export-json">Full backup &mdash; JSON</button>
-      <button type="button" class="btn btn--sm btn--ghost" data-action="import-json">
-        Restore from JSON&hellip;
+      <button type="button" class="btn btn--sm" data-action="export-json"
+              title="The complete game, re-importable.">Full backup JSON</button>
+      <button type="button" class="btn btn--sm btn--ghost" data-action="import-json"
+              title="Load a full game backup back in.">
+        Restore JSON&hellip;
       </button>
     </div>
   </div>
@@ -245,13 +250,16 @@
   <div class="actionbar__group actionbar__group--team">
     <h2 class="actionbar__title" title="This team's name and roster, to reuse or share.">Team file</h2>
     <div class="actionbar__buttons">
-      <button type="button" class="btn btn--sm btn--ghost" data-action="save-team" id="save-team-button">
-        Save team as file
+      <button type="button" class="btn btn--sm btn--ghost" data-action="save-team" id="save-team-button"
+              title="Write this team's name, abbreviation and roster to a JSON file.">
+        Save team
       </button>
-      <button type="button" class="btn btn--sm btn--ghost" data-action="open-load-team">
-        Load team from file&hellip; (JSON or CSV)
+      <button type="button" class="btn btn--sm btn--ghost" data-action="open-load-team"
+              title="Read a saved team back from a JSON or CSV file.">
+        Load team&hellip;
       </button>
-      <button type="button" class="btn btn--sm btn--ghost" data-action="open-paste-roster">
+      <button type="button" class="btn btn--sm btn--ghost" data-action="open-paste-roster"
+              title="Paste a roster copied from a spreadsheet or a message.">
         Paste roster&hellip;
       </button>
     </div>

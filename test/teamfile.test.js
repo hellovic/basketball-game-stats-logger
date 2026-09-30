@@ -262,7 +262,7 @@ test('a full game backup is detected and pointed at the right importer', () => {
   const { team, error } = parseTeamFile(gameBackup);
   assert.equal(team, null);
   assert.match(error, /full game backup/);
-  assert.match(error, /Restore from JSON/);
+  assert.match(error, /Restore JSON/);
 
   // Also caught when the format marker is present.
   assert.match(

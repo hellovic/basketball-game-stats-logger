@@ -125,7 +125,7 @@ Three things to know before you rely on it:
   working, check the address the server prints on its next start.
 
 To move a game from one device to another, export the JSON backup on the first
-and use **Restore from JSON…** on the second. Rosters move with a team file.
+and use **Restore JSON…** on the second. Rosters move with a team file.
 
 On macOS the first incoming connection may raise a firewall prompt — allow it,
 or the other devices will time out. Use `--local` when you want to be certain
@@ -163,9 +163,9 @@ players already logged in the score and the play-by-play, and drops the players
 themselves — for deleting players *and* their entries, use the checkboxes in the
 roster instead.
 
-- **Load team from file… (JSON or CSV)** reads a saved team or a `.csv` back,
+- **Load team…** reads a saved team or a `.csv` back,
   deciding by the file extension. A CSV is parsed exactly like a paste.
-- **Save team as file** writes the current team's name, abbreviation and roster
+- **Save team** writes the current team's name, abbreviation and roster
   to a small JSON file, named after the team, and downloads it.
 
 Whichever way a roster arrives, the app shows what it understood and what will
@@ -181,7 +181,7 @@ scorer's other laptop, and kept as a backup — none of which a browser-local
 store can do. Keep your teams somewhere sensible; there is no cloud copy.
 
 Picking the wrong file is handled rather than ignored: a full game backup is
-detected and you are pointed at **Restore from JSON…** instead, JSON pasted into
+detected and you are pointed at **Restore JSON…** instead, JSON pasted into
 the text box says so rather than being parsed into nonsense, and a corrupt file
 reports the problem without changing anything.
 
@@ -290,16 +290,16 @@ Four exports, all generated in your browser:
 
 | Export | What it is |
 | --- | --- |
-| **Box score — CSV** | One row per player plus a team totals row. Opens directly in Excel, Numbers or Google Sheets. |
-| **Play-by-play — CSV** | The full entry log, oldest first, each row stamped with elapsed game time. The audit trail — enough to reconstruct a game by hand. |
-| **Game summary — CSV** | The quarter grid plus the leading scorers. Good for sharing a result. |
-| **Full backup — JSON** | The complete game. Re-importable, so this is what to use to move a game to another device or browser. |
+| **Box score CSV** | One row per player plus a team totals row. Opens directly in Excel, Numbers or Google Sheets. |
+| **Play-by-play CSV** | The full entry log, oldest first, each row stamped with elapsed game time. The audit trail — enough to reconstruct a game by hand. |
+| **Game summary CSV** | The quarter grid plus the leading scorers. Good for sharing a result. |
+| **Full backup JSON** | The complete game. Re-importable, so this is what to use to move a game to another device or browser. |
 
 Files are named `2026-01-17_RIV-at-NOR_box-score.csv`, and CSV files carry a
 UTF-8 byte-order mark so accented player names open correctly rather than as
 mojibake.
 
-**Restore from JSON…** loads a backup back in. A truncated or unrelated file is
+**Restore JSON…** loads a backup back in. A truncated or unrelated file is
 rejected with a message instead of overwriting your live game.
 
 These cover one *game*. A team file (above) is a separate, much smaller export

@@ -212,7 +212,7 @@ test('points JSON pasted into the text box at the file importer', () => {
   const result = parseRosterText('{"format":"game-stats-logger/team","team":{"players":[]}}');
 
   assert.match(result.error, /looks like JSON/i);
-  assert.match(result.error, /Load team from file/);
+  assert.match(result.error, /Load team/);
 });
 
 test('rejects a header with no rows under it', () => {
