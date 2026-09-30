@@ -989,6 +989,26 @@ test('the clock runs down and moves the game to the next period', async () => {
   assert.match(document.getElementById('toast').textContent, /End of Q1/);
 });
 
+test('the toast can be dismissed instead of waiting it out', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'log-stat', playerId: rosterIds()[0], stat: '2PT', result: 'made' }));
+  const toast = document.getElementById('toast');
+  assert.equal(toast.hidden, false, 'the toast is showing');
+  assert.match(toast.innerHTML, /data-action="dismiss-toast"/, 'it offers a close button');
+
+  emit(dom.listeners, 'click', actionable({ action: 'dismiss-toast' }));
+
+  assert.equal(toast.hidden, true, 'the close button hides it');
+  // And it stays hidden: the auto-dismiss timer must not resurrect it.
+  runTimers();
+  assert.equal(toast.hidden, true);
+
+  // A later entry still gets its own toast.
+  emit(dom.listeners, 'click', actionable({ action: 'log-stat', playerId: rosterIds()[0], stat: '2PT', result: 'made' }));
+  assert.equal(toast.hidden, false);
+});
+
 test('the clock pauses and resumes without losing time', async () => {
   const dom = await startApp();
 

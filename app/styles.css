@@ -1137,6 +1137,32 @@ tbody tr:hover {
   background: rgba(255, 255, 255, 0.14);
 }
 
+/* Always offered, so the toast is never something the scorer has to wait out
+   before they can reach what is underneath it. */
+.toast__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin-right: calc(-1 * var(--sp-2));
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.toast__close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  opacity: 1;
+}
+
 /* ==========================================================================
    Dialogs (save / load a saved team)
    ========================================================================== */

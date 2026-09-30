@@ -592,12 +592,18 @@ function showToast(message, { undo = false } = {}) {
 
   toast.innerHTML = `<span>${escapeHtml(message)}</span>${
     undo ? '<button type="button" class="toast__undo" data-action="undo">Undo</button>' : ''
-  }`;
+  }<button type="button" class="toast__close" data-action="dismiss-toast"
+     aria-label="Dismiss" title="Dismiss">&times;</button>`;
   toast.hidden = false;
 
-  toastTimer = setTimeout(() => {
-    toast.hidden = true;
-  }, undo ? 6000 : 2800);
+  toastTimer = setTimeout(hideToast, undo ? 6000 : 2800);
+}
+
+/** Hide the toast now and cancel its auto-dismiss timer. */
+function hideToast() {
+  clearTimeout(toastTimer);
+  toastTimer = null;
+  $('toast').hidden = true;
 }
 
 function announce(message) {
@@ -1180,6 +1186,9 @@ document.addEventListener('click', (event) => {
       break;
     case 'undo':
       performUndo();
+      break;
+    case 'dismiss-toast':
+      hideToast();
       break;
     case 'delete-event':
       handleDelete(target.dataset.eventId);
