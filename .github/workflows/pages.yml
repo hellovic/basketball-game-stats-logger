@@ -36,12 +36,11 @@ jobs:
       - name: Test
         run: npm test
 
-      # `enablement` lets the first run switch Pages on by itself, so the
-      # deploy does not depend on remembering to flip a setting in the
-      # repository first. The token already carries pages: write for it.
+      # Pages must be switched on once by hand — Settings -> Pages -> Source:
+      # GitHub Actions — before this step can succeed. The workflow token
+      # cannot create the Pages site itself: `enablement: true` was tried and
+      # still failed here, because creating a site needs admin on the repo.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       # `app/` is the entire site. The tooling around it — the tests and the
       # dev server — is not part of what a visitor downloads, so it is not
