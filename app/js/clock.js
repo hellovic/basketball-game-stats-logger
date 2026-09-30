@@ -102,14 +102,32 @@ export function defaultPeriodSeconds(periodsPerGame) {
  * Overtime is always short. Regulation follows the configured period length,
  * defaulting to a quarter or a half according to the game structure.
  */
-export function periodLength(game) {
-  if (isOvertime(game.currentPeriod, game.periodsPerGame)) {
+export function periodLength(game, period = game.currentPeriod) {
+  if (isOvertime(period, game.periodsPerGame)) {
     return DEFAULT_OVERTIME_SECONDS;
   }
   if (typeof game.periodSeconds === 'number' && game.periodSeconds > 0) {
     return game.periodSeconds;
   }
   return defaultPeriodSeconds(game.periodsPerGame);
+}
+
+/**
+ * How far into its period an event happened, in seconds.
+ *
+ * The clock counts down, but a play-by-play reads forwards: "she scored at 3:12
+ * of the third" is how a game is described, so the stored clock reading is
+ * flipped here rather than at the moment of entry. The raw reading stays the
+ * source of truth, because that is what the scoreboard showed at the tap.
+ *
+ * Null when the event carries no clock value, which is the case for a game
+ * saved before the clock was recorded.
+ */
+export function elapsedInPeriod(game, event) {
+  const remaining = event?.clockSeconds;
+  if (typeof remaining !== 'number' || !isFinite(remaining)) return null;
+  const length = periodLength(game, event.period);
+  return Math.max(0, Math.min(length, length - remaining));
 }
 
 /**

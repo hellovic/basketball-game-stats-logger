@@ -391,7 +391,7 @@ function renderLog(derived) {
       return `
         <li class="log__row" style="--accent: ${accentFor(event.teamId)}">
           <span class="log__period">${escapeHtml(periodLabel(event.period, game.periodsPerGame))}</span>
-          <span class="log__time">${escapeHtml(eventClock(event.clockSeconds))}</span>
+          <span class="log__time">${escapeHtml(eventClock(clockface.elapsedInPeriod(game, event)))}</span>
           <span class="log__who">${escapeHtml(who)}</span>
           <span class="log__what">${escapeHtml(describeEvent(event.stat, event.result))}</span>
           <span class="log__points">${points > 0 ? `+${points}` : ''}</span>

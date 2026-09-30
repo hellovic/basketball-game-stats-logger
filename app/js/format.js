@@ -33,11 +33,14 @@ export function clock(totalSeconds) {
 }
 
 /**
- * The game clock at the moment of an entry, e.g. "07:32".
+ * A duration on the game clock, e.g. "07:32".
+ *
+ * Used for elapsed time in the play-by-play: the clock counts down, but the log
+ * reads forwards, so callers pass how far into the period the play happened.
  *
  * Blank when the value is missing, which is the case for a game saved before
  * the clock was recorded. An empty cell is honest; "00:00" would claim the play
- * happened on the buzzer.
+ * happened at the opening tip.
  */
 export function eventClock(seconds) {
   if (typeof seconds !== 'number' || !isFinite(seconds)) return '';

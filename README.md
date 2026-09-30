@@ -99,9 +99,10 @@ at once — there is nothing to switch between.
 3. **Undo** — the button on the scoreboard (it stays pinned, so it is always in
    reach), or `Ctrl`/`Cmd` + `Z`. The toast after each entry also offers a
    one-tap undo.
-4. **Play-by-play** — every entry, newest first, each row stamped with the game
-   clock rather than the time of day. Delete a wrong entry, or use the dropdown
-   on a row to move it to a different player on the same team.
+4. **Play-by-play** — every entry, newest first, each row stamped with how far
+   into its period the play happened, counting up from 00:00 to the period
+   length. Delete a wrong entry, or use the dropdown on a row to move it to a
+   different player on the same team.
 5. **Box score** — per-player totals with a team totals row, including the
    shooting percentages that would crowd the entry rows.
 
@@ -290,7 +291,7 @@ Four exports, all generated in your browser:
 | Export | What it is |
 | --- | --- |
 | **Box score — CSV** | One row per player plus a team totals row. Opens directly in Excel, Numbers or Google Sheets. |
-| **Play-by-play — CSV** | The full entry log, oldest first, each row stamped with the game clock. The audit trail — enough to reconstruct a game by hand. |
+| **Play-by-play — CSV** | The full entry log, oldest first, each row stamped with elapsed game time. The audit trail — enough to reconstruct a game by hand. |
 | **Game summary — CSV** | The quarter grid plus the leading scorers. Good for sharing a result. |
 | **Full backup — JSON** | The complete game. Re-importable, so this is what to use to move a game to another device or browser. |
 

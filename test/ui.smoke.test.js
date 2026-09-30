@@ -470,7 +470,7 @@ test('the play-by-play lists the seeded entries newest first', async () => {
   );
 });
 
-test('the play-by-play shows game time, not the time of day', async () => {
+test('the play-by-play counts up from 00:00, not down from the period length', async () => {
   await startApp();
 
   const log = document.getElementById('log-list').innerHTML;
@@ -478,12 +478,14 @@ test('the play-by-play shows game time, not the time of day', async () => {
   assert.ok(times.length > 0, 'every entry should render a time');
 
   for (const time of times) {
-    assert.match(time, /^\d{2}:\d{2}$/, `"${time}" should be MM:SS on the game clock`);
+    assert.match(time, /^\d{2}:\d{2}$/, `"${time}" should be MM:SS`);
   }
 
-  // Tip-off is 10:00, so the opening entries read in the nine-minute range. A
-  // time of day such as "20:58:52" fails the shape check above.
-  assert.ok(times.some((time) => time.startsWith('09:')), 'early entries read around 09:xx');
+  // The list is newest first, so the last row is the opening play at 0:30 and
+  // the first row is the final play of the third period at 9:42. A countdown
+  // would report those two values the other way round.
+  assert.equal(times[0], '09:42', 'the newest entry reads late in its period');
+  assert.equal(times[times.length - 1], '00:30', 'the oldest entry reads early');
 });
 
 test('a logged stat updates the scoreboard, roster and box score together', async () => {

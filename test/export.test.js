@@ -202,18 +202,25 @@ test('play-by-play lists every event oldest first with readable descriptions', (
   assert.equal(rows[2][7], '0');
 });
 
-test('the play-by-play time column is the game clock, not the time of day', () => {
+test('the play-by-play time column is elapsed game time, not the time of day', () => {
   const { game, home1 } = fixture();
+  // 425 seconds left of a ten-minute period: 175 seconds played.
   game.clock = { running: true, seconds: 425 };
 
   const first = log(game, '3PT', 'made', { player: home1, period: 1 });
   // A wall-clock timestamp that looks nothing like a game clock: if this leaked
-  // into the export the column would read "20:58:52" instead of "07:05".
+  // into the export the column would read "20:58:52".
   first.ts = Date.UTC(2026, 0, 17, 20, 58, 52);
+
+  // Later in the same period, so the elapsed value must be larger: the column
+  // counts up towards the period length while the clock counts down from it.
+  game.clock = { running: true, seconds: 100 };
+  log(game, 'REB', 'DEF', { player: home1, period: 1 });
 
   const rows = parseCsv(playByPlayCsv(game));
   assert.deepEqual(rows[0].slice(1, 3), ['Game time', 'Period']);
-  assert.equal(rows[1][1], '07:05', 'the column should read MM:SS remaining on the clock');
+  assert.equal(rows[1][1], '02:55', 'the column should count up from 00:00');
+  assert.equal(rows[2][1], '08:20', 'a later play should read a larger elapsed time');
 });
 
 test('an entry saved before clocks were recorded shows a blank time, not 00:00', () => {

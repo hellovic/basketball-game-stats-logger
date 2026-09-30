@@ -12,6 +12,7 @@
 import { STATS, describeEvent } from './stats.js';
 import { computeGame } from './derive.js';
 import { eventClock, periodLabel, safeText } from './format.js';
+import { elapsedInPeriod } from './clock.js';
 import { eventsInOrder, deserialize, serialize } from './store.js';
 
 /**
@@ -151,7 +152,7 @@ export function playByPlayCsv(game) {
 
     rows.push([
       index + 1,
-      eventClock(event.clockSeconds),
+      eventClock(elapsedInPeriod(game, event)),
       periodLabel(event.period, game.periodsPerGame),
       team.name || team.abbreviation || '',
       player ? `${player.number ? `#${player.number} ` : ''}${player.name}` : 'TEAM',
