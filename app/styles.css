@@ -42,6 +42,8 @@
   --warn: #9a6b00;
   --warn-soft: #fdf5e3;
   --warn-border: #e8cf94;
+  --danger: #b3261e;
+  --danger-hover: #8f1d17;
 
   /* Type */
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
@@ -489,6 +491,17 @@ button {
 .btn--primary:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+}
+
+.btn--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--ink-invert);
+}
+
+.btn--danger:hover {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
 }
 
 .btn--ghost {

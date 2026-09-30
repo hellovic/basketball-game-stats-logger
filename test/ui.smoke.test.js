@@ -232,8 +232,9 @@ function installFakeDom() {
 
   globalThis.document = document;
   globalThis.localStorage = localStorage;
+  // Deliberately no window.confirm: the app asks through its own dialog now, so
+  // leaving a stub here would let a reintroduced native prompt pass unnoticed.
   globalThis.window = {
-    confirm: () => true,
     addEventListener: () => {},
   };
   globalThis.CSS = { escape: (value) => String(value) };
@@ -315,6 +316,21 @@ function actionable(dataset) {
   Object.assign(el.dataset, dataset);
   el.closest = (selector) => (selector === '[data-action]' ? el : null);
   return el;
+}
+
+/**
+ * Click through the confirmation the app shows before a destructive act.
+ *
+ * Asserts the dialog was actually waiting. If an action ever stops asking, the
+ * test should fail here rather than quietly performing the step for it.
+ */
+function confirmDanger(dom) {
+  assert.equal(
+    document.getElementById('confirm-dialog').hidden,
+    false,
+    'a confirmation should be waiting before this action',
+  );
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-danger' }));
 }
 
 // ---------------------------------------------------------------------------
@@ -821,6 +837,7 @@ test('the save button is disabled until the team has a player', async () => {
 
   // A blank game has empty rosters on both sides, so saving is unavailable.
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   assert.equal(document.getElementById('save-team-button').disabled, true);
 
   emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
@@ -897,6 +914,7 @@ test('ticking a player removes only that player and their entries', async () => 
   assert.equal(document.getElementById('roster-select-all').checked, false);
 
   emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+  confirmDanger(dom);
 
   const after = storedGame();
   assert.equal(after.players.some((player) => player.id === target), false);
@@ -927,6 +945,7 @@ test('select all ticks the whole roster and removes it in one confirmed action',
   );
 
   emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+  confirmDanger(dom);
 
   const after = storedGame();
   const homeId = after.homeTeamId;
@@ -975,6 +994,7 @@ test('removing every player on the viewed team zeroes that side only', async () 
   // "Select all" selects the roster being viewed, which is home on load.
   emit(dom.listeners, 'click', checkbox({ action: 'toggle-all-players' }, true));
   emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+  confirmDanger(dom);
 
   // Home is gone: its players and their entries are both deleted.
   assert.equal(document.getElementById('score-home').textContent, '0');
@@ -992,21 +1012,54 @@ test('removing every player on the viewed team zeroes that side only', async () 
   assert.equal(document.getElementById('roster-toolbar').hidden, true);
 });
 
+test('a destructive action asks first, naming what it would discard', async () => {
+  const dom = await startApp();
+  const before = storedGame();
+  assert.ok(before.events.length > 0, 'the sample game has recorded work to lose');
+
+  emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+
+  const dialog = document.getElementById('confirm-dialog');
+  assert.equal(dialog.hidden, false, 'the question comes before anything is discarded');
+  assert.equal(document.getElementById('confirm-title').textContent, 'Start a blank game?');
+  assert.equal(document.getElementById('confirm-go').textContent, 'Start a blank game');
+  // The warning carries the count, so the answer is given against a number.
+  assert.match(
+    document.getElementById('confirm-text').textContent,
+    new RegExp(`${before.events.length} recorded entries will be discarded`),
+  );
+  assert.deepEqual(storedGame(), before, 'nothing changes while the question is open');
+
+  // Cancel leaves the game exactly as it was.
+  emit(dom.listeners, 'click', actionable({ action: 'cancel-danger' }));
+  assert.equal(dialog.hidden, true);
+  assert.deepEqual(storedGame(), before);
+
+  // Asking again, then confirming, is what actually discards it.
+  emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-danger' }));
+  assert.equal(dialog.hidden, true);
+  assert.deepEqual(storedGame().events, [], 'confirming is what starts the blank game');
+});
+
 test('cancelling the bulk confirmation changes nothing', async () => {
   const dom = await startApp();
   const before = storedGame();
 
-  window.confirm = () => false;
-  try {
-    emit(dom.listeners, 'click', checkbox({ action: 'toggle-all-players' }, true));
-    emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
-    assert.deepEqual(storedGame().players, before.players);
-    assert.equal(storedGame().events.length, before.events.length);
-    // The selection is kept, so the scorer can retry.
-    assert.equal(document.getElementById('roster-selection-count').textContent, '5 selected');
-  } finally {
-    window.confirm = () => true;
-  }
+  emit(dom.listeners, 'click', checkbox({ action: 'toggle-all-players' }, true));
+  emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+
+  // The question is up, and asking it has not changed anything yet.
+  assert.equal(document.getElementById('confirm-dialog').hidden, false);
+  assert.deepEqual(storedGame().players, before.players);
+
+  emit(dom.listeners, 'click', actionable({ action: 'cancel-danger' }));
+
+  assert.equal(document.getElementById('confirm-dialog').hidden, true);
+  assert.deepEqual(storedGame().players, before.players);
+  assert.equal(storedGame().events.length, before.events.length);
+  // The selection is kept, so the scorer can retry.
+  assert.equal(document.getElementById('roster-selection-count').textContent, '5 selected');
 });
 
 // ---------------------------------------------------------------------------
@@ -1017,6 +1070,7 @@ test('a new game can start its clock — it does not stop at 00:00', async () =>
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
 
   // A blank game's clock holds nothing.
   assert.equal(document.getElementById('clock-display').textContent, '00:00');
@@ -1042,6 +1096,7 @@ test('the clock runs down and moves the game to the next period', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   // A short period keeps the test readable.
   document.getElementById('game-period-length').value = '360';
   emit(dom.listeners, 'change', document.getElementById('game-period-length'));
@@ -1083,6 +1138,7 @@ test('the clock pauses and resumes without losing time', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   runTimers();
   runTimers();
@@ -1106,6 +1162,7 @@ test('reset puts the clock back to the start of the period and stops it', async 
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   runTimers();
   runTimers();
@@ -1120,6 +1177,7 @@ test('logging a stat starts the clock, refilling it if it is at zero', async () 
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   // Give the away team a player so there is a card to tap.
   emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
   document.getElementById('new-number').value = '12';
@@ -1138,6 +1196,7 @@ test('switching to halves moves the period length to twenty minutes', async () =
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   assert.equal(document.getElementById('clock-toggle').textContent, 'Start');
 
   const periods = document.getElementById('game-periods');
@@ -1172,6 +1231,7 @@ test('a clock time can be typed in and then counted down', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   assert.equal(document.getElementById('clock-display').getAttribute('contenteditable'), 'false');
 
   // "Edit time" opens the face for typing.
@@ -1199,6 +1259,7 @@ test('a bare number of seconds is accepted', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
 
   const face = document.getElementById('clock-display');
@@ -1213,6 +1274,7 @@ test('editing a running clock pauses it first', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   assert.equal(storedGame().clock.running, true);
 
@@ -1229,6 +1291,7 @@ test('a typed value cannot be overwritten by a re-render while editing', async (
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
 
   // A re-render from elsewhere in the app must not clobber the typed text.
@@ -1246,6 +1309,7 @@ test('a bad clock value is reported and the field stays open to fix', async () =
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   const before = storedGame().clock.seconds;
 
@@ -1264,6 +1328,7 @@ test('Escape abandons a clock edit', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   const before = storedGame().clock.seconds;
 
@@ -1281,6 +1346,7 @@ test('typing 0 clears the clock so starting refills the period', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   runTimers();
   assert.equal(document.getElementById('clock-display').textContent, '09:59');
@@ -1301,6 +1367,7 @@ test('clicking the clock face starts editing', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
   const face = document.getElementById('clock-display');
 
   emit(dom.listeners, 'click', face);
@@ -1416,6 +1483,7 @@ test('an entry-row checkbox bulk-removes the player and their entries', async ()
   assert.equal(document.getElementById('roster-selection-count').textContent, '1 selected');
 
   emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+  confirmDanger(dom);
 
   const after = storedGame();
   assert.equal(after.players.some((player) => player.id === target), false);

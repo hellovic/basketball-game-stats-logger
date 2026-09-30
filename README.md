@@ -50,6 +50,12 @@ The app opens with a **sample game** so you can see a populated screen right
 away. Use *Game details → Start a blank game* when you are ready to log a real
 one, and *Reload the sample game* to bring it back.
 
+The four actions that throw work away — starting a blank game, reloading the
+sample, removing players, and restoring a backup — all ask before they act. The
+question names what would be lost (*"36 recorded entries will be discarded"*)
+and changes nothing until you confirm, so there is always a chance to export
+first.
+
 > Opening `index.html` directly works in current browsers, but it is the least
 > reliable option: the app uses ES modules, which some browsers refuse to load
 > from `file://`.

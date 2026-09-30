@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.5.3">
-<meta name="app-build" content="2026-09-29l">
+<meta name="app-version" content="0.5.4">
+<meta name="app-build" content="2026-09-29m">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -324,6 +324,24 @@
       <button type="button" class="btn btn--primary" data-action="import-pasted-roster">
         Read these players
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     A second look before something that cannot be undone.
+
+     The wording is filled in per action, so one dialog covers every
+     destructive button rather than each growing its own copy.
+     ===================================================================== -->
+<div class="dialog" id="confirm-dialog" role="dialog" aria-modal="true"
+     aria-labelledby="confirm-title" aria-describedby="confirm-text" hidden>
+  <div class="dialog__panel">
+    <h2 class="dialog__title" id="confirm-title"></h2>
+    <p class="hint" id="confirm-text"></p>
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--ghost" data-action="cancel-danger">Cancel</button>
+      <button type="button" class="btn btn--danger" data-action="confirm-danger" id="confirm-go"></button>
     </div>
   </div>
 </div>

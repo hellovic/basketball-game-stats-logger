@@ -68,6 +68,14 @@ let clockTimer = null;
  */
 let selectedPlayerIds = new Set();
 
+/**
+ * The action waiting on a yes/no answer, or null when nothing is pending.
+ *
+ * Held as a closure rather than as a name to dispatch on later, so a queued
+ * action cannot be run twice or swapped for a different one underneath.
+ */
+let pendingDanger = null;
+
 const $ = (id) => document.getElementById(id);
 
 function save() {
@@ -255,28 +263,34 @@ function removeSelectedPlayers() {
     players.length === 1
       ? players[0].name
       : `${players.length} players`;
-  const message =
+  const them = players.length === 1 ? 'this player' : 'them';
+  const detail =
     entries > 0
-      ? `Remove ${who} and delete ${entries} recorded ${entries === 1 ? 'entry' : 'entries'}? ` +
-        'The score and box score will drop them.'
-      : `Remove ${who}?`;
+      ? `${entries} recorded ${entries === 1 ? 'entry' : 'entries'} will be deleted ` +
+        `with ${them}, and the score and box score will drop.`
+      : 'Their place in the roster is all that goes.';
 
-  if (!window.confirm(message)) return;
+  askBefore({
+    title: `Remove ${who}?`,
+    // Removing a player is not an event, so the ordinary undo (which pops the
+    // last entry) cannot reverse this. The confirmation is the safety net.
+    text: `${detail} Removing a player cannot be undone.`,
+    confirmLabel: `Remove ${players.length === 1 ? 'player' : `${players.length} players`}`,
+    run: () => {
+      for (const player of players) removePlayer(game, player.id);
+      game.events = game.events.filter((event) => !ids.has(event.playerId));
 
-  // Removing a player is not an event, so the ordinary undo (which pops the
-  // last entry) cannot reverse this. The confirmation is the safety net.
-  for (const player of players) removePlayer(game, player.id);
-  game.events = game.events.filter((event) => !ids.has(event.playerId));
+      selectedPlayerIds.clear();
+      save();
+      render();
 
-  selectedPlayerIds.clear();
-  save();
-  render();
-
-  showToast(
-    entries > 0
-      ? `${who} removed with ${entries} ${entries === 1 ? 'entry' : 'entries'}.`
-      : `${who} removed.`,
-  );
+      showToast(
+        entries > 0
+          ? `${who} removed with ${entries} ${entries === 1 ? 'entry' : 'entries'}.`
+          : `${who} removed.`,
+      );
+    },
+  });
 }
 
 
@@ -981,24 +995,82 @@ function currentTeamName() {
 }
 
 
+/**
+ * A sentence naming what a destructive action is about to discard.
+ *
+ * The point of the confirmation is that the answer is given against a number
+ * rather than a vague warning about "the current game".
+ */
+function atStake() {
+  const entries = game.events.length;
+  if (entries === 0) return 'Nothing has been recorded yet, so nothing is lost.';
+  return `${entries} recorded ${entries === 1 ? 'entry' : 'entries'} will be discarded.`;
+}
+
+/**
+ * Ask before something that throws away recorded work.
+ *
+ * `run` fires only on Confirm, and is dropped either way, so a queued action can
+ * never be set off by a later, unrelated click.
+ */
+function askBefore({ title, text, confirmLabel, run }) {
+  pendingDanger = run;
+  $('confirm-title').textContent = title;
+  $('confirm-text').textContent = text;
+  $('confirm-go').textContent = confirmLabel;
+
+  // Every dialog shares one stacking level, so the others are cleared: whichever
+  // sits later in the document would otherwise cover this one and swallow the
+  // click on Confirm, which looks exactly like a dead button.
+  closeImportDialogs();
+
+  $('confirm-dialog').hidden = false;
+  $('confirm-go').focus();
+}
+
+/** Dismiss the confirmation without doing anything. */
+function closeDanger() {
+  pendingDanger = null;
+  $('confirm-dialog').hidden = true;
+}
+
+/** Run whatever the confirmation was guarding, then close it. */
+function runDanger() {
+  const run = pendingDanger;
+  closeDanger();
+  if (run) run();
+}
+
 function startNewGame() {
-  if (game.events.length > 0 && !window.confirm('Start a blank game? The current game will be discarded — export it first if you need it.')) {
-    return;
-  }
-  game = createGame({ date: game.date, periodsPerGame: game.periodsPerGame });
-  detailTeamSlot = 'home';
-  save();
-  render();
-  showToast('New game ready. Load your saved teams to set the rosters.');
+  askBefore({
+    title: 'Start a blank game?',
+    text:
+      'The game on screen will be replaced by an empty one, and both rosters ' +
+      `with it. ${atStake()} Export the game first if you need a copy.`,
+    confirmLabel: 'Start a blank game',
+    run: () => {
+      game = createGame({ date: game.date, periodsPerGame: game.periodsPerGame });
+      detailTeamSlot = 'home';
+      save();
+      render();
+      showToast('New game ready. Load your saved teams to set the rosters.');
+    },
+  });
 }
 
 function loadSample() {
-  if (!window.confirm('Replace the current game with the sample game?')) return;
-  game = sampleGame();
-  detailTeamSlot = 'home';
-  save();
-  render();
-  showToast('Sample game loaded.');
+  askBefore({
+    title: 'Reload the sample game?',
+    text: `The game on screen will be replaced by the sample. ${atStake()}`,
+    confirmLabel: 'Reload the sample',
+    run: () => {
+      game = sampleGame();
+      detailTeamSlot = 'home';
+      save();
+      render();
+      showToast('Sample game loaded.');
+    },
+  });
 }
 
 async function importFromFile(file) {
@@ -1009,11 +1081,20 @@ async function importFromFile(file) {
       showToast(error);
       return;
     }
-    game = imported;
-    detailTeamSlot = 'home';
-    save();
-    render();
-    showToast(`Restored the game from ${file.name}.`);
+    // Confirmed once the file is known to be readable: asking before the picker
+    // would put the question before there is anything to answer about.
+    askBefore({
+      title: 'Restore this backup?',
+      text: `The game on screen will be replaced by ${file.name}. ${atStake()}`,
+      confirmLabel: 'Restore it',
+      run: () => {
+        game = imported;
+        detailTeamSlot = 'home';
+        save();
+        render();
+        showToast(`Restored the game from ${file.name}.`);
+      },
+    });
   } catch {
     showToast('Could not read that file.');
   }
@@ -1237,6 +1318,12 @@ document.addEventListener('click', (event) => {
     case 'export-json':
       downloadJson(game);
       showToast('Exported the full game as JSON.');
+      break;
+    case 'confirm-danger':
+      runDanger();
+      break;
+    case 'cancel-danger':
+      closeDanger();
       break;
     case 'import-json':
       $('import-file').click();
