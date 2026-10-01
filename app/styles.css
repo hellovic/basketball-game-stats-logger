@@ -2570,6 +2570,88 @@ ul {
   color: var(--ink-faint);
 }
 
+/* An iPad in landscape is about 1112px wide, and that is where the scoreboard
+   row runs out: two club names, a two- or three-digit score each and the clock
+   card are more than the line holds, so the card ends up over the blocks beside
+   it. The captions go first — they are the least-read thing up here, and the
+   icons are the same ones the More menu spells out — then the scores, the name
+   cap and the clock card give a little back. The block at 1100 repeats these
+   values with the rest of the tablet treatment, so nothing below it changes. */
+@media (max-width: 1240px) {
+  .icon-btn__label {
+    display: none;
+  }
+
+  .icon-btn {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 2px var(--sp-1);
+  }
+
+  .topbar__tools {
+    gap: 2px;
+    padding-left: var(--sp-2);
+  }
+
+  /* A middle track that can shrink to nothing is what stops the overflow: the
+     card sits in the space that is left instead of spilling over the blocks,
+     and the side tracks shrink with it so a long name truncates rather than
+     pushing. */
+  .scoreboard__inner {
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto) auto;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+  }
+
+  .team-block {
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
+  }
+
+  .team-block__name {
+    max-width: 16ch;
+  }
+
+  .team-block__score {
+    font-size: 38px;
+  }
+
+  .team-block__meta {
+    font-size: 9.5px;
+  }
+
+  .clock-card {
+    gap: var(--sp-2);
+    padding: 4px;
+    border-radius: 14px;
+  }
+
+  .clock-card__row {
+    gap: 3px;
+  }
+
+  .clock-box {
+    gap: 5px;
+    padding: 2px var(--sp-1);
+  }
+
+  .scoreboard__clock {
+    min-width: 4.3ch;
+    font-size: 28px;
+  }
+
+  .clock-nudge__btn {
+    min-width: 26px;
+    min-height: 18px;
+    font-size: 10.5px;
+  }
+
+  .clock-edit {
+    min-width: 64px;
+    padding: 0 var(--sp-1);
+  }
+}
+
 /* ===========================================================================
    Narrow screens: the tablet grid folds into one column and the page scrolls
    again, because a phone cannot hold the whole scoresheet at once.
