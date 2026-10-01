@@ -1658,6 +1658,21 @@ document.addEventListener('click', (event) => {
     case 'edit-clock':
       beginClockEdit();
       break;
+    case 'clock-nudge': {
+      // The clock beside a scorer drifts by a second or two over a period, so
+      // the usual correction is a nudge rather than a re-typed time. It works
+      // on a running clock too: pausing to fix a second would cost another one.
+      const step = Number(target.dataset.clockStep) || 0;
+      const next = Math.min(
+        clockface.periodLength(game),
+        Math.max(0, game.clock.seconds + step),
+      );
+      if (next === game.clock.seconds) break;
+      setClock(game, next);
+      save();
+      render();
+      break;
+    }
     case 'reset-clock': {
       // Back to the start of the period, stopped: easier than waiting for a
       // ten-minute countdown when correcting a mistake.

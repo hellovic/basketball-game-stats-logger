@@ -569,6 +569,43 @@ ul {
   outline: none;
 }
 
+/* The clock nudge pad: four small keys for the second-by-second corrections a
+   table makes by hand. Two columns — one per direction — so "earlier" is always
+   the left key and "later" the right, whatever size the step is. */
+.clock-nudge {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 2px;
+  align-content: center;
+}
+
+.clock-nudge__btn {
+  min-width: 30px;
+  min-height: 19px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.clock-nudge__btn:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.clock-nudge__btn:active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .clock-toggle {
   /* A status pill, not a primary action: the label is one word and the clock
      beside it is what the scorer is actually reading. */
@@ -2503,6 +2540,12 @@ ul {
     font-size: 26px;
   }
 
+  .clock-nudge__btn {
+    min-width: 26px;
+    min-height: 18px;
+    font-size: 10.5px;
+  }
+
   .period-pill__step {
     width: 20px;
     min-height: 30px;
@@ -2668,6 +2711,17 @@ ul {
   .scoreboard__clock {
     min-width: 4.4ch;
     font-size: 22px;
+  }
+
+  .clock-nudge {
+    gap: 1px;
+  }
+
+  .clock-nudge__btn {
+    min-width: 24px;
+    min-height: 17px;
+    padding: 0 3px;
+    font-size: 10px;
   }
 
   .clock-box__dot {

@@ -210,10 +210,26 @@ test('a partial entry is read generously rather than rejected', () => {
   assert.equal(parseInput('5:5').seconds, 305);
 });
 
-test('a bare number is read as seconds', () => {
-  assert.equal(parseInput('450').seconds, 450);
+test('two digits or fewer are read as seconds', () => {
   assert.equal(parseInput('0').seconds, 0);
   assert.equal(parseInput('59').seconds, 59);
+  assert.equal(parseInput('45').seconds, 45);
+});
+
+test('three and four digits are read as MMSS, so the colon can be left out', () => {
+  assert.equal(parseInput('0500').seconds, 300);
+  assert.equal(parseInput('500').seconds, 300);
+  assert.equal(parseInput('1130').seconds, 690);
+  assert.equal(parseInput('450').seconds, 290);
+  assert.equal(parseInput('0045').seconds, 45);
+  assert.equal(parseInput('0700').seconds, 420);
+});
+
+test('a digit-only entry with an impossible seconds part is rejected', () => {
+  // 075 is 0:75 at heart, and guessing between 0:75 and 1:15 would be worse
+  // than saying so.
+  assert.match(parseInput('075').error, /59 or less/);
+  assert.match(parseInput('1299').error, /59 or less/);
 });
 
 test('seconds beyond 59 are rejected instead of carrying', () => {
@@ -233,10 +249,12 @@ test('nonsense is rejected with a message that shows the expected form', () => {
 });
 
 test('a parsed time displays as the same clock face', () => {
-  for (const typed of ['7:30', '0:07', '12:00', '450', '0']) {
+  for (const typed of ['7:30', '0:07', '12:00', '0730', '45', '0']) {
     assert.equal(display(parseInput(typed).seconds), display(parseInput(typed).seconds));
   }
   assert.equal(display(parseInput('7:30').seconds), '07:30');
-  assert.equal(display(parseInput('450').seconds), '07:30');
+  // The colon-free form has to land on the same reading as the written one.
+  assert.equal(display(parseInput('0730').seconds), '07:30');
+  assert.equal(display(parseInput('1230').seconds), '12:30');
   assert.equal(display(parseInput('0').seconds), '00:00');
 });

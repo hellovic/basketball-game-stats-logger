@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.17.0">
-<meta name="app-build" content="2026-10-01u">
+<meta name="app-version" content="0.18.0">
+<meta name="app-build" content="2026-10-01v">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -71,7 +71,26 @@
             <span class="clock-box__dot" id="clock-dot" aria-hidden="true"></span>
             <div class="scoreboard__clock" id="clock-display" contenteditable="false"
                  role="textbox" aria-label="Game clock, editable" data-action="edit-clock"
-                 title="Tap to type a time, e.g. 7:30">00:00</div>
+                 title="Tap to type a time, e.g. 7:30 or 0500">00:00</div>
+          </div>
+
+          <!-- Four nudges for the hand corrections a table makes all night: the
+               clock is a stopwatch beside you, so it drifts by seconds. They sit
+               against the face they move, in one column per direction, so the
+               pair a thumb reaches for is in the same place every time. -->
+          <div class="clock-nudge" role="group" aria-label="Nudge the clock">
+            <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
+                    data-clock-step="-1" aria-label="One second earlier"
+                    title="One second earlier">&minus;1</button>
+            <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
+                    data-clock-step="1" aria-label="One second later"
+                    title="One second later">+1</button>
+            <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
+                    data-clock-step="-5" aria-label="Five seconds earlier"
+                    title="Five seconds earlier">&minus;5</button>
+            <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
+                    data-clock-step="5" aria-label="Five seconds later"
+                    title="Five seconds later">+5</button>
           </div>
         </div>
 
@@ -559,7 +578,8 @@
       </p>
       <dl class="about__keys">
         <dt>Ctrl / Cmd + Z</dt><dd>Undo the last entry</dd>
-        <dt>Tap the clock</dt><dd>Type an exact time</dd>
+        <dt>Tap the clock</dt><dd>Type a time &mdash; 7:30, or 0500 for 5:00</dd>
+        <dt>&minus;1 / +1 / &minus;5 / +5</dt><dd>Nudge the clock by seconds</dd>
         <dt>Esc</dt><dd>Close a dialog or abandon a clock edit</dd>
       </dl>
       <p class="about__note">

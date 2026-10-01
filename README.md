@@ -280,12 +280,17 @@ you need and press Enter or click away:
 | --- | --- |
 | `7:30` | 7 minutes 30 seconds |
 | `07:30` | the same |
+| `0730` | the same — the colon is optional |
+| `500` | 5 minutes, same as `0500` |
 | `:45` | 45 seconds |
-| `450` | 450 seconds — a raw count, same as `7:30` |
+| `45` | 45 seconds — two digits or fewer stay a count of seconds |
 | `0` | clock cleared; starting refills the period |
 
 Anything after the colon is seconds, so `3:1` is three minutes **one** second —
-write `3:10` for three minutes ten.
+write `3:10` for three minutes ten. Without a colon, three and four digits read
+as MMSS, which is what a hand on a keypad means by `0500`: minutes first, then
+seconds. A digit-only entry whose last two digits are over 59 (`075`) is
+reported rather than guessed at.
 
 Setting a time always leaves the clock **stopped**, so you decide separately
 whether to count down. Editing a running clock pauses it first. A value that
@@ -293,9 +298,16 @@ cannot be read is reported and the field stays open so you can fix it; `Escape`
 abandons the edit and restores the real time.
 
 Buttons sit beside the clock: **start/pause** (which reads `Start`, `Resume` or
-`Pause` according to what it will do), **Edit** to type a time, **Reset** to put
-the clock back to the start of the current period, and **− / +** to move the
-period by hand.
+`Pause` according to what it will do), **Reset** in the top bar to put the clock
+back to the start of the current period, and the **− / +** period arrows to move
+the period by hand.
+
+**Four nudge keys move the clock by seconds** — `−1`, `+1`, `−5`, `+5`, in a
+small pad against the clock face. A manual clock beside a scorer drifts, and
+finding it two seconds out is normal; a nudge is a lighter correction than
+re-typing the time. They work while the clock is running, which is when the
+drift is noticed. They will not take it past the end of its period or below
+`00:00`.
 
 The clock bar is deliberately thin, and it is sticky — so every pixel it takes is
 permanently lost from the scoring area below. That is why the labels are one word

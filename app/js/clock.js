@@ -49,11 +49,17 @@ export function display(seconds) {
  * Accepts what a scorer would actually type at a table:
  *
  *   7:30, 07:30, :45   minutes and seconds
- *   450                seconds, so a raw count can be typed straight in
+ *   0500, 500          the same, without stopping for the colon
+ *   45                 seconds, for a short count
  *   0                  zero, meaning "fill this period when started"
  *
  * Anything after the colon is seconds, so "3:1" is three minutes *one* second —
  * the same reading as everywhere else. Write "3:10" for three minutes ten.
+ *
+ * Three and four digits read as MMSS, because that is how a scorer's hand
+ * reaches for a keypad: 0500 is five minutes and no seconds, not five hundred
+ * of anything. Two digits or fewer stay a count of seconds, so 45 is still
+ * forty-five seconds rather than a scoreless first minute.
  *
  * Returns `{ seconds, error }` and never throws: a typo is a normal thing to
  * type, so it is reported and the previous value is kept.
@@ -73,12 +79,21 @@ export function parseInput(text) {
   }
 
   if (/^\d+$/.test(raw)) {
-    return { seconds: Number(raw), error: null };
+    if (raw.length <= 2) return { seconds: Number(raw), error: null };
+
+    if (raw.length <= 4) {
+      const minutes = Number(raw.slice(0, raw.length - 2));
+      const seconds = Number(raw.slice(-2));
+      if (seconds > 59) {
+        return { seconds: null, error: 'Seconds must be 59 or less.' };
+      }
+      return { seconds: minutes * 60 + seconds, error: null };
+    }
   }
 
   return {
     seconds: null,
-    error: 'Enter a time like 7:30, or a number of seconds.',
+    error: 'Enter a time like 7:30, or four digits like 0500 for 5:00.',
   };
 }
 

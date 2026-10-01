@@ -1183,6 +1183,48 @@ test('reset puts the clock back to the start of the period and stops it', async 
   assert.equal(storedGame().clock.running, false);
 });
 
+test('the nudge keys walk the clock a few seconds at a time', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
+  runTimers();
+  runTimers();
+  assert.equal(document.getElementById('clock-display').textContent, '09:58');
+
+  const nudge = (seconds) =>
+    emit(dom.listeners, 'click', actionable({ action: 'clock-nudge', clockStep: seconds }));
+
+  // A running clock keeps running: pausing to correct a second would cost one.
+  nudge('1');
+  assert.equal(document.getElementById('clock-display').textContent, '09:59');
+  assert.equal(storedGame().clock.running, true);
+
+  nudge('-5');
+  assert.equal(document.getElementById('clock-display').textContent, '09:54');
+
+  // It will not run past the period it is in, or below zero.
+  nudge('5');
+  nudge('5');
+  assert.equal(document.getElementById('clock-display').textContent, '10:00');
+
+  emit(dom.listeners, 'click', actionable({ action: 'reset-clock' }));
+  nudge('-1');
+  assert.equal(document.getElementById('clock-display').textContent, '09:59');
+
+  // Set a short clock by hand, then walk it off the end.
+  emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
+  const face = document.getElementById('clock-display');
+  face.textContent = '0012';
+  emit(dom.listeners, 'blur', face);
+  assert.equal(face.textContent, '00:12', 'four digits read as MMSS, no colon needed');
+
+  for (let i = 0; i < 5; i += 1) nudge('-5');
+  assert.equal(storedGame().clock.seconds, 0, 'the clock stops at zero');
+  assert.equal(document.getElementById('clock-display').textContent, '00:00');
+});
+
 test('logging a stat starts the clock, refilling it if it is at zero', async () => {
   const dom = await startApp();
 
@@ -1278,6 +1320,21 @@ test('a bare number of seconds is accepted', async () => {
 
   assert.equal(face.textContent, '01:30');
   assert.equal(storedGame().clock.seconds, 90);
+});
+
+test('a time typed without a colon reads as MMSS', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
+  emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
+
+  const face = document.getElementById('clock-display');
+  face.textContent = '0500';
+  emit(dom.listeners, 'blur', face);
+
+  assert.equal(face.textContent, '05:00');
+  assert.equal(storedGame().clock.seconds, 300);
 });
 
 test('editing a running clock pauses it first', async () => {
