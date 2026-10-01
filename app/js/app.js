@@ -255,6 +255,16 @@ function softFor(teamId) {
   return `var(--team-${colorKeyFor(teamId)}-soft)`;
 }
 
+/**
+ * A deeper tint of the same colour, for a whole row.
+ *
+ * A row has to be told apart from the row above it, not just from the page, so
+ * it needs more than the faint tint a card wears.
+ */
+function washFor(teamId) {
+  return `var(--team-${colorKeyFor(teamId)}-wash)`;
+}
+
 function teamFor(slot) {
   return game.teams[slot === 'home' ? game.homeTeamId : game.awayTeamId];
 }
@@ -732,7 +742,7 @@ function renderEntry(derived) {
         }${subStep && wanted ? ' player-card--wanted' : ''}${
           subStep && !wanted ? ' player-card--passed' : ''
         }"
-            style="--accent: ${accent}" data-action="${action}"
+            style="--accent: ${accent}; --wash: ${washFor(teamId)}" data-action="${action}"
             data-player-id="${escapeHtml(player.id)}">
           <td class="player-card__check">
             <label class="roster__check-hit">

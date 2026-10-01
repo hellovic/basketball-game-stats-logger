@@ -128,8 +128,9 @@ team. A scorer enters one team's events at a time.
 **Each team can wear its own colour.** **Colour** in *Team and players* shows
 what the selected team is wearing; tap it for the rainbow plus white and black, which
 sets the score on the scoreboard, the dot on the quarter strip, the left edge of
-that team's play-by-play rows and its heading in the box score. Home starts blue
-and away starts red, which is what a game looks like if nobody touches them.
+that team's play-by-play rows, its heading in the box score, and the row of
+every one of its players who is on the floor. Home starts blue and away starts
+red, which is what a game looks like if nobody touches them.
 The colour is saved on the **team**, not on the side, so **Swap sides** moves
 each team's colour with it — and it travels in a saved team file, so a team you
 reload arrives in its own colours.
@@ -153,7 +154,9 @@ white kit with dark numbers reads from the table.
    substitution it asks for the five who start, one tap each; after that it is
    two taps — the player coming off, then the player coming on — with the strip
    above the table saying which tap it is waiting for and offering a way out.
-   Whoever is on the floor carries a bar down the left of their row.
+   Whoever is on the floor carries their team's colour: a bar down the left of
+   the row, the number in the same colour, and a wash across the row itself, so
+   the five out there can be found without reading a name.
 3. **Undo** — the button on the scoreboard (it stays pinned, so it is always in
    reach), or `Ctrl`/`Cmd` + `Z`. The toast after each entry also offers a
    one-tap undo.

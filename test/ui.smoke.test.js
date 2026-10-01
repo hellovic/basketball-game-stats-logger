@@ -732,6 +732,38 @@ test('the five who start are named by tapping them one at a time', async () => {
   assert.equal(document.getElementById('subbar').hidden, true);
 });
 
+test('a player on the floor carries their team colour across the row', async () => {
+  await startApp();
+
+  const html = document.getElementById('player-cards').innerHTML;
+  const onRow = html
+    .split('<tr class="player-card')
+    .find((chunk) => chunk.includes('player-card--on'));
+  const offRow = html
+    .split('<tr class="player-card')
+    .find((chunk) => !chunk.includes('player-card--on'));
+
+  assert.match(onRow, /--wash: var\(--team-[a-z]+-wash\)/, 'the row wears its team wash');
+  assert.doesNotMatch(offRow ?? '', /--wash/, 'the bench does not');
+
+  // Every colour in the palette has a wash to wear, and the row asks for it.
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  for (const key of [
+    'red',
+    'orange',
+    'yellow',
+    'green',
+    'blue',
+    'indigo',
+    'violet',
+    'white',
+    'black',
+  ]) {
+    assert.match(css, new RegExp(`--team-${key}-wash: #`), `expected a ${key} wash`);
+  }
+  assert.match(css, /\.entry tbody tr\.player-card--on td \{\s*background: var\(--wash/);
+});
+
 test('a substitution takes one player off and puts another on', async () => {
   const dom = await startApp();
   const before = storedGame();

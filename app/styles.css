@@ -49,30 +49,43 @@
      version of the colour (a slate for white, near-black for black, a dark gold
      for yellow) while the picker's chip shows the colour itself. A white team
      therefore reads as dark ink on a near-white block, which is what a white
-     kit with dark numbers looks like from the table anyway. */
+     kit with dark numbers looks like from the table anyway.
+
+     `-soft` is the faint tint the picker and the raised cards use; `-wash` is a
+     step deeper, for a whole row that has to be told apart from the row above
+     it rather than just from the page. */
   --team-red: #e03131;
   --team-red-soft: #fdecec;
+  --team-red-wash: #f9d4d4;
   --team-orange: #f97316;
   --team-orange-soft: #fdefe6;
+  --team-orange-wash: #fbdfc9;
   /* Yellow is the one colour with no room to move: a brighter gold than this
      stops being readable as a score, so the picker's chip carries the bright
      yellow while the ink stays a shade beneath it. */
   --team-yellow: #ca8a04;
   --team-yellow-soft: #fdf7e2;
   --team-yellow-chip: #facc15;
+  --team-yellow-wash: #f6e9b8;
   --team-green: #2f9e44;
   --team-green-soft: #e9f6ed;
+  --team-green-wash: #cfe9d6;
   --team-blue: #2563eb;
   --team-blue-soft: #e8efff;
+  --team-blue-wash: #d8e3fd;
   --team-indigo: #4f46e5;
   --team-indigo-soft: #eceafd;
+  --team-indigo-wash: #d9d3fa;
   --team-violet: #7c3aed;
   --team-violet-soft: #f1eafd;
+  --team-violet-wash: #e3d5fa;
   --team-white: #5b6472;
   --team-white-soft: #f4f5f7;
   --team-white-chip: #ffffff;
+  --team-white-wash: #e0e4ea;
   --team-black: #1f2430;
   --team-black-soft: #e9ebef;
+  --team-black-wash: #d6dae3;
 
   /* Accents: one per team, plus the app's own action blue. Home is blue and
      away is red until someone says otherwise on the roster bar. */
@@ -1455,6 +1468,15 @@ ul {
    itself rather than as a stripe. */
 .entry tbody tr:nth-child(even) td {
   background: var(--row-stripe);
+}
+
+/* Who is on the floor carries their team's colour across the whole row, and
+   drops the zebra band while they wear it: the stripe is there to help the eye
+   across a row, and striping an on-court row as well would leave the two
+   meanings fighting over the same pixels. Set before the hover and flash rules
+   so those still win while a finger is on the row. */
+.entry tbody tr.player-card--on td {
+  background: var(--wash, var(--team-soft));
 }
 
 .entry tbody tr:hover td {
