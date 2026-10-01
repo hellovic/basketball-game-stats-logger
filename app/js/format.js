@@ -52,3 +52,48 @@ export function safeText(value, fallback = '') {
   if (value === null || value === undefined) return fallback;
   return String(value);
 }
+
+/**
+ * "2026-01-17" to "17/01/2026", the form the read-out pills use.
+ *
+ * Nothing is inferred here: an unparseable or empty value comes back as an
+ * empty string so the caller can show a dash rather than a wrong date.
+ */
+export function displayDate(iso) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso ?? ''));
+  if (!match) return '';
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+}
+
+/** "14:30" to "02:30 PM". Empty or malformed input comes back empty. */
+export function displayTime(value) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(value ?? ''));
+  if (!match) return '';
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return '';
+
+  const suffix = hours < 12 ? 'AM' : 'PM';
+  const twelve = hours % 12 === 0 ? 12 : hours % 12;
+  return `${String(twelve).padStart(2, '0')}:${match[2]} ${suffix}`;
+}
+
+/**
+ * "4 quarters • 10 mins" for the structure pill.
+ *
+ * The noun follows the number of periods, because a two-period game is played
+ * in halves and calling them quarters would be wrong in the gym.
+ */
+export function structureLabel(periods, periodSeconds) {
+  const count = Number(periods);
+  if (!Number.isFinite(count) || count <= 0) return '';
+
+  const noun = count === 4 ? 'quarters' : count === 2 ? 'halves' : 'periods';
+  const seconds = Number(periodSeconds);
+  if (!Number.isFinite(seconds) || seconds <= 0) return `${count} ${noun}`;
+
+  const minutes = Math.round(seconds / 60);
+  return `${count} ${noun} • ${minutes} min${minutes === 1 ? '' : 's'}`;
+}

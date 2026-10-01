@@ -26,11 +26,13 @@ import {
   setClockRunning,
   setPeriod,
   setPeriodsPerGame,
+  setTeamPeriodTotal,
+  teamPeriodTotal,
   undoLastEvent,
   updateEvent,
   updateTeam,
 } from './store.js';
-import { COUNTING, REBOUND, SHOOTING, describeEvent, entryButtons, getStat } from './stats.js';
+import { describeEvent, entryButtons, eventPoints, getStat } from './stats.js';
 import { parseTeamFile, teamFileJson, teamFileName, teamFromGame } from './teamfile.js';
 import { parseRosterText } from './rosterimport.js';
 import {
@@ -41,7 +43,15 @@ import {
   playerLine,
   teamLine,
 } from './derive.js';
-import { eventClock, madeAttempted, pct, periodLabel, safeText } from './format.js';
+import {
+  displayDate,
+  displayTime,
+  eventClock,
+  madeAttempted,
+  periodLabel,
+  safeText,
+  structureLabel,
+} from './format.js';
 import * as clockface from './clock.js';
 import { download, downloadCsv, downloadJson, importGame } from './export.js';
 import { sampleGame } from './sample.js';
@@ -56,6 +66,34 @@ if (!game) game = sampleGame();
 let detailTeamSlot = 'home';
 let toastTimer = null;
 let clockTimer = null;
+
+/**
+ * Which of the three panels is currently stretched across the whole workspace,
+ * or null for the ordinary two-column layout.
+ *
+ * The two columns are the right shape for a full game on a tablet, but any one
+ * of them can want the whole width — the entry row and the box score both have
+ * more columns than fit beside the other column on a smaller screen. Expanding
+ * hides the other two rather than reflowing them, so nothing moves under the
+ * scorer's finger while they are reading.
+ */
+let expandedPanel = null;
+
+/**
+ * How the panel chrome names itself in tooltips and labels.
+ */
+const PANEL_NAMES = { entry: 'live entry', log: 'play-by-play', box: 'box score' };
+
+/**
+ * How tall Live entry's stat keys are, smallest first.
+ *
+ * Only Live entry has one: it is the panel a scorer works down, and the whole
+ * point is fitting the roster on screen without a scroll. The default sits at
+ * the small end already, so the buttons are there to go further in either
+ * direction rather than to undo an oversized out-of-the-box key.
+ */
+const KEY_SIZES = ['compact', 'normal', 'roomy'];
+let keySize = 'normal';
 
 /**
  * Players ticked for removal in the roster panel.
@@ -141,11 +179,14 @@ function render() {
   renderRoster(derived);
   renderTeamFields();
   renderEntry(derived);
+  renderTeamTotal();
   renderLog(derived);
   renderBox(derived);
   renderSheet(derived);
   renderFooter();
   renderTeamLibrary();
+  renderMenuState();
+  renderWorkspace();
 
   $('undo-button').disabled = game.events.length === 0;
 
@@ -158,6 +199,13 @@ function render() {
       ? 'Start'
       : 'Resume';
 
+  // The dot beside the clock is the at-a-glance answer to "is it running?".
+  const dot = $('clock-dot');
+  if (dot) {
+    if (game.clock.running) dot.classList.add('is-running');
+    else dot.classList.remove('is-running');
+  }
+
   renderWarnings();
 }
 
@@ -167,6 +215,8 @@ function renderScoreboard(derived) {
 
   $('score-home-name').textContent = safeText(home?.name, 'Home');
   $('score-away-name').textContent = safeText(away?.name, 'Away');
+  $('score-home-abbrev').textContent = safeText(home?.abbreviation, 'HOM');
+  $('score-away-abbrev').textContent = safeText(away?.abbreviation, 'AWY');
   $('score-home').textContent = derived.scores[game.homeTeamId] ?? 0;
   $('score-away').textContent = derived.scores[game.awayTeamId] ?? 0;
 
@@ -179,12 +229,28 @@ function renderScoreboard(derived) {
 }
 
 /**
- * The team tabs and the name/abbreviation fields, which live on the roster bar
- * now that the roster no longer owns a column of its own.
+ * The team tabs and the name/abbreviation fields, which live on the settings
+ * strip now that the roster no longer owns a column of its own.
+ *
+ * The box score carries its own pair of tabs. They are a second handle on the
+ * same choice rather than a separate one, so both sets are kept in step here:
+ * whichever tab was tapped, the whole app is entering that team's events.
  */
 function renderTeamFields() {
   for (const slot of ['home', 'away']) {
-    $(`team-tab-${slot}`).setAttribute('aria-selected', String(detailTeamSlot === slot));
+    const selected = String(detailTeamSlot === slot);
+    for (const prefix of ['team-tab', 'box-tab']) {
+      const tab = $(`${prefix}-${slot}`);
+      if (tab) tab.setAttribute('aria-selected', selected);
+    }
+
+    // The side being scored reads as the raised card, so it is obvious where
+    // the next tap lands even before the row colours are read.
+    const block = $(`team-block-${slot}`);
+    if (block) {
+      if (detailTeamSlot === slot) block.classList.add('is-current');
+      else block.classList.remove('is-current');
+    }
   }
 
   $('team-name-input').value = safeText(teamFor(detailTeamSlot)?.name);
@@ -294,6 +360,15 @@ function removeSelectedPlayers() {
 }
 
 
+/**
+ * The live entry table: one row per player on the team being scored.
+ *
+ * The row is a table row rather than a card because the keys, the running
+ * totals and the column headings all have to line up down the page — a scorer
+ * finds "the third player's rebounds" by reading one column, not by re-finding
+ * a card. The 17 columns are: check, player, 4 scoring keys, 7 other keys and
+ * the 4 live values the keys are already reflected in.
+ */
 function renderEntry(derived) {
   const container = $('player-cards');
 
@@ -303,40 +378,19 @@ function renderEntry(derived) {
 
   if (roster.length === 0) {
     container.innerHTML =
-      '<p class="view__empty">No players yet — add one in the roster bar below.</p>';
+      '<tr class="entry__empty"><td colspan="15">No players yet — add one in the roster bar above.</td></tr>';
     return;
   }
 
   const accent = accentFor(teamId);
 
-  // Every button the app can record, in catalog order, with the group headings
-  // dropped: at one row per player the filled/outlined button styles already
-  // separate makes from misses, and the headings cost more height than they
-  // were worth. The full stat catalog stays available as tooltips.
+  // Every button the app can record, in catalog order. Team events are not
+  // here: they belong to no player, so they get their own strip under the
+  // table. The three groups below line up with the three column groups.
   const buttons = entryButtons();
-
-  // The entry row carries the box-score columns inline, so one glance shows the
-  // player's line and the buttons that change it. Percentages are the two
-  // columns left out: the made-attempted pair ("5-9") already reads as a
-  // percentage, and both values stay in the CSV and JSON exports.
-  const columns = [
-    ['PTS', (l) => l.points],
-    ['FG', (l) => madeAttempted(l.fgMade, l.fgAtt)],
-    ['3P', (l) => madeAttempted(l['3PT'].made, l['3PT'].made + l['3PT'].missed)],
-    ['FT', (l) => madeAttempted(l.ftMade, l.ftAtt)],
-    ['REB', (l) => l.reb],
-    ['OREB', (l) => l.rebOff],
-    ['DREB', (l) => l.rebDef],
-    ['AST', (l) => l.ast],
-    ['STL', (l) => l.stl],
-    ['BLK', (l) => l.blk],
-    ['TO', (l) => l.to],
-    ['PF', (l) => l.pf],
-  ];
-
-  const header = columns
-    .map(([label]) => `<span class="player-card__col-label">${label}</span>`)
-    .join('');
+  const makes = buttons.filter((b) => b.kind === 'made');
+  const misses = buttons.filter((b) => b.kind === 'miss');
+  const counts = buttons.filter((b) => b.kind === 'count');
 
   container.innerHTML = roster
     .map((player) => {
@@ -344,9 +398,17 @@ function renderEntry(derived) {
       const selected = selectedPlayerIds.has(player.id);
       const name = escapeHtml(player.name);
 
-      const statButtons = buttons
-        .map(
-          (b) => `
+      /**
+       * One cell per key, so every button shares a table column with the
+       * heading above it. A single spanning cell laid out by flexbox drifts:
+       * the buttons size themselves and the headings stay where the table put
+       * them, which is what put "+1" over the wrong button.
+       */
+      const keys = (list, group) =>
+        list
+          .map(
+            (b) => `
+          <td class="player-card__key player-card__keys--${group}">
             <button type="button"
                     class="stat-btn stat-btn--${b.kind}"
                     data-action="log-stat"
@@ -354,41 +416,128 @@ function renderEntry(derived) {
                     data-stat="${b.key}"
                     data-result="${b.result ?? ''}"
                     title="${escapeHtml(b.title)}"
-                    aria-label="${escapeHtml(`${b.title} for ${player.name}`)}">${escapeHtml(b.label)}</button>`,
-        )
-        .join('');
-
-      const statValues = columns
-        .map(([, get]) => `<span class="player-card__col">${escapeHtml(String(get(line)))}</span>`)
-        .join('');
+                    aria-label="${escapeHtml(`${b.title} for ${player.name}`)}">${escapeHtml(b.label)}</button>
+          </td>`,
+          )
+          .join('');
 
       return `
-        <article class="player-card${selected ? ' player-card--selected' : ''}"
-                 style="--accent: ${accent}" data-action="player-row"
-                 data-player-id="${escapeHtml(player.id)}">
-          <div class="player-card__row player-card__row--info">
+        <tr class="player-card${selected ? ' player-card--selected' : ''}"
+            style="--accent: ${accent}" data-action="player-row"
+            data-player-id="${escapeHtml(player.id)}">
+          <td class="player-card__check">
             <label class="roster__check-hit">
               <input type="checkbox" class="roster__check" data-action="toggle-player"
                      data-player-id="${escapeHtml(player.id)}"
                      aria-label="Select ${name}"${selected ? ' checked' : ''}>
             </label>
+          </td>
+          <td class="player-card__who">
             <span class="player-card__number">${escapeHtml(player.number) || '—'}</span>
             <span class="player-card__name" title="${name}">${name}</span>
-            <div class="player-card__stats">${header}${statValues}</div>
-          </div>
-          <div class="player-card__row player-card__row--buttons">
-            <span class="player-card__stat-line">${statButtons}</span>
-          </div>
-        </article>`;
+          </td>
+          ${keys(makes, 'scoring')}${keys(misses, 'scoring')}${keys(counts, 'other')}
+        </tr>`;
     })
     .join('');
+}
+
+/**
+ * Reflect the expanded panel into the workspace.
+ *
+ * The layout itself is CSS (`is-expanded` plus `data-focus`); this only keeps
+ * that attribute and the three buttons in step with the model, so a re-render
+ * from any other action cannot leave a button lying about the layout.
+ */
+function renderWorkspace() {
+  const workspace = $('workspace');
+  if (!workspace) return;
+
+  if (expandedPanel) {
+    workspace.classList.add('is-expanded');
+    workspace.setAttribute('data-focus', expandedPanel);
+  } else {
+    workspace.classList.remove('is-expanded');
+    workspace.removeAttribute('data-focus');
+  }
+
+  for (const panel of ['entry', 'log', 'box']) {
+    const name = PANEL_NAMES[panel];
+    const expand = $(`expand-${panel}`);
+    if (expand) {
+      const active = expandedPanel === panel;
+      expand.setAttribute('aria-pressed', String(active));
+      expand.title = active
+        ? `Put ${name} back beside the others`
+        : `Stretch ${name} across the whole width`;
+    }
+  }
+
+  const entry = $('panel-entry');
+  if (entry) entry.setAttribute('data-density', keySize);
+
+  // The ends of the range are real: a smaller key than the smallest is not a
+  // thing to offer, so the button says so rather than doing nothing.
+  const step = KEY_SIZES.indexOf(keySize);
+  const smaller = $('key-down-entry');
+  const larger = $('key-up-entry');
+  if (smaller) smaller.disabled = step === 0;
+  if (larger) larger.disabled = step === KEY_SIZES.length - 1;
+}
+
+/**
+ * The typed team total for the side being scored, in the period being scored.
+ *
+ * The box shows what was typed rather than the period score, so it stays the
+ * thing you edit: a blank box means nobody has typed one, and the scoreboard
+ * below is whatever the entries come to.
+ */
+function renderTeamTotal() {
+  const input = $('teamtotal-input');
+  if (!input) return;
+
+  $('teamtotal-period').textContent = periodLabel(game.currentPeriod, game.periodsPerGame);
+
+  // Never overwrite a number that is being typed.
+  if (document.activeElement === input) return;
+
+  const typed = teamPeriodTotal(game, teamIdFor(detailTeamSlot), game.currentPeriod);
+  input.value = typed === null ? '' : String(typed);
+}
+
+/**
+ * Take what is in the team total box.
+ *
+ * One entry per team per period, replaced rather than added, so retyping is the
+ * correction and an empty box takes the entry back out.
+ */
+function commitTeamTotal(raw) {
+  const teamId = teamIdFor(detailTeamSlot);
+  const text = String(raw ?? '').trim();
+  setTeamPeriodTotal(game, teamId, game.currentPeriod, text === '' ? 0 : Number(text));
+  save();
+  render();
+
+  const typed = teamPeriodTotal(game, teamId, game.currentPeriod);
+  const team = safeText(game.teams[teamId]?.name, 'Team');
+  const period = periodLabel(game.currentPeriod, game.periodsPerGame);
+  showToast(
+    typed === null
+      ? `Cleared the ${team} total for ${period}.`
+      : `${team}: ${typed} in ${period}.`,
+  );
 }
 
 function renderLog(derived) {
   const list = $('log-list');
 
   if (game.events.length === 0) {
-    list.innerHTML = '<li class="log__empty">No entries yet. Everything you log appears here.</li>';
+    list.innerHTML =
+      '<li class="log__empty">' +
+      '<strong class="log__empty-title">No plays recorded yet</strong>' +
+      '<span class="log__empty-text">Tap any action beside a player and the ' +
+      'event will appear here instantly.</span>' +
+      '</li>';
     return;
   }
 
@@ -397,19 +546,20 @@ function renderLog(derived) {
 
   list.innerHTML = ordered
     .map((event) => {
-      const team = game.teams[event.teamId];
       const player = game.players.find((p) => p.id === event.playerId);
-      const points = event.result === 'made' ? (getStat(event.stat)?.points ?? 0) : 0;
-      const who = `${player?.number ? `#${player.number} ` : ''}${player?.name ?? 'Unknown player'}`;
+    const points = eventPoints(event);
+      const who = player
+        ? `${player.number ? `#${player.number} ` : ''}${player.name}`
+        : 'TEAM';
 
       return `
-        <li class="log__row" style="--accent: ${accentFor(event.teamId)}">
-          <span class="log__period">${escapeHtml(periodLabel(event.period, game.periodsPerGame))}</span>
+        <li class="log__row${player ? '' : ' log__row--team'}" style="--accent: ${accentFor(event.teamId)}">
           <span class="log__time">${escapeHtml(eventClock(clockface.elapsedInPeriod(game, event)))}</span>
+          <span class="log__period">${escapeHtml(periodLabel(event.period, game.periodsPerGame))}</span>
           <span class="log__who">${escapeHtml(who)}</span>
           <span class="log__what">${escapeHtml(describeEvent(event.stat, event.result))}</span>
           <span class="log__points">${points > 0 ? `+${points}` : ''}</span>
-          ${reassignSelect(event)}
+          ${player ? reassignSelect(event) : '<span class="log__reassign"></span>'}
           <button type="button" class="log__delete" data-action="delete-event"
                   data-event-id="${escapeHtml(event.id)}"
                   aria-label="Delete this entry">&times;</button>
@@ -447,10 +597,8 @@ function renderBox(derived) {
   const columns = [
     ['PTS', (l) => l.points],
     ['FG', (l) => madeAttempted(l.fgMade, l.fgAtt)],
-    ['FG%', (l) => pct(l.fgPct)],
     ['3P', (l) => madeAttempted(l['3PT'].made, l['3PT'].made + l['3PT'].missed)],
     ['FT', (l) => madeAttempted(l.ftMade, l.ftAtt)],
-    ['FT%', (l) => pct(l.ftPct)],
     ['REB', (l) => l.reb],
     ['OREB', (l) => l.rebOff],
     ['DREB', (l) => l.rebDef],
@@ -465,6 +613,12 @@ function renderBox(derived) {
     .map(([label]) => `<th>${label}</th>`)
     .join('')}</tr></thead>`;
 
+  const currentTeamId = teamIdFor(detailTeamSlot);
+  const currentCount = playersOf(game, currentTeamId).length;
+  $('box-team-name').textContent = `${safeText(game.teams[currentTeamId]?.name) || 'Team'} · ${currentCount} player${
+    currentCount === 1 ? '' : 's'
+  }`;
+
   const body = [game.awayTeamId, game.homeTeamId]
     .filter(Boolean)
     .map((teamId) => {
@@ -472,9 +626,12 @@ function renderBox(derived) {
       const roster = playersOf(game, teamId);
       const teamLineValues = derived.teamTotals[teamId] || teamLine(game, teamId);
 
-      const heading = `<tr class="team-heading"><td colspan="${columns.length + 1}">${escapeHtml(
-        team?.name || 'Team',
-      )}</td></tr>`;
+      // Both teams stay in one table so the two totals can be read against each
+      // other; the heading of the team being entered is marked so it is obvious
+      // where the next tap will land.
+      const heading = `<tr class="team-heading${
+        teamId === currentTeamId ? ' is-current' : ''
+      }"><td colspan="${columns.length + 1}">${escapeHtml(team?.name || 'Team')}</td></tr>`;
 
       const playerRows = roster
         .map((player) => {
@@ -544,12 +701,27 @@ function renderFooter() {
       }>${escapeHtml(length.label)}</option>`,
   ).join('');
 
+  // The strip above the sheet is a read-out, not a form. Everything editable
+  // lives in the settings dialog; these pills only say what the game is, and
+  // tapping one opens the dialog on the matching question.
+  $('game-date-display').textContent = displayDate(game.date) || '—';
+  $('game-time-display').textContent = displayTime(game.time) || '—';
+  $('game-venue-display').textContent = safeText(game.venue) || '—';
+  $('game-structure-display').textContent =
+    structureLabel(game.periodsPerGame, game.periodSeconds) || '—';
+  $('game-status').textContent = `${game.events.length} entr${
+    game.events.length === 1 ? 'y' : 'ies'
+  }`;
+
   // Shown so a stale cached bundle is obvious at a glance when something looks
   // out of date. The build stamp is the discriminator: if you are expecting a
   // fix and this still reads the old stamp, the browser is running old code.
   const version = document.querySelector('meta[name="app-version"]')?.content;
   const build = document.querySelector('meta[name="app-build"]')?.content;
-  $('app-version').textContent = version ? `v${version}${build ? ` · ${build}` : ''}` : '';
+  const stamp = version ? `v${version}${build ? ` · ${build}` : ''}` : '';
+
+  $('app-version').textContent = stamp;
+  $('about-version').textContent = stamp;
 }
 
 /**
@@ -1229,6 +1401,127 @@ function ensureClockTicking() {
 }
 
 // ---------------------------------------------------------------------------
+// The More menu and the dialogs it opens
+// ---------------------------------------------------------------------------
+
+/** Every dialog in this app is a plain element that is either hidden or not. */
+function openDialog(id) {
+  $(id).hidden = false;
+}
+
+function closeDialogs() {
+  for (const id of ['settings-dialog', 'summary-dialog', 'about-dialog']) {
+    $(id).hidden = true;
+  }
+}
+
+function closeMenu() {
+  const menu = $('more-menu');
+  if (menu.hidden) return;
+  menu.hidden = true;
+  $('more-button').setAttribute('aria-expanded', 'false');
+}
+
+function toggleMenu() {
+  const menu = $('more-menu');
+  const opening = menu.hidden;
+  menu.hidden = !opening;
+  $('more-button').setAttribute('aria-expanded', String(opening));
+  if (opening) renderMenuState();
+}
+
+/**
+ * Say whether the import/export bar is showing.
+ *
+ * The menu item toggles the bar rather than opening something, so it carries
+ * its own state: a menu entry that looks like the others but leaves a mark
+ * elsewhere on the screen is otherwise impossible to read.
+ */
+function renderMenuState() {
+  const bar = $('actionbar');
+  $('menu-files-state').textContent = bar.hidden ? 'Hidden' : 'Shown';
+}
+
+// ---------------------------------------------------------------------------
+// The game summary
+// ---------------------------------------------------------------------------
+
+/**
+ * The third reading of the same entries: the quarter grid and the leading
+ * scorers, for the moment at the end of a game when someone asks how it went.
+ *
+ * It is computed on open rather than kept up to date, because it is only ever
+ * looked at — nothing here can be tapped.
+ */
+function renderSummary() {
+  const derived = computeGame(game);
+  const periods = listPeriods(game);
+
+  const gridHead = `<thead><tr><th>Team</th>${periods
+    .map((p) => `<th>${escapeHtml(periodLabel(p, game.periodsPerGame))}</th>`)
+    .join('')}<th>Total</th></tr></thead>`;
+
+  const gridBody = `<tbody>${derived.grid.rows
+    .map((row) => {
+      const team = game.teams[row.teamId];
+      const cells = row.cells.map((cell) => `<td>${escapedNumber(cell.value)}</td>`).join('');
+
+      return `<tr>
+        <td class="js-name" style="--accent: ${accentFor(row.teamId)}">
+          <span class="sheet__team-dot" aria-hidden="true"></span>${escapeHtml(team?.name || 'Team')}
+        </td>
+        ${cells}
+        <td class="row--team-total">${escapedNumber(row.total)}</td>
+      </tr>`;
+    })
+    .join('')}</tbody>`;
+
+  const scorers = [game.awayTeamId, game.homeTeamId]
+    .filter(Boolean)
+    .map((teamId) => {
+      const team = game.teams[teamId];
+      const ranked = playersOf(game, teamId)
+        .map((player) => ({ player, line: derived.playerLines[player.id] }))
+        .filter((entry) => entry.line && entry.line.points > 0)
+        .sort((a, b) => b.line.points - a.line.points || a.player.name.localeCompare(b.player.name))
+        .slice(0, 3);
+
+      const items = ranked.length
+        ? ranked
+            .map(
+              (entry) => `<li>
+                <span class="summary__num">${
+                  escapeHtml(entry.player.number) ? `#${escapeHtml(entry.player.number)}` : '—'
+                }</span>
+                <span class="summary__name">${escapeHtml(entry.player.name)}</span>
+                <span class="summary__pts">${entry.line.points}</span>
+              </li>`,
+            )
+            .join('')
+        : '<li class="summary__none">No points recorded.</li>';
+
+      return `<div class="summary__team">
+        <h3 class="summary__heading" style="--accent: ${accentFor(teamId)}">${escapeHtml(
+          team?.name || 'Team',
+        )}</h3>
+        <ol class="summary__list">${items}</ol>
+      </div>`;
+    })
+    .join('');
+
+  const line = (teamId) =>
+    `<span class="summary__side" style="--accent: ${accentFor(teamId)}">
+      <span class="summary__side-name">${escapeHtml(game.teams[teamId]?.name || 'Team')}</span>
+      <span class="summary__side-score">${derived.scores[teamId] ?? 0}</span>
+    </span>`;
+
+  $('summary-body').innerHTML = `
+    <div class="summary__score">${line(game.awayTeamId)}${line(game.homeTeamId)}</div>
+    <div class="table-scroll"><table class="summary__grid">${gridHead}${gridBody}</table></div>
+    <div class="summary__teams">${scorers}</div>`;
+}
+
+// ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
 
@@ -1239,6 +1532,13 @@ document.addEventListener('click', (event) => {
     return;
   }
 
+  // Anything outside the More menu dismisses it, the way a menu is expected to
+  // behave. Checked before the action lookup so clicking another tool closes
+  // the menu and still runs that tool.
+  if (!event.target.closest('#more-menu') && !event.target.closest('#more-button')) {
+    closeMenu();
+  }
+
   const target = event.target.closest('[data-action]');
   if (!target) return;
   const action = target.dataset.action;
@@ -1246,6 +1546,50 @@ document.addEventListener('click', (event) => {
   switch (action) {
     case 'log-stat':
       logStat(target.dataset.playerId, target.dataset.stat, target.dataset.result);
+      break;
+    case 'toggle-expand': {
+      const panel = target.dataset.panel;
+      expandedPanel = expandedPanel === panel ? null : panel;
+      render();
+      break;
+    }
+    case 'key-smaller':
+    case 'key-larger': {
+      const step = KEY_SIZES.indexOf(keySize) + (action === 'key-larger' ? 1 : -1);
+      keySize = KEY_SIZES[Math.min(KEY_SIZES.length - 1, Math.max(0, step))];
+      render();
+      break;
+    }
+    case 'toggle-menu':
+      toggleMenu();
+      break;
+    case 'open-settings':
+      closeMenu();
+      openDialog('settings-dialog');
+      break;
+    case 'focus-roster': {
+      // "Manage players" has no dialog of its own: the roster bar is already
+      // on screen, so the useful thing is to put the cursor in it.
+      closeMenu();
+      const field = $('team-name-input');
+      field.focus();
+      field.select();
+      break;
+    }
+    case 'toggle-actionbar': {
+      const bar = $('actionbar');
+      bar.hidden = !bar.hidden;
+      renderMenuState();
+      break;
+    }
+    case 'open-summary':
+      closeMenu();
+      renderSummary();
+      openDialog('summary-dialog');
+      break;
+    case 'open-about':
+      closeMenu();
+      openDialog('about-dialog');
       break;
     case 'undo':
       performUndo();
@@ -1343,6 +1687,7 @@ document.addEventListener('click', (event) => {
       confirmLoadTeam();
       break;
     case 'close-dialog':
+      closeDialogs();
       closeImportDialogs();
       break;
     case 'open-paste-roster':
@@ -1373,11 +1718,24 @@ document.addEventListener(
 
 // Enter commits a cell edit instead of adding a newline.
 document.addEventListener('keydown', (event) => {
-  // Escape closes the import confirmation, discarding the picked file.
-  // Escape closes whichever import dialog is open, discarding what it holds.
+  // Escape closes whichever dialog is open, discarding what it holds.
   const importing = !$('load-team-dialog').hidden || !$('paste-roster-dialog').hidden;
-  if (event.key === 'Escape' && importing && !clockIsBeingEdited()) {
+  const viewing = ['settings-dialog', 'summary-dialog', 'about-dialog'].some(
+    (id) => !$(id).hidden,
+  );
+
+  if (event.key === 'Escape' && (importing || viewing || !$('more-menu').hidden) && !clockIsBeingEdited()) {
+    closeDialogs();
     closeImportDialogs();
+    closeMenu();
+    return;
+  }
+
+  // Escape also gives the workspace its second column back, so a scorer who
+  // expanded a panel can leave it the same way they leave a dialog.
+  if (event.key === 'Escape' && expandedPanel && !clockIsBeingEdited()) {
+    expandedPanel = null;
+    render();
     return;
   }
 
@@ -1395,6 +1753,15 @@ document.addEventListener('keydown', (event) => {
       event.target.blur();
       return;
     }
+  }
+
+  // Enter takes the team total as typed. `change` would only fire on the way
+  // out, and a scorer who has just typed a number expects it to land.
+  if (event.target.id === 'teamtotal-input' && event.key === 'Enter') {
+    event.preventDefault();
+    commitTeamTotal(event.target.value);
+    event.target.blur();
+    return;
   }
 
   // Undo the last entry: the most important shortcut in the app.
@@ -1428,6 +1795,11 @@ document.addEventListener('change', (event) => {
     });
     save();
     render();
+    return;
+  }
+
+  if (id === 'teamtotal-input') {
+    commitTeamTotal(event.target.value);
     return;
   }
 

@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.5.5">
-<meta name="app-build" content="2026-09-29n">
+<meta name="app-version" content="0.15.0">
+<meta name="app-build" content="2026-10-01r">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -24,92 +24,184 @@
 </div>
 
 <!-- =====================================================================
-     Scoreboard header
+     Scoreboard header.
+
+     Shaped like the clock on a gym wall: the away side reads outward to the
+     left, the home side outward to the right, and the period and clock sit
+     dead centre between them. The whole bar is one row, so the numbers stay
+     in the same place no matter which panel is scrolled.
+
+     Undo lives here rather than beside the entry rows: the bar never moves,
+     so the correction for a mis-tap is always in reach.
      ===================================================================== -->
 <header class="scoreboard" id="scoreboard">
   <div class="scoreboard__inner">
-    <div class="scoreboard__team scoreboard__team--away">
-      <span class="scoreboard__slot">Away</span>
-      <span class="scoreboard__name" id="score-away-name">Away</span>
-      <span class="scoreboard__score" id="score-away">0</span>
-    </div>
+
+    <button type="button" class="team-block team-block--away" id="team-block-away"
+            data-action="select-team" data-team-slot="away"
+            title="Show the away team's roster and stats">
+      <span class="team-block__text">
+        <span class="team-block__name" id="score-away-name">Away</span>
+        <span class="team-block__meta">
+          <span class="team-block__slot">Away</span>
+          <span class="team-block__sep" aria-hidden="true">&middot;</span>
+          <span class="team-block__abbrev" id="score-away-abbrev">AWY</span>
+        </span>
+      </span>
+      <span class="team-block__score" id="score-away">0</span>
+    </button>
 
     <div class="scoreboard__center">
-      <div class="scoreboard__clock" id="clock-display" contenteditable="false"
-           role="textbox" aria-label="Game clock, editable"
-           title="Click to type a time, e.g. 7:30">00:00</div>
-      <div class="scoreboard__period" id="period-display">Q1</div>
-      <div class="scoreboard__controls">
-        <button type="button" class="btn btn--ghost btn--sm" data-action="toggle-clock" id="clock-toggle">
-          Start clock
-        </button>
-        <button type="button" class="btn btn--ghost btn--sm" data-action="edit-clock"
-                title="Pause and type a clock time, e.g. 7:30">
-          Edit
-        </button>
-        <button type="button" class="btn btn--ghost btn--sm" data-action="reset-clock"
-                title="Reset the clock to the start of this period">
-          Reset
-        </button>
-        <button type="button" class="btn btn--ghost btn--sm" data-action="period-prev" aria-label="Previous period">&minus;</button>
-        <button type="button" class="btn btn--ghost btn--sm" data-action="period-next" aria-label="Next period">+</button>
-        <!-- Undo lives here rather than beside the entry rows: the bar is
-             sticky, so the correction for a mis-tap is always in reach no
-             matter how far the page is scrolled. -->
-        <button type="button" class="btn btn--primary btn--sm" data-action="undo" id="undo-button"
-                title="Undo the last entry (Ctrl/Cmd + Z)" disabled>Undo</button>
+      <div class="clock-card">
+        <div class="clock-card__row">
+          <div class="period-pill">
+            <button type="button" class="period-pill__step" data-action="period-prev"
+                    aria-label="Previous period" title="Previous period">&#8249;</button>
+            <span class="scoreboard__period" id="period-display">Q1</span>
+            <button type="button" class="period-pill__step" data-action="period-next"
+                    aria-label="Next period" title="Next period">&#8250;</button>
+          </div>
+
+          <!-- The clock face is the edit affordance as well as the readout: tap
+               it and type. data-action="edit-clock" keeps a hook for the
+               keyboard route too. The dot is the "is it running" tell. -->
+          <div class="clock-box">
+            <span class="clock-box__dot" id="clock-dot" aria-hidden="true"></span>
+            <div class="scoreboard__clock" id="clock-display" contenteditable="false"
+                 role="textbox" aria-label="Game clock, editable" data-action="edit-clock"
+                 title="Tap to type a time, e.g. 7:30">00:00</div>
+          </div>
+        </div>
+
+        <button type="button" class="clock-toggle" data-action="toggle-clock" id="clock-toggle">Start</button>
       </div>
     </div>
 
-    <div class="scoreboard__team scoreboard__team--home">
-      <span class="scoreboard__slot">Home</span>
-      <span class="scoreboard__name" id="score-home-name">Home</span>
-      <span class="scoreboard__score" id="score-home">0</span>
+    <button type="button" class="team-block team-block--home" id="team-block-home"
+            data-action="select-team" data-team-slot="home"
+            title="Show the home team's roster and stats">
+      <span class="team-block__score" id="score-home">0</span>
+      <span class="team-block__text">
+        <span class="team-block__name" id="score-home-name">Home</span>
+        <span class="team-block__meta">
+          <span class="team-block__slot">Home</span>
+          <span class="team-block__sep" aria-hidden="true">&middot;</span>
+          <span class="team-block__abbrev" id="score-home-abbrev">HOM</span>
+        </span>
+      </span>
+    </button>
+
+    <div class="topbar__tools">
+      <button type="button" class="icon-btn" data-action="undo" id="undo-button"
+              title="Undo the last entry (Ctrl/Cmd + Z)" disabled>
+        <span class="icon-btn__glyph" aria-hidden="true">&#8630;</span>
+        <span class="icon-btn__label">Undo</span>
+      </button>
+      <button type="button" class="icon-btn" data-action="reset-clock"
+              title="Reset the clock to the start of this period">
+        <span class="icon-btn__glyph" aria-hidden="true">&#8635;</span>
+        <span class="icon-btn__label">Reset</span>
+      </button>
+
+      <!-- The menu is the room the top bar does not have: setup, roster work
+           and the way out to a file all live one tap behind it, so the bar
+           itself stays four buttons wide. -->
+      <div class="menu">
+        <button type="button" class="icon-btn" data-action="toggle-menu" id="more-button"
+                aria-haspopup="true" aria-expanded="false" aria-controls="more-menu"
+                title="More tools">
+          <span class="icon-btn__glyph" aria-hidden="true">&#8943;</span>
+          <span class="icon-btn__label">More</span>
+        </button>
+        <div class="menu__panel" id="more-menu" role="menu" aria-labelledby="more-button" hidden>
+          <button type="button" class="menu__item" role="menuitem" data-action="open-settings">
+            <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.6"/><path d="M8 1.2v1.9M8 12.9v1.9M1.2 8h1.9M12.9 8h1.9M3.2 3.2l1.3 1.3M11.5 11.5l1.3 1.3M12.8 3.2l-1.3 1.3M4.5 11.5l-1.3 1.3"/></svg>
+            <span class="menu__text">
+              <span class="menu__label">Game settings</span>
+              <span class="menu__sub">Date, time, venue, quarter length&hellip;</span>
+            </span>
+          </button>
+          <button type="button" class="menu__item" role="menuitem" data-action="focus-roster">
+            <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6" cy="5.4" r="2.6"/><path d="M1.4 13.6c0-2.5 2-4.1 4.6-4.1s4.6 1.6 4.6 4.1"/><path d="M11.2 3.4a2.6 2.6 0 0 1 0 4.9"/></svg>
+            <span class="menu__text">
+              <span class="menu__label">Manage players</span>
+              <span class="menu__sub">Add players and jersey numbers&hellip;</span>
+            </span>
+          </button>
+          <button type="button" class="menu__item" role="menuitem" data-action="toggle-actionbar" id="menu-toggle-files">
+            <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10.6V1.8M5.2 4.6 8 1.8l2.8 2.8"/><path d="M2 11v2.6h12V11"/></svg>
+            <span class="menu__text">
+              <span class="menu__label">Import / export</span>
+              <span class="menu__sub">CSV, JSON and team files&hellip;</span>
+            </span>
+            <span class="menu__state" id="menu-files-state">Shown</span>
+          </button>
+          <button type="button" class="menu__item" role="menuitem" data-action="open-summary">
+            <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13.4V2.6M2 13.4h12"/><path d="M4.6 11.2 7.4 6.9l2.2 2.2 3-4.4"/></svg>
+            <span class="menu__text">
+              <span class="menu__label">View game summary</span>
+              <span class="menu__sub">Quarter grid and leading scorers</span>
+            </span>
+          </button>
+          <button type="button" class="menu__item" role="menuitem" data-action="open-about">
+            <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M6.1 6.2a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4"/><circle cx="8" cy="11.6" r="0.9" fill="currentColor" stroke="none"/></svg>
+            <span class="menu__text">
+              <span class="menu__label">Help &amp; about</span>
+              <span class="menu__sub">Shortcuts and where data lives</span>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <button type="button" class="icon-btn" data-action="open-settings" id="settings-button"
+              title="Date, time, venue and period length">
+        <span class="icon-btn__glyph" aria-hidden="true">&#9881;</span>
+        <span class="icon-btn__label">Settings</span>
+      </button>
     </div>
   </div>
 </header>
 
 <!-- =====================================================================
-     Game details: the settings that decide what everything below shows —
-     the date, time and venue on the scoresheet, and the period structure and
-     length that the quarter strip and every panel read. Placed directly
-     under the scoreboard so the game's shape is set before the things that
-     depend on it, and kept out of the panels so all seven controls fit on one
-     row without any panel shrinking to make space.
+     Game details. The strip is a readout, not a form: the four pills say
+     what game this is and how long it runs, and tapping any of them opens
+     the one dialog that edits them. Editing a date is a before-the-game
+     job, so it should not cost a row of permanent screen to a scorer.
      ===================================================================== -->
 <section class="game-details" aria-label="Game details">
-  <span class="game-details__label">Game</span>
-  <label class="field">
-    <span class="field__label">Date</span>
-    <input type="date" id="game-date">
-  </label>
-  <label class="field">
-    <span class="field__label">Time</span>
-    <input type="time" id="game-time">
-  </label>
-  <label class="field">
-    <span class="field__label">Venue</span>
-    <input type="text" id="game-venue" autocomplete="off">
-  </label>
-  <label class="field field--short">
-    <span class="field__label">Periods</span>
-    <select id="game-periods">
-      <option value="4">4 quarters</option>
-      <option value="2">2 halves</option>
-    </select>
-  </label>
-  <label class="field">
-    <span class="field__label">Period length</span>
-    <select id="game-period-length"></select>
-  </label>
-  <button type="button" class="btn btn--ghost btn--sm" data-action="new-game">Start a blank game</button>
-  <button type="button" class="btn btn--ghost btn--sm" data-action="load-sample">Reload the sample game</button>
+  <div class="tabs" role="tablist" aria-label="Choose a team">
+    <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="away" id="team-tab-away">
+      Away
+    </button>
+    <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="home" id="team-tab-home">
+      Home
+    </button>
+  </div>
+
+  <button type="button" class="pill" data-action="open-settings" title="Change the game date">
+    <span class="pill__glyph" aria-hidden="true">&#128197;</span>
+    <span class="pill__text" id="game-date-display">&mdash;</span>
+  </button>
+  <button type="button" class="pill" data-action="open-settings" title="Change the tip-off time">
+    <span class="pill__glyph" aria-hidden="true">&#128340;</span>
+    <span class="pill__text" id="game-time-display">&mdash;</span>
+  </button>
+  <button type="button" class="pill pill--grow" data-action="open-settings" title="Change the venue">
+    <span class="pill__glyph" aria-hidden="true">&#128205;</span>
+    <span class="pill__text" id="game-venue-display">&mdash;</span>
+  </button>
+  <button type="button" class="pill" data-action="open-settings" title="Change the period structure">
+    <span class="pill__text" id="game-structure-display">&mdash;</span>
+  </button>
+
+  <span class="game-details__spacer"></span>
+  <span class="game-details__hint" id="game-status"></span>
 </section>
 
 <!-- =====================================================================
-     Quarter totals: a thin strip under the scoreboard, deliberately NOT
-     sticky. The HOME/AWAY bar is sticky, so every pixel it takes is gone
-     from the scoring area below forever; this scrolls away instead.
+     Quarter totals: a thin strip under the settings, deliberately NOT
+     sticky. Every pixel the fixed bars take is gone from the scoring area
+     below forever; this one stays compact.
      ===================================================================== -->
 <section class="quarters" aria-label="Quarter scores">
   <div class="table-scroll">
@@ -118,112 +210,199 @@
   <p class="sheet__note" id="warning-note" hidden></p>
 </section>
 
-<main class="workspace">
-
   <!-- ===================================================================
        Roster bar. The roster used to hold a permanent 320px column, which
        was width the entry row and the box score needed more. It is now a
-       horizontal strip, kept next to the entry rows because setting up the
-       two teams is the first thing a scorer does.
+       horizontal strip above the workspace: it belongs with the rest of the
+       setup, and the page's own scroll carries it away so the entry rows get
+       the whole screen.
        =================================================================== -->
-  <section class="rosterbar" aria-label="Roster">
-    <div class="rosterbar__group rosterbar__group--team">
-      <div class="tabs" role="tablist" aria-label="Choose a team">
-        <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="away" id="team-tab-away">
-          Away
-        </button>
-        <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="home" id="team-tab-home">
-          Home
-        </button>
-      </div>
+  <section class="rosterbar" aria-label="Roster" id="rosterbar">
+    <label class="field">
+      <span class="field__label">Team name</span>
+      <input type="text" id="team-name-input" autocomplete="off" spellcheck="false">
+    </label>
+    <label class="field field--short">
+      <span class="field__label">Abbrev.</span>
+      <input type="text" id="team-abbrev-input" maxlength="4" autocomplete="off" spellcheck="false">
+    </label>
 
-      <label class="field">
-        <span class="field__label">Team name</span>
-        <input type="text" id="team-name-input" autocomplete="off" spellcheck="false">
-      </label>
-      <label class="field field--short">
-        <span class="field__label">Abbrev.</span>
-        <input type="text" id="team-abbrev-input" maxlength="4" autocomplete="off" spellcheck="false">
-      </label>
-    </div>
+    <form class="add-player" id="add-player-form" autocomplete="off">
+      <input type="text" inputmode="numeric" id="new-number" class="add-player__number"
+             placeholder="No." aria-label="Jersey number" maxlength="3">
+      <input type="text" id="new-name" class="add-player__name"
+             placeholder="Player name" aria-label="Player name">
+      <button type="submit" class="btn btn--primary btn--sm">Add</button>
+    </form>
 
     <!-- Bulk removal. The select-all box and the count are static so a
          re-render can update them in place instead of replacing them. The
          per-player boxes live on the entry rows, where the players are. -->
-    <div class="rosterbar__group rosterbar__group--bulk">
-      <div class="roster__toolbar" id="roster-toolbar">
-        <label class="roster__select-all">
-          <input type="checkbox" id="roster-select-all" data-action="toggle-all-players">
-          <span>Select all</span>
-        </label>
-        <span class="roster__toolbar-count" id="roster-selection-count"></span>
-        <button type="button" id="roster-remove-selected" class="btn btn--sm roster__remove-selected"
-                data-action="remove-selected-players">Remove</button>
-      </div>
-    </div>
-
-    <div class="rosterbar__group rosterbar__group--add">
-      <form class="add-player" id="add-player-form" autocomplete="off">
-        <input type="text" inputmode="numeric" id="new-number" class="add-player__number"
-               placeholder="No." aria-label="Jersey number" maxlength="3">
-        <input type="text" id="new-name" class="add-player__name"
-               placeholder="Player name" aria-label="Player name">
-        <button type="submit" class="btn btn--primary">Add</button>
-      </form>
+    <div class="roster__toolbar" id="roster-toolbar">
+      <label class="roster__select-all">
+        <input type="checkbox" id="roster-select-all" data-action="toggle-all-players">
+        <span>Select all</span>
+      </label>
+      <span class="roster__toolbar-count" id="roster-selection-count"></span>
+      <button type="button" id="roster-remove-selected" class="btn btn--sm btn--danger-ghost roster__remove-selected"
+              data-action="remove-selected-players">Remove</button>
     </div>
   </section>
+
+<main class="workspace" id="workspace">
 
   <!-- ===================================================================
-       Live entry. All three panels are always on screen — the tabs that
-       used to hide two of them are gone, because a scorer needs the log and
-       the box score visible while tapping.
+       Left column: live entry. Every player's whole stat line is one row, so
+       a scorer reads down a single column instead of hunting across cards.
        =================================================================== -->
-  <section class="panel panel--entry" aria-label="Live entry">
-    <div class="panel__header">
-      <h2 class="panel__title">Live entry</h2>
-    </div>
-    <div class="panel__body">
-      <p class="hint">
-        One tap records one stat. Points on the board come from these entries, so the
-        quarter score and the box score can never disagree.
-      </p>
-      <div class="player-cards" id="player-cards"></div>
-    </div>
-  </section>
-
-  <!-- =================================================================== -->
-  <section class="panel panel--log" aria-label="Play-by-play">
-    <div class="panel__header">
-      <h2 class="panel__title">Play-by-play</h2>
-    </div>
-    <div class="panel__body">
-      <p class="hint">
-        Newest first. Delete an entry here to correct a mistake found later — every total
-        recomputes.
-      </p>
-      <ol class="log" id="log-list"></ol>
-    </div>
-  </section>
-
-  <!-- =================================================================== -->
-  <section class="panel panel--box" aria-label="Box score">
-    <div class="panel__header">
-      <h2 class="panel__title">Box score</h2>
-    </div>
-    <div class="panel__body">
-      <div class="table-scroll">
-        <table class="box-score" id="box-table"></table>
+  <div class="ws__left">
+    <section class="panel panel--entry" aria-label="Live entry" id="panel-entry">
+      <div class="panel__header">
+        <div class="panel__heading">
+          <h2 class="panel__title">Live entry</h2>
+          <span class="panel__hint">One tap records one stat</span>
+        </div>
+        <div class="panel__tools">
+          <button type="button" class="panel-tool" data-action="key-smaller" data-panel="entry"
+                  id="key-down-entry" aria-label="Smaller keys" title="Smaller keys">&minus;</button>
+          <button type="button" class="panel-tool" data-action="key-larger" data-panel="entry"
+                  id="key-up-entry" aria-label="Larger keys" title="Larger keys">+</button>
+          <button type="button" class="panel-tool" data-action="toggle-expand" data-panel="entry"
+                  id="expand-entry" aria-pressed="false"
+                  aria-label="Full width" title="Full width">
+            <svg class="panel-tool__glyph" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/></svg>
+          </button>
+        </div>
       </div>
+      <div class="panel__body">
+        <div class="table-scroll table-scroll--entry">
+          <table class="entry" id="entry-table">
+            <!-- Fixed widths for the three leading columns and an equal share of
+                 whatever is left for the thirteen keys, so the matrix fits the
+                 panel instead of running off the side of it. -->
+            <colgroup>
+              <col class="entry__col--check">
+              <col class="entry__col--who">
+              <col class="entry__col--key" span="13">
+            </colgroup>
+            <thead>
+              <tr class="entry__groups">
+                <th class="entry__num" rowspan="2" scope="col">#</th>
+                <th class="entry__who" rowspan="2" scope="col">Player</th>
+                <th class="entry__group entry__group--scoring" colspan="6" scope="colgroup">Scoring</th>
+                <!-- Rebounding keeps its two halves. The mockup shows a single
+                     REB key, but splitting it is the difference between a real
+                     rebound count and a guess, so O-Reb earns its column. -->
+                <th class="entry__group entry__group--other" colspan="7" scope="colgroup">Other stats</th>
+              </tr>
+              <tr class="entry__keys">
+                <th scope="col" class="entry__key--scoring">+2</th>
+                <th scope="col" class="entry__key--scoring">+3</th>
+                <th scope="col" class="entry__key--scoring">+1</th>
+                <!-- One heading over the three misses, one column each, so the
+                     heading and the buttons below it line up. -->
+                <th scope="col" class="entry__key--scoring" colspan="3">Miss</th>
+                <th scope="col" class="entry__key--other">Reb</th>
+                <th scope="col" class="entry__key--other">O-Reb</th>
+                <th scope="col" class="entry__key--other">Ast</th>
+                <th scope="col" class="entry__key--other">Stl</th>
+                <th scope="col" class="entry__key--other">Blk</th>
+                <th scope="col" class="entry__key--other">To</th>
+                <th scope="col" class="entry__key--other">Pf</th>
+              </tr>
+            </thead>
+            <tbody id="player-cards"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- The other side of the scoresheet. A scorer following one team's players
+         still needs the other team's score, and typing the number already on the
+         board is quicker than tapping its baskets one at a time. It applies to
+         the team the Away / Home tabs have selected, so it works for either. -->
+    <div class="teamtotal" id="teamtotal">
+      <label class="teamtotal__label" for="teamtotal-input">
+        <span class="teamtotal__title">Team total</span>
+        <span class="teamtotal__period" id="teamtotal-period">Q1</span>
+      </label>
+      <input type="number" inputmode="numeric" min="0" step="1" id="teamtotal-input"
+             class="teamtotal__input" placeholder="—" autocomplete="off"
+             title="The points this team has scored in this period"
+             aria-label="Points this team has scored in this period">
+      <span class="teamtotal__hint">for the period, as shown on the scoreboard</span>
     </div>
-  </section>
+  </div>
+
+  <!-- ===================================================================
+       Right column: the running record. The log answers "what just
+       happened?", the box score answers "where does it stand?".
+       =================================================================== -->
+  <div class="ws__right">
+    <section class="panel panel--log" aria-label="Play-by-play" id="panel-log">
+      <div class="panel__header">
+        <div class="panel__heading">
+          <h2 class="panel__title">Play-by-play</h2>
+          <span class="panel__hint">Latest first</span>
+        </div>
+        <div class="panel__tools">
+          <button type="button" class="panel-tool" data-action="toggle-expand" data-panel="log"
+                  id="expand-log" aria-pressed="false"
+                  aria-label="Full width" title="Full width">
+            <svg class="panel-tool__glyph" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="log__head" aria-hidden="true">
+        <span>Time</span><span>Q</span><span>Player</span><span></span>
+      </div>
+      <div class="panel__body">
+        <ol class="log" id="log-list"></ol>
+      </div>
+    </section>
+
+    <section class="panel panel--box" aria-label="Box score" id="panel-box">
+      <div class="panel__header">
+        <div class="panel__heading">
+          <h2 class="panel__title">Box score</h2>
+          <span class="panel__hint">Both teams, every column</span>
+        </div>
+        <div class="panel__tools">
+          <button type="button" class="panel-tool" data-action="toggle-expand" data-panel="box"
+                  id="expand-box" aria-pressed="false"
+                  aria-label="Full width" title="Full width">
+            <svg class="panel-tool__glyph" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel__subhead">
+        <span class="panel__subtitle" id="box-team-name">&mdash;</span>
+        <div class="tabs tabs--sm" role="tablist" aria-label="Box score team">
+          <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="away" id="box-tab-away">
+            Away
+          </button>
+          <button type="button" class="tab" role="tab" data-action="select-team" data-team-slot="home" id="box-tab-home">
+            Home
+          </button>
+        </div>
+      </div>
+      <div class="panel__body">
+        <div class="table-scroll">
+          <table class="box-score" id="box-table"></table>
+        </div>
+      </div>
+    </section>
+  </div>
 </main>
 
 <!-- =====================================================================
      The bottom strip: everything that gets data in or out of the app.
      Exports and team files both answer "how do I get this elsewhere?", so
      they live together in one horizontal bar rather than inside panels.
+     The bar collapses from the More menu so the scoring area can have the
+     room back on a short screen.
      ===================================================================== -->
-<section class="actionbar" aria-label="Export and team files">
+<section class="actionbar" id="actionbar" aria-label="Export and team files" hidden>
   <div class="actionbar__group actionbar__group--export">
     <h2 class="actionbar__title"
         title="The only durable copy — clearing this browser's site data erases the game.">
@@ -263,7 +442,7 @@
         Load team&hellip;
       </button>
       <button type="button" class="btn btn--sm btn--ghost" data-action="open-paste-roster"
-              title="Paste a roster copied from a spreadsheet or a message.">
+              title="Paste a roster copied from a spreadsheet or message.">
         Paste roster&hellip;
       </button>
     </div>
@@ -281,6 +460,111 @@
      ===================================================================== -->
 <input type="file" id="team-file-input" accept="application/json,.json,.csv,.txt,text/csv,text/plain" hidden>
 <input type="file" id="roster-file-input" accept=".csv,.txt,text/csv,text/plain" hidden>
+
+<!-- =====================================================================
+     Game settings. Everything the strip below the scoreboard only reports
+     is edited here: the four facts that decide what the scoresheet says and
+     how long the game runs, plus the two ways to start over.
+     ===================================================================== -->
+<div class="dialog" id="settings-dialog" role="dialog" aria-modal="true"
+     aria-labelledby="settings-title" hidden>
+  <div class="dialog__panel">
+    <h2 class="dialog__title" id="settings-title">Game settings</h2>
+    <div class="settings-grid">
+      <label class="field">
+        <span class="field__label">Date</span>
+        <input type="date" id="game-date">
+      </label>
+      <label class="field">
+        <span class="field__label">Time</span>
+        <input type="time" id="game-time">
+      </label>
+      <label class="field field--wide">
+        <span class="field__label">Venue</span>
+        <input type="text" id="game-venue" autocomplete="off" placeholder="Where is it being played?">
+      </label>
+      <label class="field">
+        <span class="field__label">Periods</span>
+        <select id="game-periods">
+          <option value="4">4 quarters</option>
+          <option value="2">2 halves</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">Period length</span>
+        <select id="game-period-length"></select>
+      </label>
+    </div>
+    <p class="hint">
+      Changing the period structure re-labels the quarter strip; it never moves
+      a stat that is already logged.
+    </p>
+    <div class="dialog__actions dialog__actions--split">
+      <button type="button" class="btn btn--danger-ghost btn--sm" data-action="new-game"
+              title="Start a blank game. This cannot be undone.">Start a blank game</button>
+      <button type="button" class="btn btn--danger-ghost btn--sm" data-action="load-sample"
+              title="Replace this game with the sample one. This cannot be undone.">Reload the sample game</button>
+      <span class="dialog__spacer"></span>
+      <button type="button" class="btn btn--primary" data-action="close-dialog" id="settings-done">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     Game summary: the same events the strip and the box score show, read
+     the third way — per quarter, per team, at the end of a game.
+     ===================================================================== -->
+<div class="dialog" id="summary-dialog" role="dialog" aria-modal="true"
+     aria-labelledby="summary-title" hidden>
+  <div class="dialog__panel dialog__panel--wide">
+    <h2 class="dialog__title" id="summary-title">Game summary</h2>
+    <div id="summary-body"></div>
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--ghost" data-action="close-dialog">Close</button>
+      <button type="button" class="btn btn--primary" data-action="export-csv" data-kind="summary">
+        Export this as CSV
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     Help and about: what the app is, what it refuses to do, and where the
+     data actually lives once the browser is closed.
+     ===================================================================== -->
+<div class="dialog" id="about-dialog" role="dialog" aria-modal="true"
+     aria-labelledby="about-title" hidden>
+  <div class="dialog__panel">
+    <h2 class="dialog__title" id="about-title">Help &amp; about</h2>
+    <div class="about">
+      <p>
+        One tap on a stat key records one entry. The scoreboard, the quarter
+        strip, the play-by-play and the box score are all the same list of
+        entries read four different ways, so they can never disagree.
+      </p>
+      <p>
+        There is no team-level scoring and no hand-typed score. The only way a
+        number reaches the board is through a player's entry. Team events
+        &mdash; timeouts, substitutions, jump balls, technicals &mdash; are
+        recorded too, but they are worth nothing.
+      </p>
+      <dl class="about__keys">
+        <dt>Ctrl / Cmd + Z</dt><dd>Undo the last entry</dd>
+        <dt>Tap the clock</dt><dd>Type an exact time</dd>
+        <dt>Esc</dt><dd>Close a dialog or abandon a clock edit</dd>
+      </dl>
+      <p class="about__note">
+        Everything lives in this browser's local storage. There is no account
+        and no server. Clearing the site data erases the game, so export a
+        backup if it matters.
+      </p>
+      <p class="about__version">Version <span id="about-version">&mdash;</span></p>
+    </div>
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--primary" data-action="close-dialog">Close</button>
+    </div>
+  </div>
+</div>
 
 <div class="dialog" id="load-team-dialog" role="dialog" aria-modal="true"
      aria-labelledby="load-team-title" hidden>

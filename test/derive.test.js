@@ -23,6 +23,7 @@ import {
   saveState,
   serialize,
   setPeriod,
+  setTeamPeriodTotal,
   undoLastEvent,
   updateTeam,
 } from '../app/js/store.js';
@@ -38,6 +39,60 @@ import {
 } from '../app/js/derive.js';
 import { clock, pct, periodLabel } from '../app/js/format.js';
 import { pointsFor } from '../app/js/stats.js';
+
+test('a typed team total scores for the team and for nobody in particular', () => {
+  const game = createGame();
+  const teamId = game.homeTeamId;
+  const player = addPlayer(game, teamId, { number: '9', name: 'A. Cole' });
+
+  setPeriod(game, 2);
+  setTeamPeriodTotal(game, teamId, 2, 18);
+
+  // The scoreboard, the quarter strip and the team totals all take it.
+  assert.equal(periodScore(game, teamId, 2), 18);
+  assert.equal(teamTotal(game, teamId), 18);
+  assert.equal(computeGame(game).scores[teamId], 18);
+  assert.equal(computeGame(game).teamTotals[teamId].points, 18);
+
+  // No player line does: the points belong to the team, and inventing a player
+  // to hold them is exactly what this saves the scorer from doing.
+  assert.equal(playerLine(game, player.id).points, 0);
+  assert.equal(computeGame(game).playerLines[player.id].points, 0);
+
+  // It is an ordinary entry, so it undoes like one.
+  undoLastEvent(game);
+  assert.equal(periodScore(game, teamId, 2), 0);
+});
+
+test('a period with both a typed total and player entries is flagged', () => {
+  const game = createGame();
+  const teamId = game.homeTeamId;
+  const player = addPlayer(game, teamId, { number: '9', name: 'A. Cole' });
+
+  // Retyping the number the board shows is the whole point, so nothing is
+  // blocked — but a period with both is a double count, and saying so is how a
+  // scorer finds it afterwards rather than at the final buzzer.
+  setPeriod(game, 1);
+  setTeamPeriodTotal(game, teamId, 1, 18);
+  assert.deepEqual(
+    consistencyWarnings(game).filter((w) => /typed total/.test(w.message)),
+    [],
+    'a typed total on its own is not a problem',
+  );
+
+  addEvent(game, {
+    teamId,
+    playerId: player.id,
+    stat: '2PT',
+    result: 'made',
+    period: 1,
+  });
+
+  const warnings = consistencyWarnings(game).filter((w) => /typed total/.test(w.message));
+  assert.equal(warnings.length, 1, 'the double count is named once');
+  assert.match(warnings[0].message, /Q1/, 'and names the period');
+  assert.equal(periodScore(game, teamId, 1), 20, 'the scoreboard counts both');
+});
 
 // ---------------------------------------------------------------------------
 // Fixtures

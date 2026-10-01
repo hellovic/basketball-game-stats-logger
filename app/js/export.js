@@ -9,7 +9,7 @@
  * output directly; only `download` touches the DOM.
  */
 
-import { STATS, describeEvent } from './stats.js';
+import { describeEvent, eventPoints } from './stats.js';
 import { computeGame } from './derive.js';
 import { eventClock, periodLabel, safeText } from './format.js';
 import { elapsedInPeriod } from './clock.js';
@@ -144,11 +144,7 @@ export function playByPlayCsv(game) {
       ? game.players.find((p) => p.id === event.playerId)
       : null;
 
-    let points = 0;
-    if (event.result === 'made') {
-      const stat = STATS.find((s) => s.key === event.stat);
-      points = stat ? stat.points : 0;
-    }
+    const points = eventPoints(event);
 
     rows.push([
       index + 1,

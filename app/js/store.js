@@ -9,7 +9,7 @@
  * No DOM access in this module, so the tests can drive it directly.
  */
 
-import { getStat, isShooting } from './stats.js';
+import { getStat, isShooting, isTeamTotal } from './stats.js';
 import { defaultPeriodSeconds } from './clock.js';
 
 const SCHEMA_VERSION = 1;
@@ -198,6 +198,7 @@ export function mergeRoster(game, teamId, savedTeam) {
 export function validateEvent(event, game = null) {
   const stat = getStat(event.stat);
   if (!stat) return 'Unknown statistic.';
+
   if (isShooting(stat.key)) {
     if (event.result !== 'made' && event.result !== 'missed') {
       return `${stat.label} needs a made or missed result.`;
@@ -210,6 +211,16 @@ export function validateEvent(event, game = null) {
     return `${stat.label} does not take a result.`;
   }
   if (!event.teamId) return 'An event needs a team.';
+
+  // The one entry that scores without naming a player: the scorer typed the
+  // team's total for the period. It is checked here so every other event can
+  // still assume it has a player.
+  if (isTeamTotal(stat.key)) {
+    if (event.playerId) return 'A team total stands for the whole team and takes no player.';
+    const points = Number(event.points);
+    if (!Number.isFinite(points) || points <= 0) return 'A team total needs a number of points.';
+    return null;
+  }
 
   // Catching a player/team mismatch here prevents the box score and the
   // scoreboard from silently disagreeing: the points would land on one team
@@ -227,8 +238,11 @@ export function validateEvent(event, game = null) {
 }
 
 /**
- * Record one stat. Every event is attributed to a player on the event's team;
- * a stat nobody can be credited with is not recorded at all.
+ * Record one stat.
+ *
+ * Every event is attributed to a player on the event's team, which is what
+ * keeps the scoreboard and the box score in agreement: a number reaches the
+ * scoreboard only through an entry somebody owns.
  *
  * `ts` is accepted so a seeded sample game can produce a believable, stable
  * play-by-play timeline instead of every event sharing one timestamp.
@@ -240,7 +254,7 @@ export function validateEvent(event, game = null) {
  */
 export function addEvent(
   game,
-  { teamId, playerId, stat, result = null, period, source = 'entry', ts, id, clockSeconds },
+  { teamId, playerId, stat, result = null, period, source = 'entry', ts, id, clockSeconds, points },
 ) {
   const event = {
     id: id || makeId('event'),
@@ -255,6 +269,10 @@ export function addEvent(
     result: result ?? null,
     source,
   };
+
+  // Only a team total carries its own value; every other stat takes its points
+  // from the catalog, so the field is written only when one is given.
+  if (points !== undefined) event.points = Math.max(0, Math.floor(Number(points) || 0));
 
   const problem = validateEvent(event, game);
   if (problem) return { event: null, error: problem };
@@ -293,6 +311,48 @@ export function updateEvent(game, eventId, patch) {
   Object.assign(event, next);
   touch(game);
   return { event, error: null };
+}
+
+/**
+ * The team total the scorer typed for one team in one period, or null when
+ * nothing was typed. Null rather than 0 so the box can show an empty field
+ * instead of claiming the team scored nothing.
+ */
+export function teamPeriodTotal(game, teamId, period) {
+  const event = game.events.find(
+    (e) => e.stat === 'TEAM_TOTAL' && e.teamId === teamId && e.period === period,
+  );
+  return event ? Math.max(0, Math.floor(Number(event.points) || 0)) : null;
+}
+
+/**
+ * Set — or clear — a team's score for one period.
+ *
+ * One entry per team per period, replaced rather than appended: the scorer types
+ * the number already on the board, so typing it a second time means the first
+ * number was wrong, not that the team scored twice. A blank box or a zero
+ * removes the entry, which is how a mistake is taken back.
+ */
+export function setTeamPeriodTotal(game, teamId, period, points) {
+  if (!game.teams[teamId]) return game;
+
+  const value = Math.max(0, Math.floor(Number(points) || 0));
+  const existing = game.events.find(
+    (e) => e.stat === 'TEAM_TOTAL' && e.teamId === teamId && e.period === period,
+  );
+
+  if (value === 0) {
+    if (existing) deleteEvent(game, existing.id);
+    return game;
+  }
+
+  if (existing) {
+    existing.points = value;
+    return touch(game);
+  }
+
+  addEvent(game, { teamId, playerId: null, stat: 'TEAM_TOTAL', period, points: value });
+  return game;
 }
 
 /** Events in game order: oldest first, then insertion order for equal stamps. */

@@ -9,7 +9,8 @@
  * This module is intentionally free of DOM access so the tests can import it.
  */
 
-import { SHOOTING, REBOUND, STATS, getStat, isShooting, pointsFor } from './stats.js';
+import { SHOOTING, REBOUND, STATS, eventPoints, getStat, isShooting } from './stats.js';
+import { periodLabel } from './format.js';
 
 /** Is this event attributed to a specific player? */
 function hasPlayer(event) {
@@ -55,7 +56,7 @@ function addEventToLine(line, event) {
   if (!stat) return;
 
   const made = event.result === 'made';
-  line.points += pointsFor(event.stat, event.result);
+  line.points += eventPoints(event);
 
   if (stat.kind === SHOOTING) {
     line[stat.key][made ? 'made' : 'missed'] += 1;
@@ -109,7 +110,7 @@ export function derivedPeriodPoints(game, teamId, period) {
   let points = 0;
   for (const event of game.events) {
     if (event.teamId !== teamId || event.period !== period) continue;
-    points += pointsFor(event.stat, event.result);
+    points += eventPoints(event);
   }
   return points;
 }
@@ -272,6 +273,34 @@ export function consistencyWarnings(game) {
         'player who is no longer on the roster, so the team totals include points ' +
         'that no player line shows.',
     });
+  }
+
+  // A typed team total is added on top of that team's player entries for the
+  // period, which is right when it is the only thing recorded and a double count
+  // when it is not. Nothing is blocked — a scorer mid-game has no time to
+  // untangle it — but it is named afterwards so it can be corrected.
+  for (const teamId of [game.awayTeamId, game.homeTeamId].filter(Boolean)) {
+    for (const period of listPeriods(game)) {
+      const inPeriod = (event) =>
+        event.teamId === teamId && event.period === period;
+      const typed = game.events.some((e) => inPeriod(e) && e.stat === 'TEAM_TOTAL');
+      if (!typed) continue;
+
+      const fromPlayers = game.events.filter(
+        (e) => inPeriod(e) && e.stat !== 'TEAM_TOTAL' && eventPoints(e) > 0,
+      ).length;
+      if (fromPlayers === 0) continue;
+
+      const team = game.teams[teamId]?.name || 'A team';
+      const when = periodLabel(period, game.periodsPerGame);
+      warnings.push({
+        level: 'warn',
+        message:
+          `${team} has a typed total and ${fromPlayers} scoring ` +
+          `entr${fromPlayers === 1 ? 'y' : 'ies'} in ${when}, so the scoreboard ` +
+          'counts both.',
+      });
+    }
   }
 
   return warnings;

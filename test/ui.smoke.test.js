@@ -412,13 +412,19 @@ test('the hidden attribute really hides, whatever the component sets', async () 
 
 test('the roster bar sits directly above the entry rows', async () => {
   // Setting up the two teams is the first thing a scorer does, so the bar
-  // belongs next to the entry rows rather than below the box score.
+  // belongs next to the entry rows rather than below the box score — and just
+  // above the workspace, so the page's scroll carries it away with the rest of
+  // the setup instead of pinning it to the panels.
   const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
-  const main = html.slice(html.indexOf('<main class="workspace">'), html.indexOf('</main>'));
-  const rosterAt = main.indexOf('class="rosterbar"');
-  const entryAt = main.indexOf('panel--entry');
-  assert.ok(rosterAt !== -1, 'the roster bar should be inside the workspace');
+  const rosterAt = html.indexOf('class="rosterbar"');
+  const workspaceAt = html.indexOf('<main');
+  const entryAt = html.indexOf('panel--entry');
+  assert.ok(rosterAt !== -1, 'the roster bar should exist');
   assert.ok(entryAt !== -1, 'live entry should be inside the workspace');
+  assert.ok(
+    rosterAt < workspaceAt,
+    'the roster bar belongs above the workspace, so scrolling can take it away',
+  );
   assert.ok(rosterAt < entryAt, 'the roster bar should come before live entry');
 
   // And the team controls still work from their new home.
@@ -438,7 +444,10 @@ test('every element id referenced by the app exists in the HTML document', async
   const lookedUp = new Set([...appSource.matchAll(/\$\('([^']+)'\)/g)].map((m) => m[1]));
   // Template lookups like $(`team-tab-${slot}`) are expanded against the domain
   // of their own variable, so the expansion has to match the variable used.
-  const domains = { slot: ['home', 'away'] };
+  const domains = {
+    slot: ['home', 'away'],
+    panel: ['entry', 'log', 'box'],
+  };
   for (const m of appSource.matchAll(/\$\(`([^`]+)`\)/g)) {
     const variable = m[1].match(/\$\{(\w+)\}/)?.[1];
     for (const value of domains[variable] ?? []) {
@@ -575,10 +584,11 @@ test('saving a team triggers a JSON file download named after the team', async (
   const dom = await startApp();
 
   const name = document.getElementById('score-home-name').textContent;
-  // Count cards, not id attributes: each card emits its player id three times
-  // (card, roster row, and every stat button).
+  // Count rows, not id attributes: each row emits its player id three times
+  // (row, checkbox, and every stat button). An unselected row is marked with
+  // the bare class, which is what this matches.
   const rosterSize = (document.getElementById('player-cards').innerHTML.match(
-    /<article class="player-card"/g,
+    /<tr class="player-card"/g,
   ) || []).length;
   assert.ok(rosterSize > 0, 'the seeded game should have a home roster');
 
@@ -1402,21 +1412,61 @@ test('an entry row combines the box-score columns with the stat buttons', async 
   const cards = document.getElementById('player-cards').innerHTML;
   assert.ok((cards.match(/data-action="log-stat"/g) || []).length > 0, 'the buttons render');
 
-  const labels = [...cards.matchAll(/player-card__col-label">([^<]+)</g)].map((m) => m[1]);
+  // The stat keys are the legend for the whole table now: written once above
+  // the players, rather than repeated as a label on every row.
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  const keyRow = /<tr class="entry__keys">([\s\S]*?)<\/tr>/.exec(html)?.[1] || '';
+  const labels = [...keyRow.matchAll(/<th[^>]*>([^<]+)<\/th>/g)].map((m) => m[1].trim());
   assert.deepEqual(
-    labels.slice(0, 12),
-    ['PTS', 'FG', '3P', 'FT', 'REB', 'OREB', 'DREB', 'AST', 'STL', 'BLK', 'TO', 'PF'],
-    'line one should carry the box-score columns',
+    labels,
+    [
+      '+2', '+3', '+1', 'Miss',
+      'Reb', 'O-Reb', 'Ast', 'Stl', 'Blk', 'To', 'Pf',
+    ],
+    'the key row should carry the scoring keys and the other stats',
   );
 
   // The made-attempted pair already reads as a percentage, so the two derived
-  // columns stay out of the row even though they remain in the exports.
+  // columns stay out of the table even though they remain in the exports.
   assert.ok(!labels.includes('FG%'), 'FG% should not be a column');
   assert.ok(!labels.includes('FT%'), 'FT% should not be a column');
 
-  // Two lines per player: identity + columns, then the buttons.
-  assert.match(cards, /player-card__row--info/);
-  assert.match(cards, /player-card__row--buttons/);
+  // One table row per player, and every row carries all thirteen keys, which
+  // is what makes the columns line up.
+  const rows = cards.split('<tr class="player-card').slice(1);
+  assert.ok(rows.length > 0, 'the seeded game should have a home roster');
+  for (const row of rows) {
+    assert.equal(
+      (row.match(/data-action="log-stat"/g) || []).length,
+      13,
+      'every key should be on every row',
+    );
+  }
+
+  // The running Pts/FG/3P/FT columns are gone from the entry row: they made the
+  // row wider than the keys needed, and the box score below carries the totals.
+  assert.doesNotMatch(cards, /player-card__col/);
+
+  // Three identical miss keys in a row cannot be told apart, so each is the
+  // bare number of the shot it misses: "+2" goes in, "2" misses.
+  const missLabels = [...cards.matchAll(/stat-btn--miss[^>]*>([^<]+)<\/button>/g)].map((m) =>
+    m[1].trim(),
+  );
+  assert.deepEqual(
+    [...new Set(missLabels)],
+    ['2', '3', '1'],
+    'the miss keys should read 2, 3 and 1',
+  );
+  assert.ok(!cards.includes('>MISS<'), 'the bare MISS label should be gone');
+
+  assert.match(cards, /player-card__keys--scoring/);
+  assert.match(cards, /player-card__keys--other/);
+  assert.match(cards, /player-card__who/);
+  assert.doesNotMatch(
+    cards,
+    /player-card__row--info/,
+    'rows are table rows now, not stacked cards',
+  );
 });
 
 test('quarter totals render in a strip below the scoreboard, not in a side panel', async () => {
@@ -1512,3 +1562,276 @@ test('an entry-row checkbox bulk-removes the player and their entries', async ()
   assert.equal(rosterIds().length, ids.length - 1);
 });
 
+test('the team-event strip is gone, along with the stats behind it', async () => {
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /team-events/, 'the strip should be gone from the document');
+
+  // The strip was the only way to record one, so the catalog must not keep
+  // offering them: a stat that can be defined but never entered is a trap for
+  // whoever reads `stats.js` next.
+  const stats = readFileSync(resolve(appDir, 'js', 'stats.js'), 'utf8');
+  assert.doesNotMatch(stats, /TIMEOUT|teamButtons/, 'no team event should survive in the catalog');
+
+  const app = readFileSync(resolve(appDir, 'js', 'app.js'), 'utf8');
+  assert.doesNotMatch(app, /log-team-event/, 'nothing should still record a team event');
+
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  assert.doesNotMatch(css, /\.team-events|\.team-btn/, 'their styling should be gone too');
+
+  await startApp();
+  assert.equal(
+    document.getElementById('team-events'),
+    null,
+    'no strip should be built at runtime either',
+  );
+});
+
+test('each panel can take the full width and give it back', async () => {
+  const dom = await startApp();
+  const workspace = document.getElementById('workspace');
+  const entry = document.getElementById('expand-entry');
+  const log = document.getElementById('expand-log');
+  const box = document.getElementById('expand-box');
+
+  // The ordinary layout is two columns and nothing is pressed.
+  assert.equal(workspace.classList.contains('is-expanded'), false);
+  assert.equal(entry.getAttribute('aria-pressed'), 'false');
+  assert.equal(entry.getAttribute('aria-label'), 'Full width');
+
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'entry' }));
+  assert.equal(workspace.classList.contains('is-expanded'), true);
+  assert.equal(workspace.getAttribute('data-focus'), 'entry');
+  assert.equal(entry.getAttribute('aria-pressed'), 'true');
+  assert.match(entry.title, /back beside/, 'the lit button says how to undo itself');
+  assert.equal(log.getAttribute('aria-pressed'), 'false', 'only one panel at a time');
+
+  // Asking a different section for the width moves it rather than stacking.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
+  assert.equal(workspace.getAttribute('data-focus'), 'box');
+  assert.equal(entry.getAttribute('aria-pressed'), 'false');
+  assert.equal(box.getAttribute('aria-pressed'), 'true');
+
+  // Pressing the lit button again puts the two columns back.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
+  assert.equal(workspace.classList.contains('is-expanded'), false);
+  assert.equal(workspace.getAttribute('data-focus'), null);
+  assert.match(box.title, /whole width/);
+
+  // Escape is the keyboard way back out, the same as it is for a dialog.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'log' }));
+  assert.equal(workspace.getAttribute('data-focus'), 'log');
+  emit(dom.listeners, 'keydown', document.body, { key: 'Escape' });
+  assert.equal(workspace.classList.contains('is-expanded'), false);
+
+  // The class is only as good as the rule that reads it.
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  assert.match(
+    css,
+    /\.workspace\.is-expanded\[data-focus='entry'\] \.ws__right[\s\S]*?display: none/,
+    'expanding live entry must actually hide the other column',
+  );
+});
+
+test('the key headings sit over the keys, column for column', async () => {
+  await startApp();
+
+  // A heading row and a body row have to describe the same columns, or the
+  // table centres a label over the wrong button — which is exactly what one
+  // wide spanning cell did to "+1" and the miss keys.
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  const keyRow = /<tr class="entry__keys">([\s\S]*?)<\/tr>/.exec(html)?.[1] || '';
+  const headingColumns = [...keyRow.matchAll(/<th[^>]*>/g)]
+    .map((match) => Number(/colspan="(\d+)"/.exec(match[0])?.[1] || 1))
+    .reduce((total, span) => total + span, 0);
+
+  const cards = document.getElementById('player-cards').innerHTML;
+  const firstRow = cards.slice(cards.indexOf('<tr class="player-card'));
+  const rowBody = firstRow.slice(0, firstRow.indexOf('</tr>'));
+  const keyCells = (rowBody.match(/class="player-card__key/g) || []).length;
+
+  assert.equal(
+    headingColumns,
+    keyCells,
+    'the heading row and a player row must span the same number of columns',
+  );
+  assert.equal(keyCells, 13, 'three makes, three misses and seven counting stats');
+
+  // The heading is written once over the three misses rather than three times.
+  assert.equal(
+    (keyRow.match(/entry__key--scoring/g) || []).length,
+    4,
+    'the scoring headings are +2, +3, +1 and one Miss',
+  );
+});
+
+test('the board is pinned and the page below it scrolls', async () => {
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  const blockFor = (selector) => {
+    const at = css.indexOf(`\n${selector} {`);
+    assert.ok(at !== -1, `expected a ${selector} rule`);
+    return css.slice(at, css.indexOf('}', at));
+  };
+
+  // The page is the scroller now, so the body must not lock it, and the board
+  // has to ride on top of that scroll rather than scroll away with it.
+  const body = blockFor('body');
+  assert.doesNotMatch(body, /overflow:\s*hidden/, 'the body must not lock the page');
+  assert.match(body, /min-height:\s*100dvh/);
+
+  const board = blockFor('.scoreboard');
+  assert.match(board, /position:\s*sticky/);
+  assert.match(board, /top:\s*0/);
+
+  // The workspace is a definite screenful below the board — a minimum would let
+  // the longest play-by-play stretch it and make the page scroll instead.
+  const workspace = blockFor('.workspace');
+  assert.match(workspace, /height:\s*calc\(100dvh - var\(--board-h\)\)/);
+  assert.doesNotMatch(
+    workspace,
+    /min-height:\s*calc\(100dvh/,
+    'a minimum would grow to fit the play-by-play',
+  );
+});
+
+test('the key matrix fits its panel instead of scrolling sideways', async () => {
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  const blockFor = (selector) => {
+    const at = css.indexOf(`\n${selector} {`);
+    assert.ok(at !== -1, `expected a ${selector} rule`);
+    return css.slice(at, css.indexOf('}', at));
+  };
+
+  // Fixed layout plus a floor is what keeps thirteen keys inside a tablet
+  // column: left to itself each key sized to its own content and the matrix ran
+  // off the side of the panel.
+  const entry = blockFor('.entry');
+  assert.match(entry, /width:\s*100%/);
+  assert.match(entry, /table-layout:\s*fixed/);
+  assert.match(entry, /min-width:\s*620px/, 'a floor, so a phone still scrolls');
+  assert.match(blockFor('.stat-btn'), /width:\s*100%/, 'keys fill their column');
+
+  // The colgroup has to describe every column the header spans, or fixed layout
+  // spreads the keys over the wrong count.
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  assert.match(html, /<colgroup>/);
+  assert.match(html, /entry__col--key" span="13"/);
+});
+
+test('the headings carry the width control, and live entry a key size', async () => {
+  await startApp();
+
+  // Three headings used to carry a row-size pair and a fold chevron. The fold
+  // and the box score's pair went; Live entry keeps a size pair, because it is
+  // the panel a scorer works down and fitting the roster on screen is the whole
+  // point there.
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  const controlsIn = (panel) => {
+    const at = html.indexOf(`id="panel-${panel}"`);
+    assert.ok(at !== -1, `expected a ${panel} panel`);
+    const chunk = html.slice(at, html.indexOf('</section>', at));
+    // The trailing character keeps `panel-tool__glyph` out of the count.
+    return (chunk.match(/class="panel-tool[ "]/g) || []).length;
+  };
+
+  assert.equal(controlsIn('entry'), 3, 'live entry: smaller, larger, full width');
+  assert.equal(controlsIn('log'), 1, 'the play-by-play keeps just the width control');
+  assert.equal(controlsIn('box'), 1, 'so does the box score');
+
+  // Folding is gone, not merely unwired.
+  const app = readFileSync(resolve(appDir, 'js', 'app.js'), 'utf8');
+  assert.doesNotMatch(app, /case 'toggle-collapse'/, 'the fold action should be gone');
+});
+
+test('live entry resizes its keys, and starts on the small side', async () => {
+  const dom = await startApp();
+  const entry = document.getElementById('panel-entry');
+  const smaller = document.getElementById('key-down-entry');
+  const larger = document.getElementById('key-up-entry');
+
+  assert.equal(entry.getAttribute('data-density'), 'normal');
+  assert.equal(smaller.disabled, false);
+  assert.equal(larger.disabled, false);
+
+  // Down to the smallest, where the "smaller" end is spent.
+  emit(dom.listeners, 'click', actionable({ action: 'key-smaller', panel: 'entry' }));
+  assert.equal(entry.getAttribute('data-density'), 'compact');
+  assert.equal(smaller.disabled, true, 'the smallest key is a real end');
+
+  // And back up through the default to the largest.
+  emit(dom.listeners, 'click', actionable({ action: 'key-larger', panel: 'entry' }));
+  emit(dom.listeners, 'click', actionable({ action: 'key-larger', panel: 'entry' }));
+  assert.equal(entry.getAttribute('data-density'), 'roomy');
+  assert.equal(larger.disabled, true);
+
+  // The default really is smaller than the roomiest step, and the row follows
+  // the key rather than being pinned to its own height.
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  // `.panel--entry` is declared more than once, so find the rule that actually
+  // sets the height rather than whichever comes first.
+  const keyHeight = (selector) => {
+    for (let from = 0; ; ) {
+      const at = css.indexOf(`\n${selector} {`, from);
+      assert.ok(at !== -1, `expected a ${selector} rule setting --key-h`);
+      const found = /--key-h:\s*(\d+)px/.exec(css.slice(at, css.indexOf('}', at)));
+      if (found) return Number(found[1]);
+      from = at + 1;
+    }
+  };
+  const fallback = keyHeight('.panel--entry');
+  const roomy = keyHeight(".panel--entry[data-density='roomy']");
+  assert.ok(
+    fallback < roomy,
+    `the default key (${fallback}px) should be smaller than the roomiest (${roomy}px)`,
+  );
+  const rowRule = css.slice(css.indexOf('\n.entry tbody td {'));
+  assert.match(rowRule.slice(0, rowRule.indexOf('}')), /calc\(var\(--key-h/, 'the row follows the key');
+});
+
+test('the team total box scores the selected team for the current period', async () => {
+  const dom = await startApp();
+  const input = document.getElementById('teamtotal-input');
+  const period = document.getElementById('teamtotal-period');
+
+  // The seed game is in Q3 with the home team selected.
+  assert.equal(period.textContent, 'Q3');
+  assert.equal(input.value, '', 'nothing typed to begin with');
+
+  input.value = '17';
+  emit(dom.listeners, 'change', input);
+
+  const game = storedGame();
+  const typed = game.events.find((event) => event.stat === 'TEAM_TOTAL');
+  assert.ok(typed, 'the total is recorded as an entry like any other');
+  assert.equal(typed.teamId, game.homeTeamId, 'against the selected team');
+  assert.equal(typed.period, 3, 'in the period on the board');
+  assert.equal(typed.points, 17);
+  assert.equal(typed.playerId, null, 'and belongs to nobody in particular');
+  assert.equal(document.getElementById('score-home').textContent, '43', '26 + 17');
+
+  // Each side keeps its own, and switching tabs shows the one that side has.
+  emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
+  assert.equal(input.value, '', 'the away team has none');
+
+  input.value = '11';
+  emit(dom.listeners, 'change', input);
+  assert.equal(document.getElementById('score-away').textContent, '32', '21 + 11');
+
+  emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'home' }));
+  assert.equal(input.value, '17', 'and the home box still holds its own');
+
+  // Typing the number again replaces it rather than adding to it, because the
+  // scorer types what the board shows.
+  input.value = '20';
+  emit(dom.listeners, 'change', input);
+  assert.equal(document.getElementById('score-home').textContent, '46');
+  assert.equal(
+    storedGame().events.filter((event) => event.stat === 'TEAM_TOTAL').length,
+    2,
+    'one entry per team, not one per keystroke',
+  );
+
+  // An empty box takes it back out.
+  input.value = '';
+  emit(dom.listeners, 'change', input);
+  assert.equal(document.getElementById('score-home').textContent, '26');
+});

@@ -41,20 +41,22 @@ appears and does nothing, because its handler does not exist in the module the
 browser is still holding. `scripts/dev-server.mjs` sends `no-store` for
 everything, which removes that whole class of problem.
 
-The app shows a **version** at the right-hand end of the bottom bar. If a change
+The app shows its **version** in two places: at the right-hand end of the file
+bar (**More → Import / export**), and in **More → Help & about**. If a change
 does not appear to have taken effect, compare that against the `app-version` in
 `app/index.html` — a mismatch means the browser is serving you a stale bundle.
 A hard reload (`Cmd`/`Ctrl` + `Shift` + `R`) fixes it.
 
 The app opens with a **sample game** so you can see a populated screen right
-away. Use *Game details → Start a blank game* when you are ready to log a real
+away. Use *Game settings → Start a blank game* when you are ready to log a real
 one, and *Reload the sample game* to bring it back.
 
-The **Game** bar under the scoreboard carries the game's own details — its date,
-start time and venue — next to the period structure that everything below reads.
-The date names every file you export; the time and venue are part of the saved
-game and travel with a backup. The start time is left blank rather than filled
-in with the current time, so a game is never stamped with a guess.
+The strip under the scoreboard **reports** the game rather than editing it: the
+date, start time, venue and period structure are shown as read-only pills, and
+tapping any one of them opens **Game settings**, where they are actually
+changed. The date names every file you export; the time and venue are part of
+the saved game and travel with a backup. The start time is left blank rather
+than filled in with the current time, so a game is never stamped with a guess.
 
 The four actions that throw work away — starting a blank game, reloading the
 sample, removing players, and restoring a backup — all ask before they act. The
@@ -90,24 +92,35 @@ The consequences are worth being explicit about:
   buckets and do
   not see each other's games.
 
-That is why both exports matter: the **Export** group in the bottom bar backs up
-a game, and a **team file** backs up a roster. See below.
+That is why both exports matter: the **Export** group in the file bar
+(**More → Import / export**) backs up a game, and a **team file** backs up a
+roster. See below.
 
 ---
 
 ## Using it during a game
 
 Set up two teams and their rosters in the **roster bar**, which sits just above
-the entry rows, then work straight down the page. All three views are on screen
-at once — there is nothing to switch between.
+the entry rows, then work straight down the page. Every part of the game is on
+the one screen — there is nothing to switch between. The scoreboard stays pinned
+to the top, and the setup strip below it (the date and venue, the quarter totals
+and the roster bar) scrolls away as you go, so a scroll down leaves the entry
+rows filling the screen. Each panel scrolls inside its own box, so a long
+play-by-play never makes the page itself longer.
+
+The **Away / Home** tabs at the top of the strip choose which team the entry
+rows are scoring. The same pair of tabs sits on the box score, and the two are
+handles on the same switch — tapping either one moves the whole screen to that
+team. A scorer enters one team's events at a time.
 
 1. **Quarter totals** — a thin strip under the scoreboard, so the per-quarter
-   score is always in view without taking over the screen. It scrolls away with
-   the page; only the scoreboard itself is pinned.
-2. **Live entry** — one tap records one stat. Pick the team with the *Away /
-   Home* tabs in the roster bar first; a scorer enters one team's events at a
-   time. Each player gets two lines: their number, name and box-score columns on
-   the first, the stat buttons on the second.
+   score is always in view without taking over the screen.
+2. **Live entry** — one tap records one stat. Each player is a row: their number
+   and name, then the scoring keys (`+2`, `+3` and `+1` to make a shot; `2`, `3`
+   and `1` to miss one), then the counting keys. The running totals live in the
+   box score below, so the entry row carries nothing but the keys. The thirteen
+   keys share out the panel rather than each claiming its own width, so the
+   matrix fits without scrolling sideways.
 3. **Undo** — the button on the scoreboard (it stays pinned, so it is always in
    reach), or `Ctrl`/`Cmd` + `Z`. The toast after each entry also offers a
    one-tap undo.
@@ -115,8 +128,31 @@ at once — there is nothing to switch between.
    into its period the play happened, counting up from 00:00 to the period
    length. Delete a wrong entry, or use the dropdown on a row to move it to a
    different player on the same team.
-5. **Box score** — per-player totals with a team totals row, including the
-   shooting percentages that would crowd the entry rows.
+5. **Box score** — both teams, per-player totals with a team totals row. The
+   heading of the team you are entering is highlighted, so it is obvious where
+   the next tap will land.
+6. **Team total** — under the entry table: the points the selected team has
+   scored *in the period on the board*, typed rather than tapped. See below.
+
+Live entry's heading carries three controls; the play-by-play and the box score
+carry one each:
+
+| Control | Where | What it does |
+| --- | --- | --- |
+| `−` / `+` | Live entry | Smaller or larger stat keys, so more or fewer of the roster fit on screen |
+| the four-corner icon | every panel | Stretch that section across the whole width, hiding the other two |
+
+The keys start small — fitting the roster on screen is worth more at the table
+than a tall key — at 32px, and the two buttons step up to 40px or down to 26px.
+The row height follows the key, so a smaller key really does mean more players
+in view. The four-corner control is how you see every column of the entry row or
+the box score on a screen too narrow to show them side by side; `Esc` also
+returns to two columns.
+
+The **More** menu holds what does not fit in the top bar: game settings, the
+player roster, import/export and team files, the game summary, and help. The
+file bar it toggles is hidden until you ask for it, which is what keeps the two
+columns tall enough to read at a glance on an iPad.
 
 ### Scoring from a phone or tablet
 
@@ -258,7 +294,7 @@ The clock bar is deliberately thin, and it is sticky — so every pixel it takes
 permanently lost from the scoring area below. That is why the labels are one word
 and the controls are compact. Phone-width layouts restore full-size tap targets.
 
-Set the **period length** under *Game details*: 6, 8, 10, 12 or 20 minutes.
+Set the **period length** under *Game settings*: 6, 8, 10, 12 or 20 minutes.
 Switching between quarters and halves moves the length with it (10 → 20 minutes),
 unless you have already chosen a specific length, in which case your choice
 stands.
@@ -274,25 +310,44 @@ stands.
 | `REB` / `OREB` / `DREB` | Rebounds, total and split |
 | `AST` `STL` `BLK` `TO` `PF` | Assists, steals, blocks, turnovers, personal fouls |
 
-**Misses are recorded, not skipped.** Tapping *miss* under 2PT, 3PT or FT is what
-makes the percentage columns real. A game logged with only made shots shows
-`100%` rather than nothing.
+**Misses are recorded, not skipped.** Tapping `2`, `3` or `1` is what makes the
+percentage columns real. A game logged with only made shots shows `100%` rather
+than nothing.
+
+Every one of these is recorded and exported. The **entry rows** are the keys
+alone; the **box score** shows the per-player totals except the percentages,
+which would not fit thirteen columns into a quarter of an iPad screen — `FG%`
+and `FT%` appear in **More → View game summary** and in the CSV exports, where
+the made–attempted figures beside them say the same thing.
 
 ### How the score is calculated
 
-There is no separate "type the quarter score" box, because a score typed by hand
-can drift away from the player stats and nobody notices until the quarter totals
-are wrong.
+**Every point is an entry**, and the scoreboard, the quarter strip, the box score
+and the exports are all the same list of entries read different ways, so they
+cannot disagree. Deleting or correcting an entry moves every one of them at once.
 
-Instead, **every point is an entry attributed to a player and a quarter**, and
-the scoreboard is the sum of those entries. The quarter-total strip and
-the box score are the same events sliced two ways, so they cannot disagree.
+Almost every entry names the player who scored it. The exception is the **team
+total** box under the entry table, which records points for a whole team in one
+period:
 
-Every entry names a player on the team it belongs to. There is deliberately no
-team-level entry and no hand-typed score: the only way a number reaches the
-scoreboard is through an entry, which is what makes the guarantee above hold
-without exception. A rebound or turnover nobody can be credited with is simply
-not recorded.
+- It applies to **the team the Away / Home tabs have selected**, and to the
+  period on the clock, so the same box serves either side.
+- Type the number **shown on the scoreboard**, not the number of points since
+  your last entry. Typing it again replaces it; retyping is the correction.
+- One entry per team per period, so a blank box and a zero both take it back out.
+- The points reach the quarter totals, the running score and the box score's team
+  totals row. No player line shows them, because none of them belong to a player.
+
+This is how you keep a game where you only follow one team. Score your own side
+player by player, and give the other side its quarter score here — the play-by-play
+reads `TEAM · Team total · +18`.
+
+What it gives up is the equality between a team's total and the sum of its player
+lines, for that team. Everything else still holds, and the two ways of scoring are
+meant to be used one per team: a period with **both** a typed total and player
+entries is counted twice, so the app says so afterwards under the scoresheet.
+Nothing is blocked while you are logging — a scorer mid-game has no time to
+untangle it — but it is named so it can be found before the final buzzer.
 
 ---
 
@@ -362,8 +417,8 @@ and no way for the app to leak a game — the tradeoff is that backup is on you.
 
 ```
 app/
-  index.html        the document: scoreboard, game settings bar, quarter strip,
-                    the roster bar, then the three views
+  index.html        the document: scoreboard, the read-out strip, the quarter
+                    strip, the roster bar, then live entry and the log
   styles.css        design tokens and all responsive rules
   js/
     stats.js        the stat catalog — add a stat here to record it

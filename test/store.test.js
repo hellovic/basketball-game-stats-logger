@@ -22,10 +22,63 @@ import {
   setPeriod,
   setPeriodSeconds,
   setPeriodsPerGame,
+  setTeamPeriodTotal,
+  teamPeriodTotal,
   updateTeam,
 } from '../app/js/store.js';
 import { DEFAULT_HALF_SECONDS, DEFAULT_PERIOD_SECONDS } from '../app/js/clock.js';
 import { listPeriods, periodScore } from '../app/js/derive.js';
+
+test('a typed team total is one entry per period, replaced rather than added', () => {
+  const game = createGame();
+  const teamId = game.homeTeamId;
+
+  assert.equal(teamPeriodTotal(game, teamId, 1), null, 'nothing typed to begin with');
+  assert.equal(
+    game.events.filter((e) => e.stat === 'TEAM_TOTAL').length,
+    0,
+    'and no entry for it',
+  );
+
+  setTeamPeriodTotal(game, teamId, 1, 18);
+  assert.equal(teamPeriodTotal(game, teamId, 1), 18);
+  assert.equal(periodScore(game, teamId, 1), 18, 'the period score follows it');
+
+  // Retyping is the correction: the scorer types the number on the board, so a
+  // second number replaces the first rather than adding to it.
+  setTeamPeriodTotal(game, teamId, 1, 20);
+  assert.equal(teamPeriodTotal(game, teamId, 1), 20);
+  assert.equal(periodScore(game, teamId, 1), 20);
+  assert.equal(
+    game.events.filter((e) => e.stat === 'TEAM_TOTAL').length,
+    1,
+    'still one entry',
+  );
+
+  // Each period keeps its own, and the other team is untouched.
+  setTeamPeriodTotal(game, teamId, 2, 9);
+  assert.equal(teamPeriodTotal(game, teamId, 2), 9);
+  assert.equal(teamPeriodTotal(game, game.awayTeamId, 1), null);
+  assert.equal(listPeriods(game).length, 4, 'periods are still the game structure');
+
+  // Clearing takes the entry back out rather than leaving a zero behind.
+  setTeamPeriodTotal(game, teamId, 1, 0);
+  assert.equal(teamPeriodTotal(game, teamId, 1), null);
+  assert.equal(periodScore(game, teamId, 1), 0);
+  assert.equal(
+    game.events.filter((e) => e.stat === 'TEAM_TOTAL').length,
+    1,
+    'only the period 2 entry is left',
+  );
+
+  setTeamPeriodTotal(game, teamId, 2, '');
+  assert.equal(teamPeriodTotal(game, teamId, 2), null, 'a blank box clears it too');
+  assert.equal(
+    game.events.filter((e) => e.stat === 'TEAM_TOTAL').length,
+    0,
+    'and takes the entry with it',
+  );
+});
 
 function fakeStorage() {
   const data = new Map();
