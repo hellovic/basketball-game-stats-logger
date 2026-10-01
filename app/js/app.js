@@ -191,23 +191,35 @@ function render() {
 
   $('undo-button').disabled = game.events.length === 0;
 
-  // One word: the scoreboard is a thin status bar, and the time is already on
-  // the clock face beside the button. The starting value is still announced in
-  // the toast when the clock is refilled.
-  $('clock-toggle').textContent = game.clock.running
-    ? 'Pause'
-    : game.clock.seconds === 0
-      ? 'Start'
-      : 'Resume';
-
-  // The dot beside the clock is the at-a-glance answer to "is it running?".
-  const dot = $('clock-dot');
-  if (dot) {
-    if (game.clock.running) dot.classList.add('is-running');
-    else dot.classList.remove('is-running');
-  }
+  renderClockRunState();
 
   renderWarnings();
+}
+
+/**
+ * The at-a-glance answer to "is it running?".
+ *
+ * This used to be a 10px dot and nothing else, which a scorer looking up
+ * mid-play never saw. Now the clock face itself carries the state — the box and
+ * its digits turn blue and light up on the start — and the run button fills in,
+ * so the answer is readable from across the table rather than from arm's
+ * length. Stopped is the plain box it has always been, so the difference is
+ * between two states rather than between two shades.
+ *
+ * One word on the button: the scoreboard is a thin status bar, and the time is
+ * already on the clock face beside it. The starting value is still announced in
+ * the toast when the clock is refilled.
+ */
+function renderClockRunState() {
+  const running = Boolean(game.clock.running);
+
+  $('clock-box').classList.toggle('is-running', running);
+  $('clock-dot').classList.toggle('is-running', running);
+
+  const toggle = $('clock-toggle');
+  toggle.textContent = running ? 'Pause' : game.clock.seconds === 0 ? 'Start' : 'Resume';
+  toggle.classList.toggle('is-running', running);
+  toggle.setAttribute('aria-pressed', String(running));
 }
 
 function renderScoreboard(derived) {
@@ -1297,7 +1309,7 @@ function beginClockEdit() {
   if (game.clock.running) {
     setClockRunning(game, false);
     save();
-    $('clock-toggle').textContent = 'Resume';
+    renderClockRunState();
     showToast('Clock paused while you set the time.');
   }
 

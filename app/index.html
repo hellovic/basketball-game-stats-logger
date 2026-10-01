@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.18.0">
-<meta name="app-build" content="2026-10-01v">
+<meta name="app-version" content="0.19.0">
+<meta name="app-build" content="2026-10-01w">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -67,7 +67,7 @@
           <!-- The clock face is the edit affordance as well as the readout: tap
                it and type. data-action="edit-clock" keeps a hook for the
                keyboard route too. The dot is the "is it running" tell. -->
-          <div class="clock-box">
+          <div class="clock-box" id="clock-box">
             <span class="clock-box__dot" id="clock-dot" aria-hidden="true"></span>
             <div class="scoreboard__clock" id="clock-display" contenteditable="false"
                  role="textbox" aria-label="Game clock, editable" data-action="edit-clock"

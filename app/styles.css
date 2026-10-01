@@ -529,6 +529,29 @@ ul {
   background: var(--surface);
 }
 
+/* A stopped clock is the plain box above. A running one has to be readable from
+   across the table, so the face carries the state on three channels at once —
+   blue digits, a blue box, and a dot that beats — plus a ring that flares once
+   as it starts, so the moment of starting is felt and not just inferred. */
+.clock-box.is-running {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  animation: clock-start 0.45s ease-out;
+}
+
+.clock-box.is-running .scoreboard__clock {
+  color: var(--accent);
+}
+
+@keyframes clock-start {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(37, 99, 235, 0);
+  }
+}
+
 /* Small status dot: filled and blue while the clock is counting down. */
 .clock-box__dot {
   flex: none;
@@ -542,6 +565,17 @@ ul {
 .clock-box__dot.is-running {
   background: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+  animation: clock-beat 1.6s ease-in-out infinite;
+}
+
+@keyframes clock-beat {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
 }
 
 .scoreboard__clock {
@@ -626,6 +660,18 @@ ul {
 
 .clock-toggle:hover {
   background: #fdf4ec;
+}
+
+/* Running fills the button in. Solid against outline is a difference a glance
+   catches; two words in the same orange were not. */
+.clock-toggle.is-running {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.clock-toggle.is-running:hover {
+  background: var(--accent-hover);
 }
 
 .topbar__tools {

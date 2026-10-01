@@ -41,6 +41,16 @@ class ClassList {
   remove(name) {
     this.set.delete(name);
   }
+  /**
+   * The two-argument form, which is what the app leans on: a state flag should
+   * be set from the model rather than flipped in the DOM.
+   */
+  toggle(name, force) {
+    const on = force === undefined ? !this.set.has(name) : Boolean(force);
+    if (on) this.set.add(name);
+    else this.set.delete(name);
+    return on;
+  }
   contains(name) {
     return this.set.has(name);
   }
@@ -1166,6 +1176,45 @@ test('the clock pauses and resumes without losing time', async () => {
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   runTimers();
   assert.equal(document.getElementById('clock-display').textContent, '09:57');
+});
+
+test('a running clock says so on the face, the dot and the button at once', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
+
+  const box = document.getElementById('clock-box');
+  const dot = document.getElementById('clock-dot');
+  const toggle = document.getElementById('clock-toggle');
+
+  // Stopped is the plain box: no run styling anywhere.
+  assert.equal(box.classList.contains('is-running'), false);
+  assert.equal(dot.classList.contains('is-running'), false);
+  assert.equal(toggle.classList.contains('is-running'), false);
+  assert.equal(toggle.textContent, 'Start');
+  assert.equal(toggle.getAttribute('aria-pressed'), 'false');
+
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
+  assert.equal(box.classList.contains('is-running'), true, 'the face turns live');
+  assert.equal(dot.classList.contains('is-running'), true);
+  assert.equal(toggle.classList.contains('is-running'), true, 'the button fills in');
+  assert.equal(toggle.textContent, 'Pause');
+  assert.equal(toggle.getAttribute('aria-pressed'), 'true');
+
+  // Pausing clears all three: a stopped clock must never look like a running one.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
+  assert.equal(box.classList.contains('is-running'), false);
+  assert.equal(dot.classList.contains('is-running'), false);
+  assert.equal(toggle.classList.contains('is-running'), false);
+  assert.equal(toggle.textContent, 'Resume');
+
+  // Editing pauses the clock, so the tell has to follow that too.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
+  emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
+  assert.equal(box.classList.contains('is-running'), false, 'an edit pauses the clock');
+  assert.equal(toggle.classList.contains('is-running'), false);
+  assert.equal(toggle.textContent, 'Resume');
 });
 
 test('reset puts the clock back to the start of the period and stops it', async () => {

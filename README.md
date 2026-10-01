@@ -309,6 +309,13 @@ re-typing the time. They work while the clock is running, which is when the
 drift is noticed. They will not take it past the end of its period or below
 `00:00`.
 
+**A running clock looks running.** The face turns blue — the digits, the box
+around them and the run button, which fills in — and the dot beside the digits
+beats. Stopped is the plain white face. The tell used to be the dot alone, which
+was too small to catch while play was going on; a filled button against an
+outlined one reads from across the table, where two words in the same colour did
+not.
+
 The clock bar is deliberately thin, and it is sticky — so every pixel it takes is
 permanently lost from the scoring area below. That is why the labels are one word
 and the controls are compact. Phone-width layouts restore full-size tap targets.
