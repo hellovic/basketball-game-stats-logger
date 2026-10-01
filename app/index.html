@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.21.0">
-<meta name="app-build" content="2026-10-01B">
+<meta name="app-version" content="0.22.0">
+<meta name="app-build" content="2026-10-01C">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -405,7 +405,7 @@
       <div class="panel__header">
         <div class="panel__heading">
           <h2 class="panel__title">Box score</h2>
-          <span class="panel__hint">Both teams, every column</span>
+          <span class="panel__hint" id="box-hint">Both teams, every column</span>
         </div>
         <div class="panel__tools">
           <button type="button" class="panel-tool" data-action="toggle-expand" data-panel="box"

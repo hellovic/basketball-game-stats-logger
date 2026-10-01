@@ -1689,6 +1689,35 @@ ul {
   border-bottom: 1px solid var(--border-strong);
 }
 
+/* The expanded box sorts by whatever heading is tapped, so the whole heading
+   cell is the target. It inherits the cell's alignment and type so a sortable
+   heading looks exactly like the plain one it replaces until it is used. */
+.box__sort {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.box__sort:hover {
+  color: var(--ink);
+}
+
+.box__sort.is-sorted {
+  color: var(--accent);
+}
+
+.box__sort-arrow {
+  margin-left: 2px;
+}
+
 .box-score th:first-child,
 .box-score td:first-child {
   text-align: left;

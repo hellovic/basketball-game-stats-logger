@@ -531,7 +531,7 @@ test('expanding the box score adds the shooting percentages and efficiency', asy
     assert.ok(box.includes(`>${label}<`), `expected a ${label} column`);
   }
   // The derived columns are ruled off from the tallies they are read from.
-  assert.match(box, /<th class="is-advanced">FG%</);
+  assert.match(box, /<th class="is-advanced" aria-sort="none"><button[^>]*>FG%</);
 
   // J. Reed: 9 points on 4 of 5 from the field, 1 of 2 from three, no free
   // throws, plus a rebound and an assist.
@@ -547,6 +547,99 @@ test('expanding the box score adds the shooting percentages and efficiency', asy
   // Collapsing puts the compact table back exactly as it was.
   emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
   assert.equal(columnCount(), 13);
+});
+
+test('tapping a heading in the expanded box sorts that team, biggest first', async () => {
+  const dom = await startApp();
+
+  // The players of one team, in the order the table renders them, plus the
+  // label of the last row so the totals row can be checked to stay put.
+  const teamOrder = (team) => {
+    const rows = document
+      .getElementById('box-table')
+      .innerHTML.split('<tr')
+      .slice(1)
+      .map((chunk) => [...chunk.matchAll(/<td[^>]*>([^<]*)</g)].map((m) => m[1]));
+
+    const heading = rows.findIndex((cells) => cells[0] === team);
+    assert.ok(heading !== -1, `expected a heading for ${team}`);
+
+    const players = [];
+    let last = '';
+    for (const cells of rows.slice(heading + 1)) {
+      if (cells[0] === 'Team totals') {
+        last = cells[0];
+        break;
+      }
+      players.push(cells[0].replace(/^#\S+\s/, ''));
+    }
+    return { players, last };
+  };
+
+  const sortBy = (column) =>
+    emit(dom.listeners, 'click', actionable({ action: 'sort-box', column }));
+
+  const jerseyOrder = teamOrder('Northside').players;
+  assert.deepEqual(jerseyOrder, ['J. Reed', 'A. Cole', 'D. Okafor', 'T. Nguyen', 'S. Whitfield']);
+
+  // Nothing is sortable until the panel has the room for the headings to be
+  // worth tapping.
+  assert.doesNotMatch(document.getElementById('box-table').innerHTML, /sort-box/);
+
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
+  assert.match(document.getElementById('box-table').innerHTML, /sort-box/);
+
+  // Rebounds, biggest first: Okafor has two, Reed one, the rest none — and the
+  // three-way tie keeps its jersey order rather than shuffling.
+  sortBy('reb');
+  assert.deepEqual(teamOrder('Northside').players, [
+    'D. Okafor',
+    'J. Reed',
+    'A. Cole',
+    'T. Nguyen',
+    'S. Whitfield',
+  ]);
+  assert.equal(teamOrder('Northside').last, 'Team totals', 'totals stay at the foot of the team');
+
+  // The same heading again turns it round.
+  sortBy('reb');
+  assert.deepEqual(teamOrder('Northside').players, [
+    'A. Cole',
+    'T. Nguyen',
+    'S. Whitfield',
+    'J. Reed',
+    'D. Okafor',
+  ]);
+
+  // A rate nobody has taken cannot win "worst shooter": Whitfield is the only
+  // Northside player with a free throw, and the rest sink below him.
+  sortBy('ftPct');
+  assert.deepEqual(teamOrder('Northside').players, [
+    'S. Whitfield',
+    'J. Reed',
+    'A. Cole',
+    'D. Okafor',
+    'T. Nguyen',
+  ]);
+
+  // The player column sorts on the name.
+  sortBy('name');
+  assert.deepEqual(teamOrder('Northside').players, [
+    'T. Nguyen',
+    'S. Whitfield',
+    'J. Reed',
+    'D. Okafor',
+    'A. Cole',
+  ]);
+  // Each team is sorted inside its own block: the away side is reverse
+  // alphabetical too, and still under its own heading.
+  assert.deepEqual(teamOrder('Riverside').players, [
+    'R. Feldman',
+    'P. Alvarez',
+    'M. Diaz',
+    'L. Mwangi',
+    'K. Boyd',
+  ]);
 });
 
 test('the play-by-play lists the seeded entries newest first', async () => {

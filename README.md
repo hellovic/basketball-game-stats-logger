@@ -131,7 +131,10 @@ team. A scorer enters one team's events at a time.
 5. **Box score** — both teams, per-player totals with a team totals row. The
    heading of the team you are entering is highlighted, so it is obvious where
    the next tap will land. Its **Full width** button adds the shooting
-   percentages and efficiency; see below.
+   percentages and efficiency, and turns every heading into a sort key — tap one
+   and that team's players reorder, biggest first, and a second tap on the same
+   heading turns it round. Each team sorts inside its own block, so the two are
+   never mixed together. See below.
 6. **Team total** — under the entry table: the points the selected team has
    scored *in the period on the board*, typed rather than tapped. See below.
 
@@ -360,6 +363,10 @@ therefore able to pass 100%, and a team that only shot threes will. **`EFF`** is
 the FIBA scoresheet number — points, rebounds, assists, steals and blocks, less
 missed shots and turnovers — so it is worth zero to a player who did nothing and
 can go negative for one who only missed.
+
+Sorting by a rate skips the players who have nothing to sort: someone with no
+shot attempts has no percentage, so they sit at the bottom whichever way the
+column is turned rather than leading it as a 0%.
 
 ### How the score is calculated
 

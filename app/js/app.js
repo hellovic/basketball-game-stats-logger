@@ -82,6 +82,15 @@ let clockTimer = null;
 let expandedPanel = null;
 
 /**
+ * Which column the expanded box score is sorted by, or null for roster order.
+ *
+ * A view choice, not part of the game: it is deliberately not saved with the
+ * score, so opening an archived game never reorders it before the coach has
+ * asked for anything.
+ */
+let boxSort = null;
+
+/**
  * How the panel chrome names itself in tooltips and labels.
  */
 const PANEL_NAMES = { entry: 'live entry', log: 'play-by-play', box: 'box score' };
@@ -651,21 +660,75 @@ function reassignSelect(event) {
                   aria-label="Re-attribute this entry">${options.join('')}</select>`;
 }
 
+/**
+ * The roster in the order the box score should read it.
+ *
+ * `boxSort` holds a column key and a direction; the column itself says what to
+ * compare, which is not always what it prints. A rate with nothing behind it —
+ * no attempts — has no rank at all, so it sinks to the bottom in either
+ * direction rather than being read as a zero and winning "worst shooter".
+ */
+function sortBoxRoster(roster, columns, derived) {
+  if (!boxSort) return roster;
+
+  const column = columns.find((entry) => entry.key === boxSort.key);
+  if (!column && boxSort.key !== 'name') return roster;
+
+  const valueOf = (player) =>
+    boxSort.key === 'name' ? player.name : column.sort(derived.playerLines[player.id]);
+  const slope = boxSort.direction === 'desc' ? -1 : 1;
+
+  return [...roster].sort((a, b) => {
+    const left = valueOf(a);
+    const right = valueOf(b);
+
+    if (left === null || left === undefined) {
+      return right === null || right === undefined ? 0 : 1;
+    }
+    if (right === null || right === undefined) return -1;
+
+    const comparison =
+      typeof left === 'string' ? left.localeCompare(right) : left - right;
+    // Ties keep the roster order the array came in, which is the jersey order a
+    // coach already reads.
+    return slope * comparison;
+  });
+}
+
 function renderBox(derived) {
   const table = $('box-table');
+  const expanded = expandedPanel === 'box';
+
+  // Each column knows what it prints and what it sorts on — the two are not the
+  // same: a made–attempted column prints "4-5" and sorts on the four.
   const columns = [
-    ['PTS', (l) => l.points],
-    ['FG', (l) => madeAttempted(l.fgMade, l.fgAtt)],
-    ['3P', (l) => madeAttempted(l['3PT'].made, l['3PT'].made + l['3PT'].missed)],
-    ['FT', (l) => madeAttempted(l.ftMade, l.ftAtt)],
-    ['REB', (l) => l.reb],
-    ['OREB', (l) => l.rebOff],
-    ['DREB', (l) => l.rebDef],
-    ['AST', (l) => l.ast],
-    ['STL', (l) => l.stl],
-    ['BLK', (l) => l.blk],
-    ['TO', (l) => l.to],
-    ['PF', (l) => l.pf],
+    { key: 'pts', label: 'PTS', value: (l) => l.points, sort: (l) => l.points },
+    {
+      key: 'fg',
+      label: 'FG',
+      value: (l) => madeAttempted(l.fgMade, l.fgAtt),
+      sort: (l) => l.fgMade,
+    },
+    {
+      key: '3p',
+      label: '3P',
+      value: (l) => madeAttempted(l['3PT'].made, l['3PT'].made + l['3PT'].missed),
+      sort: (l) => l['3PT'].made,
+    },
+    {
+      key: 'ft',
+      label: 'FT',
+      value: (l) => madeAttempted(l.ftMade, l.ftAtt),
+      sort: (l) => l.ftMade,
+    },
+    { key: 'reb', label: 'REB', value: (l) => l.reb, sort: (l) => l.reb },
+    { key: 'oreb', label: 'OREB', value: (l) => l.rebOff, sort: (l) => l.rebOff },
+    { key: 'dreb', label: 'DREB', value: (l) => l.rebDef, sort: (l) => l.rebDef },
+    { key: 'ast', label: 'AST', value: (l) => l.ast, sort: (l) => l.ast },
+    { key: 'stl', label: 'STL', value: (l) => l.stl, sort: (l) => l.stl },
+    { key: 'blk', label: 'BLK', value: (l) => l.blk, sort: (l) => l.blk },
+    { key: 'to', label: 'TO', value: (l) => l.to, sort: (l) => l.to },
+    { key: 'pf', label: 'PF', value: (l) => l.pf, sort: (l) => l.pf },
   ];
 
   // Everything up to here is a tally of recorded events; what follows is read
@@ -676,14 +739,14 @@ function renderBox(derived) {
   // once the panel has the whole width. That is what the Full width button on
   // this panel is for, so they are added there and nowhere else: the compact box
   // a scorer watches during play stays the twelve counting columns it was.
-  if (expandedPanel === 'box') {
+  if (expanded) {
     columns.push(
-      ['FG%', (l) => pct(l.fgPct)],
-      ['3P%', (l) => pct(l.fg3Pct)],
-      ['FT%', (l) => pct(l.ftPct)],
-      ['eFG%', (l) => pct(l.efgPct)],
-      ['TS%', (l) => pct(l.tsPct)],
-      ['EFF', (l) => l.eff],
+      { key: 'fgPct', label: 'FG%', value: (l) => pct(l.fgPct), sort: (l) => l.fgPct },
+      { key: 'fg3Pct', label: '3P%', value: (l) => pct(l.fg3Pct), sort: (l) => l.fg3Pct },
+      { key: 'ftPct', label: 'FT%', value: (l) => pct(l.ftPct), sort: (l) => l.ftPct },
+      { key: 'efgPct', label: 'eFG%', value: (l) => pct(l.efgPct), sort: (l) => l.efgPct },
+      { key: 'tsPct', label: 'TS%', value: (l) => pct(l.tsPct), sort: (l) => l.tsPct },
+      { key: 'eff', label: 'EFF', value: (l) => l.eff, sort: (l) => l.eff },
     );
   }
 
@@ -691,8 +754,30 @@ function renderBox(derived) {
   // is ruled off to keep the eye from reading a rate as a tally.
   const cellClass = (index) => (index >= countingColumns ? ' class="is-advanced"' : '');
 
-  const head = `<thead><tr><th>Player</th>${columns
-    .map(([label], index) => `<th${cellClass(index)}>${label}</th>`)
+  // A heading is a button while the panel has the room to sort by it. Tapping
+  // the column a coach reads a box score for — points, efficiency — should be
+  // the fastest way to answer "who is on top", so the first tap sorts it that
+  // way round and the second turns it over.
+  const headCell = (key, label, index) => {
+    const advanced = cellClass(index);
+    if (!expanded) return `<th${advanced}>${label}</th>`;
+
+    const active = boxSort?.key === key;
+    const direction = active ? boxSort.direction : null;
+    const arrow = direction ? (direction === 'desc' ? '&#8595;' : '&#8593;') : '';
+    const ariaSort = direction === 'desc' ? 'descending' : direction ? 'ascending' : 'none';
+
+    return (
+      `<th${advanced} aria-sort="${ariaSort}">` +
+      `<button type="button" class="box__sort${active ? ' is-sorted' : ''}"` +
+      ` data-action="sort-box" data-column="${key}"` +
+      ` title="Sort by ${label}">${label}` +
+      `<span class="box__sort-arrow" aria-hidden="true">${arrow}</span></button></th>`
+    );
+  };
+
+  const head = `<thead><tr>${headCell('name', 'Player', -1)}${columns
+    .map(({ key, label }, index) => headCell(key, label, index))
     .join('')}</tr></thead>`;
 
   const currentTeamId = teamIdFor(detailTeamSlot);
@@ -700,13 +785,20 @@ function renderBox(derived) {
   $('box-team-name').textContent = `${safeText(game.teams[currentTeamId]?.name) || 'Team'} · ${currentCount} player${
     currentCount === 1 ? '' : 's'
   }`;
+  // The headings only become buttons with the room the full width gives them, so
+  // the hint is where the panel says so.
+  $('box-hint').textContent = expanded ? 'Tap a heading to sort' : 'Both teams, every column';
 
   const body = [game.awayTeamId, game.homeTeamId]
     .filter(Boolean)
     .map((teamId) => {
       const team = game.teams[teamId];
-      const roster = playersOf(game, teamId);
       const teamLineValues = derived.teamTotals[teamId] || teamLine(game, teamId);
+
+      // Sorting happens inside each team rather than across both: the table is
+      // read team by team, and a heading that jumped between them would be
+      // harder to follow than the roster order it replaces.
+      const roster = sortBoxRoster(playersOf(game, teamId), columns, derived);
 
       // Both teams stay in one table so the two totals can be read against each
       // other; the heading of the team being entered is marked so it is obvious
@@ -721,14 +813,18 @@ function renderBox(derived) {
           if (!line) return '';
           return `<tr>
             <td class="js-name">${escapeHtml(player.number) ? `#${escapeHtml(player.number)} ` : ''}${escapeHtml(player.name)}</td>
-            ${columns.map(([, get], index) => `<td${cellClass(index)}>${escapeHtml(get(line))}</td>`).join('')}
+            ${columns
+              .map(({ value }, index) => `<td${cellClass(index)}>${escapeHtml(value(line))}</td>`)
+              .join('')}
           </tr>`;
         })
         .join('');
 
       const totals = `<tr class="row--team">
         <td>Team totals</td>
-        ${columns.map(([, get], index) => `<td${cellClass(index)}>${escapeHtml(get(teamLineValues))}</td>`).join('')}
+        ${columns
+          .map(({ value }, index) => `<td${cellClass(index)}>${escapeHtml(value(teamLineValues))}</td>`)
+          .join('')}
       </tr>`;
 
       return heading + playerRows + totals;
@@ -1645,6 +1741,17 @@ document.addEventListener('click', (event) => {
     case 'toggle-expand': {
       const panel = target.dataset.panel;
       expandedPanel = expandedPanel === panel ? null : panel;
+      render();
+      break;
+    }
+    case 'sort-box': {
+      // First tap puts the biggest number on top — the way a box score is read
+      // — and a second tap on the same heading turns it round.
+      const key = target.dataset.column;
+      boxSort =
+        boxSort?.key === key && boxSort.direction === 'desc'
+          ? { key, direction: 'asc' }
+          : { key, direction: 'desc' };
       render();
       break;
     }
