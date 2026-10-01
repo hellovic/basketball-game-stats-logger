@@ -159,6 +159,28 @@ test('box score has one row per player plus a team totals row', () => {
   // than a misleading zero.
   assert.equal(cole[cols['FT%']], '');
 
+  // The expanded box's rates export too, after the counting columns so a
+  // spreadsheet built on the earlier ones keeps its references.
+  assert.equal(header[header.length - 4], '3P%');
+  assert.equal(header[header.length - 3], 'eFG%');
+  assert.equal(header[header.length - 2], 'TS%');
+  assert.equal(header[header.length - 1], 'EFF');
+  assert.equal(header.indexOf('PF') < header.indexOf('3P%'), true);
+
+  // A. Cole: one three, no other shot, so 100% from three and 150% effective
+  // (a made three is worth half a make more than a two).
+  assert.equal(cole[cols['3P%']], '100.0');
+  assert.equal(cole[cols['eFG%']], '150.0');
+  assert.equal(cole[cols['TS%']], '150.0');
+  // 3 points and a rebound, with nothing missed and no turnover.
+  assert.equal(cole[cols.EFF], '4');
+
+  // J. Reed: one of two from the field, both twos, and nothing else.
+  assert.equal(reed[cols['3P%']], '');
+  assert.equal(reed[cols['eFG%']], '50.0');
+  assert.equal(reed[cols['TS%']], '50.0');
+  assert.equal(reed[cols.EFF], '1');
+
   const awayTotal = rows.find((row) => row[2] === 'TEAM TOTALS' && row[0] === 'Riverside');
   assert.equal(awayTotal[cols.PTS], '3');
   // The team-level rebound counts for the team even with no player attached.

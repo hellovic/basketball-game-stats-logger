@@ -130,7 +130,8 @@ team. A scorer enters one team's events at a time.
    different player on the same team.
 5. **Box score** — both teams, per-player totals with a team totals row. The
    heading of the team you are entering is highlighted, so it is obvious where
-   the next tap will land.
+   the next tap will land. Its **Full width** button adds the shooting
+   percentages and efficiency; see below.
 6. **Team total** — under the entry table: the points the selected team has
    scored *in the period on the board*, typed rather than tapped. See below.
 
@@ -339,16 +340,26 @@ stands.
 | `FT` / `FT%` | Free throws made–attempted |
 | `REB` / `OREB` / `DREB` | Rebounds, total and split |
 | `AST` `STL` `BLK` `TO` `PF` | Assists, steals, blocks, turnovers, personal fouls |
+| `3P%` `eFG%` `TS%` | Three-point, effective field goal and true shooting percentages |
+| `EFF` | FIBA efficiency |
 
 **Misses are recorded, not skipped.** Tapping `2`, `3` or `1` is what makes the
 percentage columns real. A game logged with only made shots shows `100%` rather
 than nothing.
 
 Every one of these is recorded and exported. The **entry rows** are the keys
-alone; the **box score** shows the per-player totals except the percentages,
-which would not fit thirteen columns into a quarter of an iPad screen — `FG%`
-and `FT%` appear in **More → View game summary** and in the CSV exports, where
-the made–attempted figures beside them say the same thing.
+alone; the **box score** shows the counting totals, and its **Full width**
+button adds the six derived columns — `FG%`, `3P%`, `FT%`, `eFG%`, `TS%` and
+`EFF` — which need the room that only the full width gives them. They are in
+the box score CSV as well, so a downloaded sheet matches the screen.
+
+Two of those read differently from a plain percentage and are worth knowing
+before you quote them to a player. **`eFG%`** counts a three as half a make more
+than a two, and **`TS%`** folds free throws in at 0.44 of a trip each; both are
+therefore able to pass 100%, and a team that only shot threes will. **`EFF`** is
+the FIBA scoresheet number — points, rebounds, assists, steals and blocks, less
+missed shots and turnovers — so it is worth zero to a player who did nothing and
+can go negative for one who only missed.
 
 ### How the score is calculated
 

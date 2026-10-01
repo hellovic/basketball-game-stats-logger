@@ -76,6 +76,12 @@ export function boxScoreCsv(game) {
     'BLK',
     'TO',
     'PF',
+    // The derived rates sit at the end rather than beside FG% and FT%, so a
+    // spreadsheet built on the earlier columns keeps its references.
+    '3P%',
+    'eFG%',
+    'TS%',
+    'EFF',
   ];
 
   const rows = [header];
@@ -126,7 +132,19 @@ function playerRow(teamName, number, playerName, line) {
     line.blk,
     line.to,
     line.pf,
+    percent(line.fg3Pct),
+    percent(line.efgPct),
+    percent(line.tsPct),
+    line.eff,
   ];
+}
+
+/**
+ * A percentage as the number a spreadsheet wants, to one decimal like the
+ * FG% and FT% columns beside it, and empty when there was nothing to shoot.
+ */
+function percent(ratio) {
+  return ratio === null || ratio === undefined ? '' : (ratio * 100).toFixed(1);
 }
 
 /**

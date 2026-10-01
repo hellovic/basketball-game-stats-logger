@@ -484,12 +484,69 @@ test('the sample game renders a populated box score and scoresheet', async () =>
   assert.match(box, /M\. Diaz/);
   assert.match(box, /Team totals/);
 
+  // The counting line is all that is there while the panel shares the screen.
+  assert.equal((box.match(/<th[ >]/g) || []).length, 13, 'Player plus twelve columns');
+  assert.doesNotMatch(box, /is-advanced/);
+
   const sheet = document.getElementById('sheet-table').innerHTML;
   assert.match(sheet, /Northside/);
   assert.match(sheet, /Riverside/);
   // Four quarters plus a total column.
   assert.match(sheet, />Q1</);
   assert.match(sheet, />Q4</);
+});
+
+test('expanding the box score adds the shooting percentages and efficiency', async () => {
+  const dom = await startApp();
+
+  // Read one player's row as rendered, so the assertions are on what a coach
+  // would actually be reading rather than on the model underneath it.
+  const rows = () => document.getElementById('box-table').innerHTML.split('<tr').slice(1);
+  const cells = (row) => [...row.matchAll(/<td[^>]*>([^<]*)</g)].map((match) => match[1]);
+  const rowFor = (name) => {
+    const row = rows().find((chunk) => chunk.includes(name));
+    assert.ok(row, `expected a row for ${name}`);
+    return cells(row);
+  };
+  // A team's totals sit under its heading, and carry no name of their own.
+  const totalsFor = (teamName) => {
+    const chunks = rows();
+    const heading = chunks.findIndex((chunk) => chunk.includes(teamName));
+    assert.ok(heading !== -1, `expected a heading for ${teamName}`);
+    const totals = chunks.slice(heading).find((chunk) => chunk.includes('Team totals'));
+    return cells(totals);
+  };
+  const columnCount = () =>
+    (document.getElementById('box-table').innerHTML.match(/<th[ >]/g) || []).length;
+
+  const compact = rowFor('J. Reed');
+  assert.equal(compact.length, 13, 'name plus the twelve counting columns');
+
+  // The Full width control on this panel is what asks for the rates.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
+
+  const box = document.getElementById('box-table').innerHTML;
+  assert.equal(columnCount(), 19, 'Player, twelve tallies, six rates');
+  for (const label of ['FG%', '3P%', 'FT%', 'eFG%', 'TS%', 'EFF']) {
+    assert.ok(box.includes(`>${label}<`), `expected a ${label} column`);
+  }
+  // The derived columns are ruled off from the tallies they are read from.
+  assert.match(box, /<th class="is-advanced">FG%</);
+
+  // J. Reed: 9 points on 4 of 5 from the field, 1 of 2 from three, no free
+  // throws, plus a rebound and an assist.
+  const reed = rowFor('J. Reed');
+  assert.deepEqual(reed.slice(13), ['80%', '50%', '—', '90%', '90%', '10']);
+
+  // Riverside's team row: 21 points on 9 of 10 from the field, all of them
+  // threes. Effective and true shooting can pass 100% — a three is worth more
+  // than the two points a plain percentage assumes.
+  const away = totalsFor('Riverside');
+  assert.deepEqual(away.slice(13), ['90%', '100%', '—', '105%', '105%', '24']);
+
+  // Collapsing puts the compact table back exactly as it was.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
+  assert.equal(columnCount(), 13);
 });
 
 test('the play-by-play lists the seeded entries newest first', async () => {

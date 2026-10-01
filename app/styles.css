@@ -1656,9 +1656,10 @@ ul {
    Box score
    =========================================================================== */
 
-/* The box score is the widest table in the app and has to clear thirteen
-   columns inside a quarter of the screen, so it runs a size smaller than the
-   entry table and leans on tabular figures to stay readable. */
+/* The box score is the widest table in the app: thirteen columns inside a
+   quarter of the screen while it shares the workspace, nineteen when it is
+   expanded. It runs a size smaller than the entry table and leans on tabular
+   figures to stay readable either way. */
 .box-score {
   width: 100%;
   border-collapse: separate;
@@ -1714,6 +1715,17 @@ ul {
   max-width: 84px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* The expanded box carries the derived rates to the right of the tallies. A rule
+   between the two keeps a percentage from being read as a count — they are the
+   same numbers in the same row, and only the line says which is which. */
+.box-score .is-advanced {
+  border-left: 1px solid var(--border);
+}
+
+.box-score thead .is-advanced {
+  border-left-color: var(--border-strong);
 }
 
 /* Both teams are in the one table, so the team whose roster is on the entry

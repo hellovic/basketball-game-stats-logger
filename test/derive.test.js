@@ -246,6 +246,16 @@ test('player line tracks points, rebounds and shooting splits', () => {
   assert.equal(line.ftAtt, 2);
   assert.equal(line.ftPct, 0.5);
 
+  // 3P% is its own split: 1 made of 2.
+  assert.equal(line.fg3Pct, 0.5);
+  // eFG% gives a three half a make more than a two: (3 + 0.5) / 5.
+  assert.equal(line.efgPct, 0.7);
+  // TS% weighs the two free throws as 0.44 of a possession each: 8 / (2 * 5.88).
+  assert.equal(Math.round(line.tsPct * 1000) / 1000, 0.68);
+  // EFF is what was added minus what the misses and turnovers cost:
+  // (8 + 3 + 1 + 1 + 1) - (2 missed field goals + 1 missed free throw + 1 TO).
+  assert.equal(line.eff, 10);
+
   // Rebounds land in the total as well as the split.
   assert.equal(line.reb, 3);
   assert.equal(line.rebOff, 1);
@@ -272,12 +282,57 @@ test('a player with only misses has zero points but real attempts', () => {
   assert.equal(line.fgPct, 0);
   assert.equal(line.ftAtt, 1);
   assert.equal(line.ftPct, 0);
+  assert.equal(line.fg3Pct, 0);
+  assert.equal(line.efgPct, 0);
+  assert.equal(line.tsPct, 0);
+  // Three misses and no points: efficiency goes below zero rather than stopping
+  // at it, which is the whole point of the number.
+  assert.equal(line.eff, -3);
   assert.equal(teamTotal(game, game.homeTeamId), 0);
 
   // No attempts anywhere should read as "—", not 0%.
   const { game: fresh, players: freshPlayers } = fixture();
   assert.equal(playerLine(fresh, freshPlayers.home1.id).fgPct, null);
+  assert.equal(playerLine(fresh, freshPlayers.home1.id).fg3Pct, null);
+  assert.equal(playerLine(fresh, freshPlayers.home1.id).efgPct, null);
+  assert.equal(playerLine(fresh, freshPlayers.home1.id).tsPct, null);
   assert.equal(pct(playerLine(fresh, freshPlayers.home1.id).fgPct), '—');
+
+  // A line with nothing in it is worth zero efficiency, not "no efficiency":
+  // the number always exists, unlike a rate with no attempts behind it.
+  assert.equal(playerLine(fresh, freshPlayers.home1.id).eff, 0);
+});
+
+test('the derived rates are the same arithmetic on a team line as on a player line', () => {
+  const { game, players } = fixture();
+  const { home1, home2 } = players;
+
+  log(game, '2PT', 'made', { player: home1 });
+  log(game, '3PT', 'made', { player: home1 });
+  log(game, '3PT', 'missed', { player: home1 });
+  log(game, 'FT', 'made', { player: home2 });
+  log(game, 'FT', 'missed', { player: home2 });
+  log(game, 'REB', 'OFF', { player: home2 });
+  log(game, 'AST', null, { player: home2 });
+  log(game, 'TO', null, { player: home1 });
+
+  const team = teamLine(game, game.homeTeamId);
+  const combined = computeGame(game);
+  const fromPlayers = combined.playerLines[home1.id];
+
+  // 6 points: a two, a three and a free throw, on 2 of 3 from the field and
+  // 1 of 2 from the line.
+  assert.equal(team.points, 6);
+  assert.equal(team.fgPct, 2 / 3);
+  assert.equal(team.fg3Pct, 0.5);
+  assert.equal(team.ftPct, 0.5);
+  assert.equal(team.efgPct, 2.5 / 3);
+  assert.equal(team.eff, 6 + 1 + 1 - (1 + 1 + 1));
+
+  // The team line is the sum of the two players', rates included, because it is
+  // the same formula over the same events.
+  assert.equal(team.points, combined.playerLines[home1.id].points + combined.playerLines[home2.id].points);
+  assert.equal(team.eff, fromPlayers.eff + combined.playerLines[home2.id].eff);
 });
 
 // ---------------------------------------------------------------------------

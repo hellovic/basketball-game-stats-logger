@@ -77,12 +77,37 @@ function addEventToLine(line, event) {
   }
 }
 
-/** Attach the derived percentages without storing them. */
+/**
+ * Attach the derived rates without storing them.
+ *
+ * Every one of these is a read of the same line, so nothing here can drift from
+ * the raw counts beside it — which is the whole reason the box score is
+ * computed rather than kept.
+ *
+ * `withPercentages` keeps its name because that is what the callers ask for;
+ * the last two entries are a rate and a score rather than a percentage.
+ */
 function withPercentages(line) {
+  const threes = line['3PT'];
+  const threesAtt = threes.made + threes.missed;
+
+  // True shooting weighs every trip to the line as 0.44 of a possession, which
+  // is the standard way to fold free throws into a single shooting number.
+  const trueShooting = 2 * (line.fgAtt + 0.44 * line.ftAtt);
+
   return {
     ...line,
     fgPct: line.fgAtt === 0 ? null : line.fgMade / line.fgAtt,
     ftPct: line.ftAtt === 0 ? null : line.ftMade / line.ftAtt,
+    fg3Pct: threesAtt === 0 ? null : threes.made / threesAtt,
+    // Effective field goal: a three is worth half a make more than a two.
+    efgPct: line.fgAtt === 0 ? null : (line.fgMade + 0.5 * threes.made) / line.fgAtt,
+    tsPct: trueShooting === 0 ? null : line.points / trueShooting,
+    // FIBA's efficiency, the number on a scoresheet: what the player added
+    // minus what the misses and turnovers cost. It can go negative.
+    eff:
+      line.points + line.reb + line.ast + line.stl + line.blk -
+      (line.fgAtt - line.fgMade + (line.ftAtt - line.ftMade) + line.to),
   };
 }
 

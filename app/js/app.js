@@ -49,6 +49,7 @@ import {
   displayTime,
   eventClock,
   madeAttempted,
+  pct,
   periodLabel,
   safeText,
   structureLabel,
@@ -667,8 +668,31 @@ function renderBox(derived) {
     ['PF', (l) => l.pf],
   ];
 
+  // Everything up to here is a tally of recorded events; what follows is read
+  // off those tallies.
+  const countingColumns = columns.length;
+
+  // The rates read the same line the columns beside them do, and they only fit
+  // once the panel has the whole width. That is what the Full width button on
+  // this panel is for, so they are added there and nowhere else: the compact box
+  // a scorer watches during play stays the twelve counting columns it was.
+  if (expandedPanel === 'box') {
+    columns.push(
+      ['FG%', (l) => pct(l.fgPct)],
+      ['3P%', (l) => pct(l.fg3Pct)],
+      ['FT%', (l) => pct(l.ftPct)],
+      ['eFG%', (l) => pct(l.efgPct)],
+      ['TS%', (l) => pct(l.tsPct)],
+      ['EFF', (l) => l.eff],
+    );
+  }
+
+  // Everything after the counting columns is derived rather than recorded, so it
+  // is ruled off to keep the eye from reading a rate as a tally.
+  const cellClass = (index) => (index >= countingColumns ? ' class="is-advanced"' : '');
+
   const head = `<thead><tr><th>Player</th>${columns
-    .map(([label]) => `<th>${label}</th>`)
+    .map(([label], index) => `<th${cellClass(index)}>${label}</th>`)
     .join('')}</tr></thead>`;
 
   const currentTeamId = teamIdFor(detailTeamSlot);
@@ -697,14 +721,14 @@ function renderBox(derived) {
           if (!line) return '';
           return `<tr>
             <td class="js-name">${escapeHtml(player.number) ? `#${escapeHtml(player.number)} ` : ''}${escapeHtml(player.name)}</td>
-            ${columns.map(([, get]) => `<td>${escapeHtml(get(line))}</td>`).join('')}
+            ${columns.map(([, get], index) => `<td${cellClass(index)}>${escapeHtml(get(line))}</td>`).join('')}
           </tr>`;
         })
         .join('');
 
       const totals = `<tr class="row--team">
         <td>Team totals</td>
-        ${columns.map(([, get]) => `<td>${escapeHtml(get(teamLineValues))}</td>`).join('')}
+        ${columns.map(([, get], index) => `<td${cellClass(index)}>${escapeHtml(get(teamLineValues))}</td>`).join('')}
       </tr>`;
 
       return heading + playerRows + totals;
