@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.16.1">
-<meta name="app-build" content="2026-10-01t">
+<meta name="app-version" content="0.17.0">
+<meta name="app-build" content="2026-10-01u">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -37,18 +37,20 @@
 <header class="scoreboard" id="scoreboard">
   <div class="scoreboard__inner">
 
-    <button type="button" class="team-block team-block--away" id="team-block-away"
-            data-action="select-team" data-team-slot="away"
-            title="Show the away team's roster and stats">
+    <!-- Home reads inward from the left, away outward to the right: the board
+         runs home-first, the same way the quarter strip reads below it. -->
+    <button type="button" class="team-block team-block--home" id="team-block-home"
+            data-action="select-team" data-team-slot="home"
+            title="Show the home team's roster and stats">
       <span class="team-block__text">
-        <span class="team-block__name" id="score-away-name">Away</span>
+        <span class="team-block__name" id="score-home-name">Home</span>
         <span class="team-block__meta">
-          <span class="team-block__slot">Away</span>
+          <span class="team-block__slot">Home</span>
           <span class="team-block__sep" aria-hidden="true">&middot;</span>
-          <span class="team-block__abbrev" id="score-away-abbrev">AWY</span>
+          <span class="team-block__abbrev" id="score-home-abbrev">HOM</span>
         </span>
       </span>
-      <span class="team-block__score" id="score-away">0</span>
+      <span class="team-block__score" id="score-home">0</span>
     </button>
 
     <div class="scoreboard__center">
@@ -77,16 +79,16 @@
       </div>
     </div>
 
-    <button type="button" class="team-block team-block--home" id="team-block-home"
-            data-action="select-team" data-team-slot="home"
-            title="Show the home team's roster and stats">
-      <span class="team-block__score" id="score-home">0</span>
+    <button type="button" class="team-block team-block--away" id="team-block-away"
+            data-action="select-team" data-team-slot="away"
+            title="Show the away team's roster and stats">
+      <span class="team-block__score" id="score-away">0</span>
       <span class="team-block__text">
-        <span class="team-block__name" id="score-home-name">Home</span>
+        <span class="team-block__name" id="score-away-name">Away</span>
         <span class="team-block__meta">
-          <span class="team-block__slot">Home</span>
+          <span class="team-block__slot">Away</span>
           <span class="team-block__sep" aria-hidden="true">&middot;</span>
-          <span class="team-block__abbrev" id="score-home-abbrev">HOM</span>
+          <span class="team-block__abbrev" id="score-away-abbrev">AWY</span>
         </span>
       </span>
     </button>

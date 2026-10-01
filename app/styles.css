@@ -384,14 +384,15 @@ ul {
 }
 
 .team-block--away {
-  justify-self: start;
+  justify-self: end;
+  text-align: right;
   --team-accent: var(--away-accent);
   --team-soft: var(--away-soft);
 }
 
 .team-block--home {
-  justify-self: end;
-  text-align: right;
+  justify-self: start;
+  text-align: left;
   --team-accent: var(--home-accent);
   --team-soft: var(--home-soft);
 }
@@ -442,7 +443,7 @@ ul {
   color: var(--ink-faint);
 }
 
-.team-block--home .team-block__meta {
+.team-block--away .team-block__meta {
   justify-content: flex-end;
 }
 
@@ -2722,12 +2723,12 @@ ul {
   }
 
   .team-block--away {
-    grid-column: 1;
+    grid-column: 2;
     grid-row: 2;
   }
 
   .team-block--home {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 2;
   }
 

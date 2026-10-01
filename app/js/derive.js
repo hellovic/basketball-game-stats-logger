@@ -134,10 +134,13 @@ export function teamTotal(game, teamId) {
 /**
  * The quarter-by-quarter grid shown on the scoreboard and the scoresheet. Every
  * cell is derived from logged events, so there is nothing to flag.
+ *
+ * Home leads, matching the scoreboard above it: the home side is the left-hand
+ * block and the top row of the strip, so the two read as the same order.
  */
 export function periodGrid(game) {
   const periods = listPeriods(game);
-  const rows = [game.awayTeamId, game.homeTeamId].filter(Boolean).map((teamId) => {
+  const rows = [game.homeTeamId, game.awayTeamId].filter(Boolean).map((teamId) => {
     const cells = periods.map((period) => ({
       period,
       value: periodScore(game, teamId, period),
