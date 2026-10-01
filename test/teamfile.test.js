@@ -86,10 +86,25 @@ test('the exported team carries only what a team file needs', () => {
 
   // Internal ids are deliberately not exported: they mean nothing in another
   // browser, and `mergeRoster` regenerates them on load.
-  assert.deepEqual(Object.keys(parsed.team).sort(), ['abbreviation', 'name', 'players']);
+  assert.deepEqual(Object.keys(parsed.team).sort(), ['abbreviation', 'color', 'name', 'players']);
+  assert.equal(parsed.team.color, 'blue', 'the colour travels with the team');
   for (const player of parsed.team.players) {
     assert.deepEqual(Object.keys(player).sort(), ['active', 'name', 'number']);
   }
+});
+
+test('a colour the format does not know is left out rather than written through', () => {
+  const parsed = JSON.parse(
+    teamFileJson({ name: 'Northside', players: [{ number: '4', name: 'J. Reed' }], color: 'chartreuse' }),
+  );
+  assert.equal('color' in parsed.team, false, 'an unknown colour is dropped');
+
+  // A team saved without one says nothing, so the importer leaves the colour
+  // this team already wears alone.
+  const plain = JSON.parse(
+    teamFileJson({ name: 'Northside', players: [{ number: '4', name: 'J. Reed' }] }),
+  );
+  assert.equal('color' in plain.team, false);
 });
 
 test('exporting normalises the fields the importer depends on', () => {

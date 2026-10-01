@@ -40,14 +40,35 @@
   --border: #e6e8f2;
   --border-strong: #d2d7e6;
 
-  /* Accents: one per team, plus the app's own action blue. */
+  /* Team colours. A team stores a key from this list rather than a colour: an
+     accent and the soft tint behind it have to be chosen together to stay
+     readable, and the key is what travels in a saved team file. */
+  --team-blue: #2563eb;
+  --team-blue-soft: #e8efff;
+  --team-red: #e03131;
+  --team-red-soft: #fdecec;
+  --team-green: #2f9e44;
+  --team-green-soft: #e9f6ed;
+  --team-amber: #b4690e;
+  --team-amber-soft: #fdf1e0;
+  --team-purple: #7c4ddb;
+  --team-purple-soft: #f0eafb;
+  --team-teal: #0f7b8a;
+  --team-teal-soft: #e3f4f6;
+  --team-pink: #c2255c;
+  --team-pink-soft: #fdeaf2;
+  --team-slate: #3f4a5f;
+  --team-slate-soft: #eceff4;
+
+  /* Accents: one per team, plus the app's own action blue. Home is blue and
+     away is red until someone says otherwise on the roster bar. */
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --accent-soft: #e8efff;
-  --away-accent: #e03131;
-  --away-soft: #fdecec;
-  --home-accent: #2563eb;
-  --home-soft: #e8efff;
+  --away-accent: var(--team-red);
+  --away-soft: var(--team-red-soft);
+  --home-accent: var(--team-blue);
+  --home-soft: var(--team-blue-soft);
 
   /* The clock's own colour, for the one thing on the page that is a state
      rather than a count. Deliberately not the steal green: a running clock
@@ -1077,6 +1098,60 @@ ul {
   width: 74px;
 }
 
+/* The colour swatches. Each button is a filled circle in its own colour, which
+   is the whole label — the key is in the title and the aria-label for anyone
+   who cannot see it. The chosen one carries a ring rather than a tick: a tick
+   over a dark swatch is hard to see, and a ring cannot be mistaken for one of
+   the colours. */
+.swatches {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.swatch:hover {
+  transform: scale(1.08);
+}
+
+.swatch.is-current {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
+}
+
+.swatch--blue {
+  background: var(--team-blue);
+}
+.swatch--red {
+  background: var(--team-red);
+}
+.swatch--green {
+  background: var(--team-green);
+}
+.swatch--amber {
+  background: var(--team-amber);
+}
+.swatch--purple {
+  background: var(--team-purple);
+}
+.swatch--teal {
+  background: var(--team-teal);
+}
+.swatch--pink {
+  background: var(--team-pink);
+}
+.swatch--slate {
+  background: var(--team-slate);
+}
+
 .add-player {
   display: flex;
   flex: none;
@@ -1761,8 +1836,8 @@ ul {
    table has to be marked — otherwise there is no way to tell where the next
    tap will land. */
 .box-score .team-heading.is-current td {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--team-soft);
+  color: var(--team-accent);
 }
 
 /* ===========================================================================
@@ -2793,6 +2868,14 @@ ul {
     min-width: 56px;
   }
 
+  /* The roster bar carries the team identity, the add-player form and the
+     selection controls, and by here they no longer fit on one line. It wraps
+     rather than scrolling: a swatch pushed out of sight is a colour nobody can
+     reach. */
+  .rosterbar {
+    flex-wrap: wrap;
+  }
+
   .workspace {
     display: block;
     height: auto;
@@ -2909,10 +2992,6 @@ ul {
     padding: 0 7px;
     font-size: 10px;
     letter-spacing: 0.06em;
-  }
-
-  .rosterbar {
-    flex-wrap: wrap;
   }
 
   .rosterbar .field input,

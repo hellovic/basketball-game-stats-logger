@@ -52,8 +52,10 @@ export function createGame(overrides = {}) {
     homeTeamId,
     awayTeamId,
     teams: {
-      [homeTeamId]: { id: homeTeamId, name: 'Home', abbreviation: 'HOM' },
-      [awayTeamId]: { id: awayTeamId, name: 'Away', abbreviation: 'AWY' },
+      // The colour is a key from the app's palette, not a colour value, so a
+      // team always has a readable accent and a tint that goes with it.
+      [homeTeamId]: { id: homeTeamId, name: 'Home', abbreviation: 'HOM', color: 'blue' },
+      [awayTeamId]: { id: awayTeamId, name: 'Away', abbreviation: 'AWY', color: 'red' },
     },
     players: [],
     events: [],
@@ -194,6 +196,9 @@ export function mergeRoster(game, teamId, savedTeam) {
   if (team) {
     if (savedTeam.name) team.name = savedTeam.name;
     if (savedTeam.abbreviation) team.abbreviation = savedTeam.abbreviation;
+    // A team keeps the colour it came with; a file that says nothing about one
+    // leaves whatever this team already wears.
+    if (savedTeam.color) team.color = savedTeam.color;
   }
 
   touch(game);
@@ -463,6 +468,14 @@ export function deserialize(raw) {
     game.currentPeriod ??= 1;
     game.periodsPerGame ??= 4;
     game.periodSeconds ??= defaultPeriodSeconds(game.periodsPerGame);
+
+    // A game saved before teams had colours takes the defaults once, by side.
+    // From then on the colour belongs to the team rather than to whichever end
+    // of the scoreboard it happens to be standing at.
+    for (const [teamId, team] of Object.entries(game.teams)) {
+      if (!team || typeof team !== 'object') continue;
+      team.color ??= teamId === game.homeTeamId ? 'blue' : 'red';
+    }
     return game;
   } catch {
     return null;

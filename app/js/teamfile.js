@@ -18,6 +18,22 @@ export const TEAM_FILE_FORMAT = 'game-stats-logger/team';
 export const TEAM_FILE_VERSION = 1;
 
 /**
+ * The colours a team file may carry.
+ *
+ * Kept here rather than imported from the UI so the file format has no
+ * dependency on the app layer. An unknown key is dropped on read and the team
+ * takes the default for its side, which is what a file written by a newer
+ * version should do here.
+ */
+const TEAM_COLORS = ['blue', 'red', 'green', 'amber', 'purple', 'teal', 'pink', 'slate'];
+
+/** A colour key worth writing to a file, or null when there is nothing to say. */
+function teamColor(value) {
+  const key = String(value ?? '').trim().toLowerCase();
+  return TEAM_COLORS.includes(key) ? key : null;
+}
+
+/**
  * Capture a team and its roster from a game, ready to be written to a file.
  *
  * Internal player ids are deliberately left behind: they would mean nothing in
@@ -30,6 +46,7 @@ export function teamFromGame(game, teamId, name) {
   return {
     name: String(name || team.name || 'Team').trim(),
     abbreviation: String(team.abbreviation || '').trim().toUpperCase().slice(0, 4),
+    color: teamColor(team.color),
     players: game.players
       .filter((player) => player.teamId === teamId)
       .sort((a, b) => (parseInt(a.number, 10) || 0) - (parseInt(b.number, 10) || 0))
@@ -56,6 +73,7 @@ export function teamFileJson(team, { appVersion = null, exportedAt = Date.now() 
     team: {
       name: String(team?.name ?? '').trim() || 'Team',
       abbreviation: String(team?.abbreviation ?? '').trim().toUpperCase().slice(0, 4),
+      ...(teamColor(team?.color) ? { color: teamColor(team.color) } : {}),
       players: (team?.players ?? []).map((player) => ({
         number: String(player?.number ?? '').trim(),
         name: String(player?.name ?? '').trim(),
@@ -152,6 +170,7 @@ export function parseTeamFile(text) {
     team: {
       name: name || 'Imported team',
       abbreviation: String(raw.abbreviation ?? '').trim().toUpperCase().slice(0, 4),
+      color: teamColor(raw.color),
       players,
     },
     error: null,

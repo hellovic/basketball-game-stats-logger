@@ -108,6 +108,25 @@ test('a save from before the start time existed loads with a blank one', () => {
   assert.equal(restored.time, '');
 });
 
+test('a save from before teams had colours takes the defaults once, by side', () => {
+  const game = createGame();
+  delete game.teams[game.homeTeamId].color;
+  delete game.teams[game.awayTeamId].color;
+
+  const restored = deserialize(JSON.stringify({ game }));
+
+  // From here on the colour is the team's own rather than the side's, so a swap
+  // moves the colour with the team instead of repainting both.
+  assert.equal(restored.teams[restored.homeTeamId].color, 'blue');
+  assert.equal(restored.teams[restored.awayTeamId].color, 'red');
+
+  // A colour already chosen survives the trip.
+  const chosen = createGame();
+  updateTeam(chosen, chosen.homeTeamId, { color: 'teal' });
+  const again = deserialize(JSON.stringify({ game: chosen }));
+  assert.equal(again.teams[again.homeTeamId].color, 'teal');
+});
+
 test('a quarter game starts with ten-minute periods', () => {
   const game = createGame();
   assert.equal(game.periodsPerGame, 4);

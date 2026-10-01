@@ -78,7 +78,19 @@ class Element {
     this.checked = false;
     this.indeterminate = false;
     this.files = [];
-    this.style = {};
+    /**
+     * The two ways the app writes inline styles: `cssText` for a whole
+     * declaration, and `setProperty` for one custom property. Both land on the
+     * object, so a test can read back what a render set.
+     */
+    this.style = {
+      setProperty(name, value) {
+        this[name] = String(value);
+      },
+      getPropertyValue(name) {
+        return this[name] ?? '';
+      },
+    };
     this.href = '';
     this.download = '';
   }
@@ -2168,4 +2180,47 @@ test('the menu puts each team on the other side', async () => {
 
   const game = storedGame();
   assert.equal(game.teams[game.homeTeamId].name, 'Riverside', 'and it was saved');
+});
+
+test('a team can wear its own colour, and keeps it when the sides swap', async () => {
+  const dom = await startApp();
+
+  // The colour lands on the block as the accent it is drawn in.
+  const accent = (slot) =>
+    document.getElementById(`team-block-${slot}`).style.getPropertyValue('--team-accent');
+  const soft = (slot) =>
+    document.getElementById(`team-block-${slot}`).style.getPropertyValue('--team-soft');
+
+  // Nothing chosen: home is blue and away is red, as they always were.
+  assert.equal(accent('home'), 'var(--team-blue)');
+  assert.equal(soft('home'), 'var(--team-blue-soft)');
+  assert.equal(accent('away'), 'var(--team-red)');
+
+  // The palette is drawn from one list, and the colour in use is marked.
+  const swatches = document.getElementById('team-colors').rendered;
+  for (const key of ['blue', 'red', 'green', 'amber', 'purple', 'teal', 'pink', 'slate']) {
+    assert.match(swatches, new RegExp(`data-color="${key}"`), `expected a ${key} swatch`);
+  }
+  assert.match(swatches, /data-color="blue"\s*\n?\s*aria-pressed="true"|data-color="blue"[^>]*aria-pressed="true"/);
+
+  // The swatches edit the team the roster is on, which is the home side here.
+  emit(dom.listeners, 'click', actionable({ action: 'set-team-color', color: 'green' }));
+  assert.equal(accent('home'), 'var(--team-green)');
+  assert.equal(soft('home'), 'var(--team-green-soft)');
+  assert.equal(accent('away'), 'var(--team-red)', 'the other side is left alone');
+
+  const game = storedGame();
+  assert.equal(game.teams[game.homeTeamId].color, 'green', 'saved on the team');
+
+  // A colour that is not in the palette is refused rather than stored.
+  emit(dom.listeners, 'click', actionable({ action: 'set-team-color', color: 'chartreuse' }));
+  assert.equal(accent('home'), 'var(--team-green)');
+  assert.equal(storedGame().teams[storedGame().homeTeamId].color, 'green');
+
+  // Which side a team is on is a separate thing from what it wears: after a
+  // swap each block shows the colour of the team now standing there.
+  emit(dom.listeners, 'click', actionable({ action: 'swap-sides' }));
+  assert.equal(document.getElementById('score-home-name').textContent, 'Riverside');
+  assert.equal(accent('home'), 'var(--team-red)', 'Riverside still wears red');
+  assert.equal(accent('away'), 'var(--team-green)', 'Northside still wears green');
 });

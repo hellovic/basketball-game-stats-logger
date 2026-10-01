@@ -196,9 +196,40 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * The colours a team can wear, in the order they are offered.
+ *
+ * Keys, not colour values: the accent and the tint behind it are defined
+ * together in the stylesheet, so every choice is readable on white without the
+ * picker having to police contrast. `home` and `away` are the defaults, which is
+ * why the first two entries are what an untouched game already looks like.
+ */
+const TEAM_COLORS = [
+  { key: 'blue', label: 'Blue' },
+  { key: 'red', label: 'Red' },
+  { key: 'green', label: 'Green' },
+  { key: 'amber', label: 'Amber' },
+  { key: 'purple', label: 'Purple' },
+  { key: 'teal', label: 'Teal' },
+  { key: 'pink', label: 'Pink' },
+  { key: 'slate', label: 'Slate' },
+];
+
+/** The colour a team wears: what it chose, or the default for its side. */
+function colorKeyFor(teamId) {
+  const chosen = game.teams?.[teamId]?.color;
+  if (TEAM_COLORS.some((entry) => entry.key === chosen)) return chosen;
+  return teamId === game.homeTeamId ? 'blue' : 'red';
+}
+
 /** The accent colour a team should render in. */
 function accentFor(teamId) {
-  return teamId === game.homeTeamId ? 'var(--home-accent)' : 'var(--away-accent)';
+  return `var(--team-${colorKeyFor(teamId)})`;
+}
+
+/** The tint that goes behind that accent, e.g. the raised team block. */
+function softFor(teamId) {
+  return `var(--team-${colorKeyFor(teamId)}-soft)`;
 }
 
 function teamFor(slot) {
@@ -281,6 +312,16 @@ function renderScoreboard(derived) {
   const home = teamFor('home');
   const away = teamFor('away');
 
+  // The teams' colours are set here rather than by the home/away classes, so a
+  // team keeps the colour it was given even after the two sides swap.
+  for (const slot of ['home', 'away']) {
+    const teamId = teamIdFor(slot);
+    const block = $(`team-block-${slot}`);
+    if (!block || !teamId) continue;
+    block.style.setProperty('--team-accent', accentFor(teamId));
+    block.style.setProperty('--team-soft', softFor(teamId));
+  }
+
   $('score-home-name').textContent = safeText(home?.name, 'Home');
   $('score-away-name').textContent = safeText(away?.name, 'Away');
   $('score-home-abbrev').textContent = safeText(home?.abbreviation, 'HOM');
@@ -323,6 +364,30 @@ function renderTeamFields() {
 
   $('team-name-input').value = safeText(teamFor(detailTeamSlot)?.name);
   $('team-abbrev-input').value = safeText(teamFor(detailTeamSlot)?.abbreviation);
+  renderTeamColors();
+}
+
+/**
+ * The colour swatches for the team being edited.
+ *
+ * Redrawn rather than patched: there are eight of them, and a swatch is a
+ * button whose fill, pressed state and title all say the same thing — simpler
+ * to build from the palette than to keep in step by hand.
+ */
+function renderTeamColors() {
+  const teamId = teamIdFor(detailTeamSlot);
+  const current = colorKeyFor(teamId);
+  const team = safeText(teamFor(detailTeamSlot)?.name) || 'this team';
+
+  $('team-colors').innerHTML = TEAM_COLORS.map(({ key, label }) => {
+    const on = key === current;
+    return `<button type="button" class="swatch swatch--${key}${on ? ' is-current' : ''}"
+      data-action="set-team-color" data-color="${key}"
+      aria-pressed="${on}" aria-label="${label}"
+      title="${label}"></button>`;
+  }).join('');
+
+  $('team-colors').setAttribute('aria-label', `Colour for ${team}`);
 }
 
 function renderRoster() {
@@ -802,10 +867,12 @@ function renderBox(derived) {
 
       // Both teams stay in one table so the two totals can be read against each
       // other; the heading of the team being entered is marked so it is obvious
-      // where the next tap will land.
+      // where the next tap will land — in that team's own colour, which is what
+      // the scoreboard and the strip above it are using for the same team.
       const heading = `<tr class="team-heading${
         teamId === currentTeamId ? ' is-current' : ''
-      }"><td colspan="${columns.length + 1}">${escapeHtml(team?.name || 'Team')}</td></tr>`;
+      }" style="--team-accent: ${accentFor(teamId)}; --team-soft: ${softFor(teamId)}">
+        <td colspan="${columns.length + 1}">${escapeHtml(team?.name || 'Team')}</td></tr>`;
 
       const playerRows = roster
         .map((player) => {
@@ -1835,6 +1902,16 @@ document.addEventListener('click', (event) => {
       detailTeamSlot = target.dataset.teamSlot;
       render();
       break;
+    case 'set-team-color': {
+      const key = target.dataset.color;
+      if (!TEAM_COLORS.some((entry) => entry.key === key)) break;
+      // Saved on the team, not on the side: swapping home and away carries it
+      // with the team, which is what "our colours" means to a coach.
+      updateTeam(game, teamIdFor(detailTeamSlot), { color: key });
+      save();
+      render();
+      break;
+    }
     case 'period-next':
       setPeriod(game, game.currentPeriod + 1);
       save();

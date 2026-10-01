@@ -113,6 +113,15 @@ rows are scoring. The same pair of tabs sits on the box score, and the two are
 handles on the same switch — tapping either one moves the whole screen to that
 team. A scorer enters one team's events at a time.
 
+**Each team can wear its own colour.** The row of swatches beside the team name
+and abbreviation sets the colour of whichever team the tabs have selected: the
+score on the scoreboard, the dot on the quarter strip, the left edge of that
+team's play-by-play rows and its heading in the box score all follow it. Home
+starts blue and away starts red, which is what a game looks like if nobody
+touches them. The colour is saved on the **team**, not on the side, so
+**Swap sides** moves each team's colour with it — and it travels in a saved team
+file, so a team you reload arrives in its own colours.
+
 1. **Quarter totals** — a thin strip under the scoreboard, so the per-quarter
    score is always in view without taking over the screen.
 2. **Live entry** — one tap records one stat. Each player is a row: their number

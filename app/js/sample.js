@@ -119,8 +119,8 @@ export function sampleGame() {
   game.homeTeamId = HOME_TEAM;
   game.awayTeamId = AWAY_TEAM;
   game.teams = {
-    [HOME_TEAM]: { id: HOME_TEAM, name: 'Northside', abbreviation: 'NOR' },
-    [AWAY_TEAM]: { id: AWAY_TEAM, name: 'Riverside', abbreviation: 'RIV' },
+    [HOME_TEAM]: { id: HOME_TEAM, name: 'Northside', abbreviation: 'NOR', color: 'blue' },
+    [AWAY_TEAM]: { id: AWAY_TEAM, name: 'Riverside', abbreviation: 'RIV', color: 'red' },
   };
   updateTeam(game, HOME_TEAM, { name: 'Northside', abbreviation: 'NOR' });
 

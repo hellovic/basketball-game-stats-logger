@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.22.1">
-<meta name="app-build" content="2026-10-01D">
+<meta name="app-version" content="0.23.0">
+<meta name="app-build" content="2026-10-01E">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -266,6 +266,15 @@
       <span class="field__label">Abbrev.</span>
       <input type="text" id="team-abbrev-input" maxlength="4" autocomplete="off" spellcheck="false">
     </label>
+
+    <!-- The colour belongs beside the name and the abbreviation: all three are
+         the team's identity, and all three apply to whichever side the Away /
+         Home tabs have selected. The swatches are drawn from the palette in
+         app.js so the keys and the labels cannot drift apart. -->
+    <div class="field field--color">
+      <span class="field__label">Colour</span>
+      <div class="swatches" id="team-colors" role="group" aria-label="Team colour"></div>
+    </div>
 
     <form class="add-player" id="add-player-form" autocomplete="off">
       <input type="text" inputmode="numeric" id="new-number" class="add-player__number"
