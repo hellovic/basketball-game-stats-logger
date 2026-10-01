@@ -835,11 +835,10 @@ ul {
   height: calc(100dvh - var(--board-h));
   display: grid;
   grid-template-columns: minmax(0, 1fr) 392px;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  /* Auto rows must not stretch to soak up spare height: with one panel hidden
-     there is a lot of it, and the roster bar would balloon to swallow the
-     slack instead of the panel simply ending where its content ends. */
-  align-content: start;
+  /* One row. The two above and below it held the roster bar before it moved
+     into a dialog, and an empty row still costs its share of the gap: the
+     panels sat 8px lower than they needed to, for a row with nothing in it. */
+  grid-template-rows: minmax(0, 1fr);
   gap: var(--sp-2);
   padding: var(--sp-2);
 }
@@ -854,12 +853,12 @@ ul {
 
 .ws__left {
   grid-column: 1;
-  grid-row: 2;
+  grid-row: 1;
 }
 
 .ws__right {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
 }
 
 .ws__right .panel--log {
@@ -869,15 +868,6 @@ ul {
 
 .ws__right .panel--box {
   flex: 1 1 54%;
-  min-height: 0;
-}
-
-.ws__cards {
-  grid-column: 1 / -1;
-  grid-row: 3;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 470px;
-  gap: var(--sp-2);
   min-height: 0;
 }
 
@@ -3078,10 +3068,6 @@ ul {
     min-height: 24px;
     padding: 0 var(--sp-1);
     font-size: 10px;
-  }
-
-  .ws__cards {
-    grid-template-columns: minmax(0, 1fr);
   }
 
 }
