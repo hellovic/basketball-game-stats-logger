@@ -603,12 +603,11 @@ ul {
   outline: none;
 }
 
-/* The clock nudge pad: four small keys for the second-by-second corrections a
-   table makes by hand. Two columns — one per direction — so "earlier" is always
-   the left key and "later" the right, whatever size the step is. */
+/* The clock nudge pads: four small keys for the second-by-second corrections a
+   table makes by hand. One column each, set either side of the face, so the
+   keys sit on the side they move the clock towards. */
 .clock-nudge {
   display: grid;
-  grid-template-columns: repeat(2, auto);
   gap: 2px;
   align-content: center;
 }

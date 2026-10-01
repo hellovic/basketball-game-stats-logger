@@ -302,12 +302,13 @@ Buttons sit beside the clock: **start/pause** (which reads `Start`, `Resume` or
 back to the start of the current period, and the **− / +** period arrows to move
 the period by hand.
 
-**Four nudge keys move the clock by seconds** — `−1`, `+1`, `−5`, `+5`, in a
-small pad against the clock face. A manual clock beside a scorer drifts, and
-finding it two seconds out is normal; a nudge is a lighter correction than
-re-typing the time. They work while the clock is running, which is when the
-drift is noticed. They will not take it past the end of its period or below
-`00:00`.
+**Four nudge keys move the clock by seconds** — `−1` and `−5` on the left of the
+face, `+1` and `+5` on the right, fine step on top. A manual clock beside a
+scorer drifts, and finding it two seconds out is normal; a nudge is a lighter
+correction than re-typing the time, and putting each pair on the side it moves
+towards means the key is where the finger is already going. They work while the
+clock is running, which is when the drift is noticed. They will not take it past
+the end of its period or below `00:00`.
 
 **A running clock looks running.** The face turns blue — the digits, the box
 around them and the run button, which fills in — and the dot beside the digits

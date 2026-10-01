@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.19.0">
-<meta name="app-build" content="2026-10-01w">
+<meta name="app-version" content="0.19.1">
+<meta name="app-build" content="2026-10-01x">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -64,6 +64,21 @@
                     aria-label="Next period" title="Next period">&#8250;</button>
           </div>
 
+          <!-- Four nudges for the hand corrections a table makes all night: the
+               clock is a stopwatch beside you, so it drifts by seconds. They
+               straddle the face — back on the left, on to the right — so a
+               nudge sits where its direction points. One column each, fine step
+               on top, so the pair a thumb reaches for is always in the same
+               place. -->
+          <div class="clock-nudge" role="group" aria-label="Move the clock back">
+            <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
+                    data-clock-step="-1" aria-label="One second earlier"
+                    title="One second earlier">&minus;1</button>
+            <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
+                    data-clock-step="-5" aria-label="Five seconds earlier"
+                    title="Five seconds earlier">&minus;5</button>
+          </div>
+
           <!-- The clock face is the edit affordance as well as the readout: tap
                it and type. data-action="edit-clock" keeps a hook for the
                keyboard route too. The dot is the "is it running" tell. -->
@@ -74,20 +89,10 @@
                  title="Tap to type a time, e.g. 7:30 or 0500">00:00</div>
           </div>
 
-          <!-- Four nudges for the hand corrections a table makes all night: the
-               clock is a stopwatch beside you, so it drifts by seconds. They sit
-               against the face they move, in one column per direction, so the
-               pair a thumb reaches for is in the same place every time. -->
-          <div class="clock-nudge" role="group" aria-label="Nudge the clock">
-            <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
-                    data-clock-step="-1" aria-label="One second earlier"
-                    title="One second earlier">&minus;1</button>
+          <div class="clock-nudge" role="group" aria-label="Move the clock on">
             <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
                     data-clock-step="1" aria-label="One second later"
                     title="One second later">+1</button>
-            <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
-                    data-clock-step="-5" aria-label="Five seconds earlier"
-                    title="Five seconds earlier">&minus;5</button>
             <button type="button" class="clock-nudge__btn" data-action="clock-nudge"
                     data-clock-step="5" aria-label="Five seconds later"
                     title="Five seconds later">+5</button>
