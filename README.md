@@ -187,6 +187,9 @@ The **More** menu holds what does not fit in the top bar: game settings, the
 player roster, swapping the two sides, import/export and team files, the game
 summary, and help. The file bar it toggles is hidden until you ask for it, which
 is what keeps the two columns tall enough to read at a glance on an iPad.
+Game settings is behind that menu rather than on a button of its own: the date,
+time, venue and period pills on the strip all open it, so the scoreboard keeps
+its three buttons — Undo, Reset and More — and the width they save.
 
 **Swap home and away** puts both teams on the other side, for the game set up the
 wrong way round or noticed only once the scoreboard is up. Only the sides change:
