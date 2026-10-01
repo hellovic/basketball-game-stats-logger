@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.23.0">
-<meta name="app-build" content="2026-10-01E">
+<meta name="app-version" content="0.24.0">
+<meta name="app-build" content="2026-10-01F">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -269,11 +269,16 @@
 
     <!-- The colour belongs beside the name and the abbreviation: all three are
          the team's identity, and all three apply to whichever side the Away /
-         Home tabs have selected. The swatches are drawn from the palette in
-         app.js so the keys and the labels cannot drift apart. -->
+         Home tabs have selected. It shows the choice rather than the palette —
+         the palette is a wall of circles to read past on every screen, for a
+         choice that is made once a game. -->
     <div class="field field--color">
       <span class="field__label">Colour</span>
-      <div class="swatches" id="team-colors" role="group" aria-label="Team colour"></div>
+      <button type="button" class="color-chip" id="team-color-button"
+              data-action="open-team-color" aria-haspopup="dialog">
+        <span class="color-chip__dot" id="team-color-dot"></span>
+        <span class="color-chip__name" id="team-color-name">&mdash;</span>
+      </button>
     </div>
 
     <form class="add-player" id="add-player-form" autocomplete="off">
@@ -563,6 +568,28 @@
      Game summary: the same events the strip and the box score show, read
      the third way — per quarter, per team, at the end of a game.
      ===================================================================== -->
+
+<!-- =====================================================================
+     Team colour: the rainbow, plus the two kit colours that are not in it.
+     The swatches are drawn from the palette in app.js, so the keys, the names
+     and the fills cannot drift apart.
+     ===================================================================== -->
+<div class="dialog" id="color-dialog" role="dialog" aria-modal="true"
+     aria-labelledby="color-dialog-title" hidden>
+  <div class="dialog__panel">
+    <h2 class="dialog__title" id="color-dialog-title">Team colour</h2>
+    <p class="dialog__note">
+      Used for this team's score, its dot on the quarter strip and its rows in
+      the play-by-play. It belongs to the team, so it stays with them when the
+      sides swap.
+    </p>
+    <div class="swatches" id="team-colors" role="group" aria-label="Team colour"></div>
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--ghost" data-action="close-dialog">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="dialog" id="summary-dialog" role="dialog" aria-modal="true"
      aria-labelledby="summary-title" hidden>
   <div class="dialog__panel dialog__panel--wide">

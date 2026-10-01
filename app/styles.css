@@ -40,25 +40,36 @@
   --border: #e6e8f2;
   --border-strong: #d2d7e6;
 
-  /* Team colours. A team stores a key from this list rather than a colour: an
-     accent and the soft tint behind it have to be chosen together to stay
-     readable, and the key is what travels in a saved team file. */
-  --team-blue: #2563eb;
-  --team-blue-soft: #e8efff;
+  /* Team colours: the rainbow, plus the two kit colours that are not in it.
+     Each is a key a team stores and a file can carry.
+
+     Three of them are deliberately not printed as themselves. A score has to be
+     read from across a gym, and white, black and yellow cannot be drawn as ink
+     on a white page and still be told apart — so the ink is the readable
+     version of the colour (a slate for white, near-black for black, a dark gold
+     for yellow) while the picker's chip shows the colour itself. A white team
+     therefore reads as dark ink on a near-white block, which is what a white
+     kit with dark numbers looks like from the table anyway. */
   --team-red: #e03131;
   --team-red-soft: #fdecec;
+  --team-orange: #e8590c;
+  --team-orange-soft: #fdeee3;
+  --team-yellow: #a16207;
+  --team-yellow-soft: #fdf6e3;
+  --team-yellow-chip: #eab308;
   --team-green: #2f9e44;
   --team-green-soft: #e9f6ed;
-  --team-amber: #b4690e;
-  --team-amber-soft: #fdf1e0;
-  --team-purple: #7c4ddb;
-  --team-purple-soft: #f0eafb;
-  --team-teal: #0f7b8a;
-  --team-teal-soft: #e3f4f6;
-  --team-pink: #c2255c;
-  --team-pink-soft: #fdeaf2;
-  --team-slate: #3f4a5f;
-  --team-slate-soft: #eceff4;
+  --team-blue: #2563eb;
+  --team-blue-soft: #e8efff;
+  --team-indigo: #4f46e5;
+  --team-indigo-soft: #eceafd;
+  --team-violet: #7c3aed;
+  --team-violet-soft: #f1eafd;
+  --team-white: #5b6472;
+  --team-white-soft: #f4f5f7;
+  --team-white-chip: #ffffff;
+  --team-black: #1f2430;
+  --team-black-soft: #e9ebef;
 
   /* Accents: one per team, plus the app's own action blue. Home is blue and
      away is red until someone says otherwise on the roster bar. */
@@ -1098,58 +1109,148 @@ ul {
   width: 74px;
 }
 
-/* The colour swatches. Each button is a filled circle in its own colour, which
-   is the whole label — the key is in the title and the aria-label for anyone
-   who cannot see it. The chosen one carries a ring rather than a tick: a tick
-   over a dark swatch is hard to see, and a ring cannot be mistaken for one of
-   the colours. */
-.swatches {
-  display: flex;
+/* The colour chip on the roster bar: the chosen colour and its name, and the
+   thing that opens the picker. */
+.color-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-2);
   min-height: 28px;
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.color-chip:hover {
+  border-color: var(--border-strong);
+}
+
+.color-chip__dot {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 50%;
+}
+
+/* The picker: every colour by name, two rows of them in the dialog. */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0;
 }
 
 .swatch {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
   cursor: pointer;
 }
 
 .swatch:hover {
-  transform: scale(1.08);
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
 }
 
+/* A ring on the chosen swatch rather than a tick: a tick over a dark circle is
+   hard to see, and a ring cannot be mistaken for one of the colours. */
 .swatch.is-current {
-  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+  font-weight: 700;
 }
 
-.swatch--blue {
-  background: var(--team-blue);
+.swatch__chip {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 50%;
 }
-.swatch--red {
+
+/* The chip shows the colour as it is named, so white is white — the readable
+   ink it is drawn in on the scoreboard is not what the picker is offering. */
+.swatch--red .swatch__chip {
   background: var(--team-red);
 }
-.swatch--green {
+.swatch--orange .swatch__chip {
+  background: var(--team-orange);
+}
+.swatch--yellow .swatch__chip {
+  background: var(--team-yellow-chip);
+}
+.swatch--green .swatch__chip {
   background: var(--team-green);
 }
-.swatch--amber {
-  background: var(--team-amber);
+.swatch--blue .swatch__chip {
+  background: var(--team-blue);
 }
-.swatch--purple {
-  background: var(--team-purple);
+.swatch--indigo .swatch__chip {
+  background: var(--team-indigo);
 }
-.swatch--teal {
-  background: var(--team-teal);
+.swatch--violet .swatch__chip {
+  background: var(--team-violet);
 }
-.swatch--pink {
-  background: var(--team-pink);
+.swatch--white .swatch__chip {
+  background: var(--team-white-chip);
 }
-.swatch--slate {
-  background: var(--team-slate);
+.swatch--black .swatch__chip {
+  background: var(--team-black);
+}
+
+/* The chip's dot carries the same fills as the swatches in the picker, so the
+   colour on the bar is the colour being offered. */
+.color-chip__dot--red {
+  background: var(--team-red);
+}
+.color-chip__dot--orange {
+  background: var(--team-orange);
+}
+.color-chip__dot--yellow {
+  background: var(--team-yellow-chip);
+}
+.color-chip__dot--green {
+  background: var(--team-green);
+}
+.color-chip__dot--blue {
+  background: var(--team-blue);
+}
+.color-chip__dot--indigo {
+  background: var(--team-indigo);
+}
+.color-chip__dot--violet {
+  background: var(--team-violet);
+}
+.color-chip__dot--white {
+  background: var(--team-white-chip);
+}
+.color-chip__dot--black {
+  background: var(--team-black);
+}
+
+.dialog__note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+.swatch__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .add-player {

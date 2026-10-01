@@ -2196,15 +2196,36 @@ test('a team can wear its own colour, and keeps it when the sides swap', async (
   assert.equal(soft('home'), 'var(--team-blue-soft)');
   assert.equal(accent('away'), 'var(--team-red)');
 
-  // The palette is drawn from one list, and the colour in use is marked.
+  // The bar carries the choice, not the palette: a chip naming the colour.
+  const chip = document.getElementById('team-color-name');
+  assert.equal(chip.textContent, 'Blue');
+  assert.equal(document.getElementById('color-dialog').hidden, true);
+
+  // Tapping it opens the picker: the rainbow, plus white and black, each by
+  // name rather than as a circle that has to be decoded.
+  emit(dom.listeners, 'click', actionable({ action: 'open-team-color' }));
+  assert.equal(document.getElementById('color-dialog').hidden, false);
+
   const swatches = document.getElementById('team-colors').rendered;
-  for (const key of ['blue', 'red', 'green', 'amber', 'purple', 'teal', 'pink', 'slate']) {
+  for (const [key, label] of [
+    ['red', 'Red'],
+    ['orange', 'Orange'],
+    ['yellow', 'Yellow'],
+    ['green', 'Green'],
+    ['blue', 'Blue'],
+    ['indigo', 'Indigo'],
+    ['violet', 'Violet'],
+    ['white', 'White'],
+    ['black', 'Black'],
+  ]) {
     assert.match(swatches, new RegExp(`data-color="${key}"`), `expected a ${key} swatch`);
+    assert.match(swatches, new RegExp(`>${label}<`), `expected ${label} to be named`);
   }
-  assert.match(swatches, /data-color="blue"\s*\n?\s*aria-pressed="true"|data-color="blue"[^>]*aria-pressed="true"/);
 
   // The swatches edit the team the roster is on, which is the home side here.
   emit(dom.listeners, 'click', actionable({ action: 'set-team-color', color: 'green' }));
+  assert.equal(document.getElementById('color-dialog').hidden, true, 'choosing closes the picker');
+  assert.equal(chip.textContent, 'Green');
   assert.equal(accent('home'), 'var(--team-green)');
   assert.equal(soft('home'), 'var(--team-green-soft)');
   assert.equal(accent('away'), 'var(--team-red)', 'the other side is left alone');
@@ -2216,6 +2237,13 @@ test('a team can wear its own colour, and keeps it when the sides swap', async (
   emit(dom.listeners, 'click', actionable({ action: 'set-team-color', color: 'chartreuse' }));
   assert.equal(accent('home'), 'var(--team-green)');
   assert.equal(storedGame().teams[storedGame().homeTeamId].color, 'green');
+
+  // The picker behaves like the app's other dialogs: Escape closes it, and the
+  // chip reopens it on the colour in use.
+  emit(dom.listeners, 'click', actionable({ action: 'open-team-color' }));
+  assert.equal(document.getElementById('color-dialog').hidden, false);
+  emit(dom.listeners, 'keydown', document.body, { key: 'Escape' });
+  assert.equal(document.getElementById('color-dialog').hidden, true);
 
   // Which side a team is on is a separate thing from what it wears: after a
   // swap each block shows the colour of the team now standing there.

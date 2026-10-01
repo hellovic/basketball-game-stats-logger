@@ -199,20 +199,22 @@ function escapeHtml(value) {
 /**
  * The colours a team can wear, in the order they are offered.
  *
- * Keys, not colour values: the accent and the tint behind it are defined
- * together in the stylesheet, so every choice is readable on white without the
- * picker having to police contrast. `home` and `away` are the defaults, which is
- * why the first two entries are what an untouched game already looks like.
+ * The rainbow, plus the two kit colours that are not in it. Keys, not colour
+ * values: the ink and the tint are defined together in the stylesheet, because
+ * two of these cannot be printed as themselves and stay readable — see the
+ * palette there. Blue and red are the defaults, which is why an untouched game
+ * already looks the way it did before any of this existed.
  */
 const TEAM_COLORS = [
-  { key: 'blue', label: 'Blue' },
   { key: 'red', label: 'Red' },
+  { key: 'orange', label: 'Orange' },
+  { key: 'yellow', label: 'Yellow' },
   { key: 'green', label: 'Green' },
-  { key: 'amber', label: 'Amber' },
-  { key: 'purple', label: 'Purple' },
-  { key: 'teal', label: 'Teal' },
-  { key: 'pink', label: 'Pink' },
-  { key: 'slate', label: 'Slate' },
+  { key: 'blue', label: 'Blue' },
+  { key: 'indigo', label: 'Indigo' },
+  { key: 'violet', label: 'Violet' },
+  { key: 'white', label: 'White' },
+  { key: 'black', label: 'Black' },
 ];
 
 /** The colour a team wears: what it chose, or the default for its side. */
@@ -368,25 +370,35 @@ function renderTeamFields() {
 }
 
 /**
- * The colour swatches for the team being edited.
+ * The colour chip on the roster bar, and the swatches in the picker it opens.
  *
- * Redrawn rather than patched: there are eight of them, and a swatch is a
- * button whose fill, pressed state and title all say the same thing — simpler
- * to build from the palette than to keep in step by hand.
+ * The bar keeps one chip rather than the whole palette: nine colours is a wall
+ * of circles to read past on every screen when the choice is made once a game,
+ * and the chip says what was chosen without having to be decoded.
  */
 function renderTeamColors() {
   const teamId = teamIdFor(detailTeamSlot);
   const current = colorKeyFor(teamId);
   const team = safeText(teamFor(detailTeamSlot)?.name) || 'this team';
 
+  const chosen = TEAM_COLORS.find((entry) => entry.key === current);
+  $('team-color-dot').className = `color-chip__dot color-chip__dot--${current}`;
+  $('team-color-name').textContent = chosen.label;
+  $('team-color-button').setAttribute('aria-label', `Team colour for ${team}: ${chosen.label}`);
+
+  // The swatches are named, not just coloured: "White" and "Black" have to be
+  // readable as words before they are readable as circles.
   $('team-colors').innerHTML = TEAM_COLORS.map(({ key, label }) => {
     const on = key === current;
     return `<button type="button" class="swatch swatch--${key}${on ? ' is-current' : ''}"
       data-action="set-team-color" data-color="${key}"
-      aria-pressed="${on}" aria-label="${label}"
-      title="${label}"></button>`;
+      aria-pressed="${on}" aria-label="${label}">
+      <span class="swatch__chip" aria-hidden="true"></span>
+      <span class="swatch__name">${label}</span>
+    </button>`;
   }).join('');
 
+  $('color-dialog-title').textContent = `Colour for ${team}`;
   $('team-colors').setAttribute('aria-label', `Colour for ${team}`);
 }
 
@@ -1674,7 +1686,7 @@ function openDialog(id) {
 }
 
 function closeDialogs() {
-  for (const id of ['settings-dialog', 'summary-dialog', 'about-dialog']) {
+  for (const id of ['settings-dialog', 'summary-dialog', 'about-dialog', 'color-dialog']) {
     $(id).hidden = true;
   }
 }
@@ -1909,9 +1921,15 @@ document.addEventListener('click', (event) => {
       // with the team, which is what "our colours" means to a coach.
       updateTeam(game, teamIdFor(detailTeamSlot), { color: key });
       save();
+      closeDialogs();
       render();
       break;
     }
+    case 'open-team-color':
+      closeMenu();
+      render();
+      openDialog('color-dialog');
+      break;
     case 'period-next':
       setPeriod(game, game.currentPeriod + 1);
       save();
@@ -2033,7 +2051,7 @@ document.addEventListener('mousedown', (event) => {
 document.addEventListener('keydown', (event) => {
   // Escape closes whichever dialog is open, discarding what it holds.
   const importing = !$('load-team-dialog').hidden || !$('paste-roster-dialog').hidden;
-  const viewing = ['settings-dialog', 'summary-dialog', 'about-dialog'].some(
+  const viewing = ['settings-dialog', 'summary-dialog', 'about-dialog', 'color-dialog'].some(
     (id) => !$(id).hidden,
   );
 
