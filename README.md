@@ -109,21 +109,24 @@ roster. See below.
 
 ## Using it during a game
 
-Set up two teams and their rosters in the **roster bar**, which sits just above
-the entry rows, then work straight down the page. Every part of the game is on
-the one screen — there is nothing to switch between. The scoreboard stays pinned
-to the top, and the setup strip below it (the date and venue, the quarter totals
-and the roster bar) scrolls away as you go, so a scroll down leaves the entry
-rows filling the screen. Each panel scrolls inside its own box, so a long
-play-by-play never makes the page itself longer.
+Set the two teams and their rosters up in **More → Team and players**, then work
+straight down the page. Every part of the game is on the one screen — there is
+nothing to switch between. The scoreboard stays pinned to the top, and the setup
+strip below it (the date and venue, the quarter totals) scrolls away as you go,
+so a scroll down leaves the entry rows filling the screen. Each panel scrolls
+inside its own box, so a long play-by-play never makes the page itself longer.
+
+Setting up is the one job that is not a tap on the entry row, and it is done once
+a game: a scorer is picking a team, not adding to it, so it lives in the menu
+with the rest of the setup rather than holding a row of the screen all game.
 
 The **Away / Home** tabs at the top of the strip choose which team the entry
 rows are scoring. The same pair of tabs sits on the box score, and the two are
 handles on the same switch — tapping either one moves the whole screen to that
 team. A scorer enters one team's events at a time.
 
-**Each team can wear its own colour.** **Colour** in the roster bar shows what
-the selected team is wearing; tap it for the rainbow plus white and black, which
+**Each team can wear its own colour.** **Colour** in *Team and players* shows
+what the selected team is wearing; tap it for the rainbow plus white and black, which
 sets the score on the scoreboard, the dot on the quarter strip, the left edge of
 that team's play-by-play rows and its heading in the box score. Home starts blue
 and away starts red, which is what a game looks like if nobody touches them.
@@ -192,9 +195,9 @@ the entry row or the box score on a screen too narrow to show them side by side;
 `Esc` also returns to two columns.
 
 The **More** menu holds what does not fit in the top bar: game settings, the
-player roster, swapping the two sides, import/export and team files, the game
-summary, and help. The file bar it toggles is hidden until you ask for it, which
-is what keeps the two columns tall enough to read at a glance on an iPad.
+team and its players, swapping the two sides, import/export and team files, the
+game summary, and help. The file bar it toggles is hidden until you ask for it,
+which is what keeps the two columns tall enough to read at a glance on an iPad.
 Game settings is behind that menu rather than on a button of its own: the date,
 time, venue and period pills on the strip all open it, so the scoreboard keeps
 its three buttons — Undo, Reset and More — and the width they save.
@@ -523,7 +526,7 @@ and no way for the app to leak a game — the tradeoff is that backup is on you.
 ```
 app/
   index.html        the document: scoreboard, the read-out strip, the quarter
-                    strip, the roster bar, then live entry and the log
+                    strip, then live entry and the log — and the dialogs
   styles.css        design tokens and all responsive rules
   js/
     stats.js        the stat catalog — add a stat here to record it

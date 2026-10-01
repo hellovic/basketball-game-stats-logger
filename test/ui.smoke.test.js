@@ -432,25 +432,26 @@ test('the hidden attribute really hides, whatever the component sets', async () 
   assert.equal(document.getElementById('storage-banner').hidden, true);
 });
 
-test('the roster bar sits directly above the entry rows', async () => {
-  // Setting up the two teams is the first thing a scorer does, so the bar
-  // belongs next to the entry rows rather than below the box score — and just
-  // above the workspace, so the page's scroll carries it away with the rest of
-  // the setup instead of pinning it to the panels.
-  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
-  const rosterAt = html.indexOf('class="rosterbar"');
-  const workspaceAt = html.indexOf('<main');
-  const entryAt = html.indexOf('panel--entry');
-  assert.ok(rosterAt !== -1, 'the roster bar should exist');
-  assert.ok(entryAt !== -1, 'live entry should be inside the workspace');
-  assert.ok(
-    rosterAt < workspaceAt,
-    'the roster bar belongs above the workspace, so scrolling can take it away',
-  );
-  assert.ok(rosterAt < entryAt, 'the roster bar should come before live entry');
-
-  // And the team controls still work from their new home.
+test('the roster is set up from a dialog, not from a row of the screen', async () => {
+  // Setting up two teams is the first thing a scorer does and then not again,
+  // so it belongs with the rest of the setup behind the menu — the screen is
+  // for the entry keys.
   const dom = await startApp();
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+
+  assert.match(html, /data-action="open-roster"/, 'the menu offers it');
+  assert.doesNotMatch(
+    html,
+    /<main[\s\S]*class="rosterbar"/,
+    'and the bar is not a row of the page any more',
+  );
+  assert.equal(document.getElementById('roster-dialog').hidden, true, 'closed until asked for');
+
+  emit(dom.listeners, 'click', actionable({ action: 'open-roster' }));
+  assert.equal(document.getElementById('roster-dialog').hidden, false);
+  assert.equal(document.getElementById('more-menu').hidden, true, 'the menu gets out of the way');
+
+  // The team controls all still work from their new home.
   emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
   assert.equal(document.getElementById('team-tab-away').getAttribute('aria-selected'), 'true');
   assert.equal(document.getElementById('team-name-input').value, 'Riverside');

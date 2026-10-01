@@ -1099,6 +1099,17 @@ ul {
   overflow-x: auto;
 }
 
+/* Inside its dialog the bar is the panel's content, not a surface of its own:
+   no card, no scroll, and it wraps because a dialog is narrower than a page. */
+.dialog .rosterbar {
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
 .tabs {
   display: inline-flex;
   flex: none;

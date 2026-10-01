@@ -660,7 +660,8 @@ function renderEntry(derived) {
 
   if (roster.length === 0) {
     container.innerHTML =
-      '<tr class="entry__empty"><td colspan="15">No players yet — add one in the roster bar above.</td></tr>';
+      '<tr class="entry__empty"><td colspan="15">No players yet — add them under ' +
+      'More → Team and players.</td></tr>';
     return;
   }
 
@@ -2005,6 +2006,7 @@ function closeDialogs() {
     'summary-dialog',
     'about-dialog',
     'color-dialog',
+    'roster-dialog',
     'copy-game-dialog',
   ]) {
     $(id).hidden = true;
@@ -2180,10 +2182,12 @@ document.addEventListener('click', (event) => {
       closeMenu();
       openDialog('settings-dialog');
       break;
-    case 'focus-roster': {
-      // "Manage players" has no dialog of its own: the roster bar is already
-      // on screen, so the useful thing is to put the cursor in it.
+    case 'open-roster': {
+      // Setting up the two teams is the first thing a scorer does and then not
+      // again, so it sits in the menu rather than owning a row of the screen.
+      // The cursor lands in the team name, which is what the scorer came for.
       closeMenu();
+      openDialog('roster-dialog');
       const field = $('team-name-input');
       field.focus();
       field.select();
@@ -2410,6 +2414,7 @@ document.addEventListener('keydown', (event) => {
     'summary-dialog',
     'about-dialog',
     'color-dialog',
+    'roster-dialog',
     'copy-game-dialog',
   ].some((id) => !$(id).hidden);
 

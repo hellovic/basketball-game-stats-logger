@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.28.0">
-<meta name="app-build" content="2026-10-01M">
+<meta name="app-version" content="0.29.0">
+<meta name="app-build" content="2026-10-01N">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -156,11 +156,11 @@
               <span class="menu__sub">Date, time, venue, quarter length&hellip;</span>
             </span>
           </button>
-          <button type="button" class="menu__item" role="menuitem" data-action="focus-roster">
+          <button type="button" class="menu__item" role="menuitem" data-action="open-roster">
             <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6" cy="5.4" r="2.6"/><path d="M1.4 13.6c0-2.5 2-4.1 4.6-4.1s4.6 1.6 4.6 4.1"/><path d="M11.2 3.4a2.6 2.6 0 0 1 0 4.9"/></svg>
             <span class="menu__text">
-              <span class="menu__label">Manage players</span>
-              <span class="menu__sub">Add players and jersey numbers&hellip;</span>
+              <span class="menu__label">Team and players</span>
+              <span class="menu__sub">Names, colours and the roster&hellip;</span>
             </span>
           </button>
           <button type="button" class="menu__item" role="menuitem" data-action="swap-sides">
@@ -248,57 +248,68 @@
 </section>
 
   <!-- ===================================================================
-       Roster bar. The roster used to hold a permanent 320px column, which
-       was width the entry row and the box score needed more. It is now a
-       horizontal strip above the workspace: it belongs with the rest of the
-       setup, and the page's own scroll carries it away so the entry rows get
-       the whole screen.
+       The roster bar has moved behind the More menu: setting up two teams is
+       the first thing a scorer does and then not again, so it does not earn a
+       permanent row of the screen the way the entry keys do.
        =================================================================== -->
-  <section class="rosterbar" aria-label="Roster" id="rosterbar">
-    <label class="field">
-      <span class="field__label">Team name</span>
-      <input type="text" id="team-name-input" autocomplete="off" spellcheck="false">
-    </label>
-    <label class="field field--short">
-      <span class="field__label">Abbrev.</span>
-      <input type="text" id="team-abbrev-input" maxlength="4" autocomplete="off" spellcheck="false">
-    </label>
+  <div class="dialog" id="roster-dialog" role="dialog" aria-modal="true"
+       aria-labelledby="roster-title" hidden>
+    <div class="dialog__panel">
+      <h2 class="dialog__title" id="roster-title">Team and players</h2>
+      <p class="dialog__note">
+        Everything here applies to the side the Away / Home tabs have selected.
+      </p>
 
-    <!-- The colour belongs beside the name and the abbreviation: all three are
-         the team's identity, and all three apply to whichever side the Away /
-         Home tabs have selected. It shows the choice rather than the palette —
-         the palette is a wall of circles to read past on every screen, for a
-         choice that is made once a game. -->
-    <div class="field field--color">
-      <span class="field__label">Colour</span>
-      <button type="button" class="color-chip" id="team-color-button"
-              data-action="open-team-color" aria-haspopup="dialog">
-        <span class="color-chip__dot" id="team-color-dot"></span>
-        <span class="color-chip__name" id="team-color-name">&mdash;</span>
-      </button>
+      <section class="rosterbar" aria-label="Roster" id="rosterbar">
+        <label class="field">
+          <span class="field__label">Team name</span>
+          <input type="text" id="team-name-input" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="field field--short">
+          <span class="field__label">Abbrev.</span>
+          <input type="text" id="team-abbrev-input" maxlength="4" autocomplete="off" spellcheck="false">
+        </label>
+
+        <!-- The colour belongs beside the name and the abbreviation: all three are
+             the team's identity, and all three apply to whichever side the Away /
+             Home tabs have selected. It shows the choice rather than the palette —
+             the palette is a wall of circles to read past on every screen, for a
+             choice that is made once a game. -->
+        <div class="field field--color">
+          <span class="field__label">Colour</span>
+          <button type="button" class="color-chip" id="team-color-button"
+                  data-action="open-team-color" aria-haspopup="dialog">
+            <span class="color-chip__dot" id="team-color-dot"></span>
+            <span class="color-chip__name" id="team-color-name">&mdash;</span>
+          </button>
+        </div>
+
+        <form class="add-player" id="add-player-form" autocomplete="off">
+          <input type="text" inputmode="numeric" id="new-number" class="add-player__number"
+                 placeholder="No." aria-label="Jersey number" maxlength="3">
+          <input type="text" id="new-name" class="add-player__name"
+                 placeholder="Player name" aria-label="Player name">
+          <button type="submit" class="btn btn--primary btn--sm">Add</button>
+        </form>
+
+        <!-- Bulk removal. The select-all box and the count are static so a
+             re-render can update them in place instead of replacing them. The
+             per-player boxes live on the entry rows, where the players are. -->
+        <div class="roster__toolbar" id="roster-toolbar">
+          <label class="roster__select-all">
+            <input type="checkbox" id="roster-select-all" data-action="toggle-all-players">
+            <span>Select all</span>
+          </label>
+          <span class="roster__toolbar-count" id="roster-selection-count"></span>
+          <button type="button" id="roster-remove-selected" class="btn btn--sm btn--danger-ghost roster__remove-selected"
+                  data-action="remove-selected-players">Remove</button>
+        </div>
+      </section>
+      <div class="dialog__actions">
+        <button type="button" class="btn btn--primary" data-action="close-dialog">Done</button>
+      </div>
     </div>
-
-    <form class="add-player" id="add-player-form" autocomplete="off">
-      <input type="text" inputmode="numeric" id="new-number" class="add-player__number"
-             placeholder="No." aria-label="Jersey number" maxlength="3">
-      <input type="text" id="new-name" class="add-player__name"
-             placeholder="Player name" aria-label="Player name">
-      <button type="submit" class="btn btn--primary btn--sm">Add</button>
-    </form>
-
-    <!-- Bulk removal. The select-all box and the count are static so a
-         re-render can update them in place instead of replacing them. The
-         per-player boxes live on the entry rows, where the players are. -->
-    <div class="roster__toolbar" id="roster-toolbar">
-      <label class="roster__select-all">
-        <input type="checkbox" id="roster-select-all" data-action="toggle-all-players">
-        <span>Select all</span>
-      </label>
-      <span class="roster__toolbar-count" id="roster-selection-count"></span>
-      <button type="button" id="roster-remove-selected" class="btn btn--sm btn--danger-ghost roster__remove-selected"
-              data-action="remove-selected-players">Remove</button>
-    </div>
-  </section>
+  </div>
 
 <main class="workspace" id="workspace">
 
