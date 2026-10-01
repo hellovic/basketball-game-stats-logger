@@ -124,7 +124,7 @@ reload arrives in its own colours.
 
 Three of the nine cannot be printed as themselves and stay readable: a score has
 to be legible from across a gym, so **white** is drawn in slate, **black** in
-near-black and **yellow** in a dark gold, each on its own pale tint. The picker
+near-black and **yellow** in a gold, each on its own pale tint. The picker
 still shows the colour by name and as it looks; a white team just reads the way a
 white kit with dark numbers reads from the table.
 

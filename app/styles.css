@@ -52,11 +52,14 @@
      kit with dark numbers looks like from the table anyway. */
   --team-red: #e03131;
   --team-red-soft: #fdecec;
-  --team-orange: #e8590c;
-  --team-orange-soft: #fdeee3;
-  --team-yellow: #a16207;
-  --team-yellow-soft: #fdf6e3;
-  --team-yellow-chip: #eab308;
+  --team-orange: #f97316;
+  --team-orange-soft: #fdefe6;
+  /* Yellow is the one colour with no room to move: a brighter gold than this
+     stops being readable as a score, so the picker's chip carries the bright
+     yellow while the ink stays a shade beneath it. */
+  --team-yellow: #ca8a04;
+  --team-yellow-soft: #fdf7e2;
+  --team-yellow-chip: #facc15;
   --team-green: #2f9e44;
   --team-green-soft: #e9f6ed;
   --team-blue: #2563eb;
