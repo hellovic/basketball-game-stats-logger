@@ -1,4 +1,4 @@
-# Basketball Game Stats Logger
+# 籃球比賽數據記錄器 / Basketball Game Stats Logger
 
 A responsive web app for manually logging basketball game stats courtside.
 Tap a stat, and the quarter score, running total, quarter strip and player box
