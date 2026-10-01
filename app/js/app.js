@@ -147,6 +147,27 @@ function startClockIfIdle() {
   if (!game.clock.running) startClock();
 }
 
+/**
+ * Start or stop the clock, from the face.
+ *
+ * Tapping the readout is the move a scorer makes without looking, so that tap
+ * runs the clock. While the face is open for typing a tap belongs to the text —
+ * it places the cursor rather than stopping the clock mid-edit.
+ */
+function toggleClock() {
+  if (clockIsBeingEdited()) return;
+
+  if (game.clock.running) {
+    setClockRunning(game, false);
+    save();
+  } else {
+    startClock();
+    save();
+    ensureClockTicking();
+  }
+  render();
+}
+
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
@@ -206,20 +227,34 @@ function render() {
  * length. Stopped is the plain box it has always been, so the difference is
  * between two states rather than between two shades.
  *
- * One word on the button: the scoreboard is a thin status bar, and the time is
- * already on the clock face beside it. The starting value is still announced in
- * the toast when the clock is refilled.
+ * The face is also the run control, so it says what a tap will do. While it is
+ * open for typing the label belongs to the text field instead.
  */
 function renderClockRunState() {
   const running = Boolean(game.clock.running);
 
   $('clock-box').classList.toggle('is-running', running);
   $('clock-dot').classList.toggle('is-running', running);
+  if (!clockIsBeingEdited()) setClockFaceMode(false);
+}
 
-  const toggle = $('clock-toggle');
-  toggle.textContent = running ? 'Pause' : game.clock.seconds === 0 ? 'Start' : 'Resume';
-  toggle.classList.toggle('is-running', running);
-  toggle.setAttribute('aria-pressed', String(running));
+/**
+ * Point the clock face at the job it is doing: run control, or text field.
+ *
+ * One element is both because they are the same number in the same place, and a
+ * scorer reads it constantly. The role and the label have to follow, or a
+ * screen reader would announce a text box that typing does nothing in.
+ */
+function setClockFaceMode(editing) {
+  const face = $('clock-display');
+  face.setAttribute('contenteditable', editing ? 'true' : 'false');
+  face.setAttribute('role', editing ? 'textbox' : 'button');
+  face.setAttribute(
+    'aria-label',
+    editing
+      ? 'Game clock, editable'
+      : `Game clock, tap to ${game.clock.running ? 'stop' : 'start'}`,
+  );
 }
 
 function renderScoreboard(derived) {
@@ -1313,7 +1348,7 @@ function beginClockEdit() {
     showToast('Clock paused while you set the time.');
   }
 
-  display.setAttribute('contenteditable', 'true');
+  setClockFaceMode(true);
   display.focus();
 
   const range = document.createRange?.();
@@ -1344,7 +1379,7 @@ function commitClockEdit() {
     return false;
   }
 
-  display.setAttribute('contenteditable', 'false');
+  setClockFaceMode(false);
   setClock(game, seconds);
   setClockRunning(game, false);
   save();
@@ -1353,8 +1388,8 @@ function commitClockEdit() {
   display.textContent = clockface.display(game.clock.seconds);
   showToast(
     seconds === 0
-      ? `Clock cleared. It will fill to ${clockface.display(clockface.periodLength(game))} when started.`
-      : `Clock set to ${clockface.display(seconds)}. Use ${'Start'} to count down.`,
+      ? `Clock cleared. It will fill to ${clockface.display(clockface.periodLength(game))} when you start it.`
+      : `Clock set to ${clockface.display(seconds)}. Tap the clock to count down.`,
   );
   return true;
 }
@@ -1539,12 +1574,6 @@ function renderSummary() {
 // ---------------------------------------------------------------------------
 
 document.addEventListener('click', (event) => {
-  // Clicking the clock face itself begins editing.
-  if (event.target.id === 'clock-display') {
-    beginClockEdit();
-    return;
-  }
-
   // Anything outside the More menu dismisses it, the way a menu is expected to
   // behave. Checked before the action lookup so clicking another tool closes
   // the menu and still runs that tool.
@@ -1657,23 +1686,23 @@ document.addEventListener('click', (event) => {
       render();
       break;
     case 'toggle-clock':
-      if (game.clock.running) {
-        setClockRunning(game, false);
-        save();
-      } else {
-        startClock();
-        save();
-        ensureClockTicking();
-      }
-      render();
+      // Carried by the clock face: tap it to start, tap it again to stop.
+      toggleClock();
       break;
     case 'edit-clock':
-      beginClockEdit();
+      // The same tap opens the face for typing and, once it is open, closes it
+      // again — the blur this click causes on some platforms has already
+      // committed the value by then, so there is nothing left to do.
+      if (clockIsBeingEdited()) commitClockEdit();
+      else beginClockEdit();
       break;
     case 'clock-nudge': {
       // The clock beside a scorer drifts by a second or two over a period, so
       // the usual correction is a nudge rather than a re-typed time. It works
       // on a running clock too: pausing to fix a second would cost another one.
+      // A nudge next to an open edit would fight the value being typed, so the
+      // typed value lands first.
+      if (clockIsBeingEdited() && !commitClockEdit()) break;
       const step = Number(target.dataset.clockStep) || 0;
       const next = Math.min(
         clockface.periodLength(game),
@@ -1754,6 +1783,15 @@ document.addEventListener(
   true,
 );
 
+// The Edit button must not take focus on the way in. Focus leaving the face
+// commits the edit, so a tap on Edit would otherwise close the field and the
+// click that followed would open it again — and that only happens on the
+// platforms that focus buttons on click, which is the worst kind of bug to
+// chase. Keeping focus put lets the click decide.
+document.addEventListener('mousedown', (event) => {
+  if (event.target.closest?.('[data-action="edit-clock"]')) event.preventDefault();
+});
+
 // Enter commits a cell edit instead of adding a newline.
 document.addEventListener('keydown', (event) => {
   // Escape closes whichever dialog is open, discarding what it holds.
@@ -1786,11 +1824,23 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       event.preventDefault();
       // Abandon the edit, restoring the value the clock actually holds.
-      event.target.setAttribute('contenteditable', 'false');
+      setClockFaceMode(false);
       event.target.textContent = clockface.display(game.clock.seconds);
       event.target.blur();
       return;
     }
+  }
+
+  // The face is a run control wearing a clock's clothes, so give it the keyboard
+  // a button implies: Enter or Space starts and stops, the way it does elsewhere.
+  if (
+    event.target.id === 'clock-display' &&
+    !clockIsBeingEdited() &&
+    (event.key === 'Enter' || event.key === ' ')
+  ) {
+    event.preventDefault();
+    toggleClock();
+    return;
   }
 
   // Enter takes the team total as typed. `change` would only fire on the way

@@ -272,9 +272,13 @@ two behaviours are worth knowing:
   recording when a period ends, so the app does not wait to be told. Overtime
   gets a 5-minute period.
 
-**You can type a time straight into the clock.** Click the clock face (it is
-dotted-underlined to show it is typeable) or use **Edit**, then type what
-you need and press Enter or click away:
+**Tap the clock to start it, tap it again to stop it.** The face is the run
+control, which means the biggest target in the card does the thing a scorer does
+without looking. It also says which way it will go: the label reads "tap to
+start" when the clock is idle and "tap to stop" while it is counting.
+
+**Editing the time is the Edit button beside it.** Tap **Edit**, type what you
+need and press Enter or click away:
 
 | You type | You get |
 | --- | --- |
@@ -297,10 +301,10 @@ whether to count down. Editing a running clock pauses it first. A value that
 cannot be read is reported and the field stays open so you can fix it; `Escape`
 abandons the edit and restores the real time.
 
-Buttons sit beside the clock: **start/pause** (which reads `Start`, `Resume` or
-`Pause` according to what it will do), **Reset** in the top bar to put the clock
-back to the start of the current period, and the **− / +** period arrows to move
-the period by hand.
+The clock's own controls are the face (**tap to start, tap to stop**), the
+**Edit** button beside it for typing a time, and **Reset** in the top bar to put
+the clock back to the start of the current period. The **− / +** arrows in the
+period pill move the period by hand.
 
 **Four nudge keys move the clock by seconds** — `−1` and `−5` on the left of the
 face, `+1` and `+5` on the right, fine step on top. A manual clock beside a
@@ -311,11 +315,9 @@ clock is running, which is when the drift is noticed. They will not take it past
 the end of its period or below `00:00`.
 
 **A running clock looks running.** The face turns blue — the digits, the box
-around them and the run button, which fills in — and the dot beside the digits
-beats. Stopped is the plain white face. The tell used to be the dot alone, which
-was too small to catch while play was going on; a filled button against an
-outlined one reads from across the table, where two words in the same colour did
-not.
+around them and the dot beside them, which beats — and the whole bar is a shade
+louder than the stopped one. Stopped is the plain white face. The tell used to
+be the dot alone, which was too small to catch while play was going on.
 
 The clock bar is deliberately thin, and it is sticky — so every pixel it takes is
 permanently lost from the scoring area below. That is why the labels are one word

@@ -1094,8 +1094,8 @@ test('a new game can start its clock — it does not stop at 00:00', async () =>
 
   // A blank game's clock holds nothing.
   assert.equal(document.getElementById('clock-display').textContent, '00:00');
-  // The button says what it will actually do.
-  assert.equal(document.getElementById('clock-toggle').textContent, 'Start');
+  // The face says what a tap will do.
+  assert.match(document.getElementById('clock-display').getAttribute('aria-label'), /to start/);
 
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
 
@@ -1104,7 +1104,7 @@ test('a new game can start its clock — it does not stop at 00:00', async () =>
   assert.equal(document.getElementById('clock-display').textContent, '10:00');
   assert.equal(storedGame().clock.seconds, 600);
   assert.equal(storedGame().clock.running, true);
-  assert.equal(document.getElementById('clock-toggle').textContent, 'Pause');
+  assert.match(document.getElementById('clock-display').getAttribute('aria-label'), /to stop/);
 
   // One tick of a real clock leaves it running.
   runTimers();
@@ -1166,7 +1166,7 @@ test('the clock pauses and resumes without losing time', async () => {
 
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   assert.equal(storedGame().clock.running, false);
-  assert.equal(document.getElementById('clock-toggle').textContent, 'Resume');
+  assert.equal(document.getElementById('clock-display').getAttribute('contenteditable'), 'false');
 
   // While paused, a pending tick must not change anything.
   runTimers();
@@ -1178,7 +1178,7 @@ test('the clock pauses and resumes without losing time', async () => {
   assert.equal(document.getElementById('clock-display').textContent, '09:57');
 });
 
-test('a running clock says so on the face, the dot and the button at once', async () => {
+test('a running clock says so on the box, the dot and the face at once', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
@@ -1186,35 +1186,34 @@ test('a running clock says so on the face, the dot and the button at once', asyn
 
   const box = document.getElementById('clock-box');
   const dot = document.getElementById('clock-dot');
-  const toggle = document.getElementById('clock-toggle');
+  const face = document.getElementById('clock-display');
 
   // Stopped is the plain box: no run styling anywhere.
   assert.equal(box.classList.contains('is-running'), false);
   assert.equal(dot.classList.contains('is-running'), false);
-  assert.equal(toggle.classList.contains('is-running'), false);
-  assert.equal(toggle.textContent, 'Start');
-  assert.equal(toggle.getAttribute('aria-pressed'), 'false');
+  assert.match(face.getAttribute('aria-label'), /tap to start/);
 
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   assert.equal(box.classList.contains('is-running'), true, 'the face turns live');
   assert.equal(dot.classList.contains('is-running'), true);
-  assert.equal(toggle.classList.contains('is-running'), true, 'the button fills in');
-  assert.equal(toggle.textContent, 'Pause');
-  assert.equal(toggle.getAttribute('aria-pressed'), 'true');
+  assert.match(face.getAttribute('aria-label'), /tap to stop/);
 
-  // Pausing clears all three: a stopped clock must never look like a running one.
+  // Stopping clears it again: a stopped clock must never look like a running one.
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   assert.equal(box.classList.contains('is-running'), false);
   assert.equal(dot.classList.contains('is-running'), false);
-  assert.equal(toggle.classList.contains('is-running'), false);
-  assert.equal(toggle.textContent, 'Resume');
+  assert.match(face.getAttribute('aria-label'), /tap to start/);
 
   // Editing pauses the clock, so the tell has to follow that too.
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
   assert.equal(box.classList.contains('is-running'), false, 'an edit pauses the clock');
-  assert.equal(toggle.classList.contains('is-running'), false);
-  assert.equal(toggle.textContent, 'Resume');
+  assert.equal(face.getAttribute('contenteditable'), 'true');
+  assert.equal(face.getAttribute('role'), 'textbox', 'the face is a text field while it is open');
+  // And a tap on the open face belongs to the text, not to the run control.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
+  assert.equal(storedGame().clock.running, false);
+  assert.equal(face.getAttribute('contenteditable'), 'true');
 });
 
 test('reset puts the clock back to the start of the period and stops it', async () => {
@@ -1298,14 +1297,14 @@ test('switching to halves moves the period length to twenty minutes', async () =
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
   confirmDanger(dom);
-  assert.equal(document.getElementById('clock-toggle').textContent, 'Start');
+  assert.equal(document.getElementById('clock-display').textContent, '00:00');
 
   const periods = document.getElementById('game-periods');
   periods.value = '2';
   emit(dom.listeners, 'change', periods);
 
   assert.equal(storedGame().periodSeconds, 1200);
-  assert.equal(document.getElementById('clock-toggle').textContent, 'Start');
+  assert.equal(document.getElementById('clock-display').textContent, '00:00');
   assert.equal(document.getElementById('period-display').textContent, 'H1');
 
   // A specific length already chosen by the scorer is respected, not overwritten.
@@ -1321,7 +1320,7 @@ test('the clock face reflects the sample game on load', async () => {
   await startApp();
   // The sample is positioned mid-Q3 with 6:52 left.
   assert.equal(document.getElementById('clock-display').textContent, '06:52');
-  assert.equal(document.getElementById('clock-toggle').textContent, 'Resume');
+  assert.match(document.getElementById('clock-display').getAttribute('aria-label'), /tap to start/);
 });
 
 // ---------------------------------------------------------------------------
@@ -1348,7 +1347,7 @@ test('a clock time can be typed in and then counted down', async () => {
   assert.equal(storedGame().clock.seconds, 450);
   assert.equal(storedGame().clock.running, false, 'setting a time leaves it stopped');
   // Starting it counts down from the typed value, not from the period start.
-  assert.equal(document.getElementById('clock-toggle').textContent, 'Resume');
+  assert.equal(face.textContent, '07:30');
 
   emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
   runTimers();
@@ -1479,16 +1478,42 @@ test('typing 0 clears the clock so starting refills the period', async () => {
   assert.equal(document.getElementById('clock-display').textContent, '10:00');
 });
 
-test('clicking the clock face starts editing', async () => {
+test('the clock face runs the clock and the button opens it for typing', async () => {
   const dom = await startApp();
 
   emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
   confirmDanger(dom);
   const face = document.getElementById('clock-display');
 
-  emit(dom.listeners, 'click', face);
+  // The document hands the face the run control and the button the edit, which
+  // is what a tap on each one reaches. (A stub element cannot carry its data
+  // attribute into the click handler, so the markup is checked directly.)
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  assert.match(html, /id="clock-display"[\s\S]*?data-action="toggle-clock"/);
+  assert.match(html, /data-action="edit-clock"[\s\S]*?id="clock-edit"/);
 
+  // A tap on the face starts it; a second tap stops it. Neither is an edit.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
+  assert.equal(storedGame().clock.running, true);
+  assert.equal(face.getAttribute('contenteditable'), 'false', 'running is not editing');
+
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
+  assert.equal(storedGame().clock.running, false);
+
+  // The keyboard gets the button it cannot see: Enter starts and stops too.
+  emit(dom.listeners, 'keydown', face, { key: 'Enter' });
+  assert.equal(storedGame().clock.running, true);
+  emit(dom.listeners, 'keydown', face, { key: 'Enter' });
+  assert.equal(storedGame().clock.running, false);
+
+  // Edit opens the field, and the same button finishes the edit.
+  emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
   assert.equal(face.getAttribute('contenteditable'), 'true');
+
+  face.textContent = '3:20';
+  emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
+  assert.equal(face.getAttribute('contenteditable'), 'false');
+  assert.equal(storedGame().clock.seconds, 200);
 });
 
 test('all three views are on screen at once, with no tab switcher', async () => {

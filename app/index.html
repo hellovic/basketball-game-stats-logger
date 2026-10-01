@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.19.1">
-<meta name="app-build" content="2026-10-01x">
+<meta name="app-version" content="0.20.0">
+<meta name="app-build" content="2026-10-01y">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -79,14 +79,18 @@
                     title="Five seconds earlier">&minus;5</button>
           </div>
 
-          <!-- The clock face is the edit affordance as well as the readout: tap
-               it and type. data-action="edit-clock" keeps a hook for the
-               keyboard route too. The dot is the "is it running" tell. -->
+          <!-- The face runs the clock: tap it to start, tap it again to stop.
+               That is the move a scorer makes without looking, so it gets the
+               biggest target in the card. Typing a time is the rarer job and
+               lives on the Edit button beside it, which also means no tap can
+               drop the face into a text field by accident. The dot is the "is
+               it running" tell. -->
           <div class="clock-box" id="clock-box">
             <span class="clock-box__dot" id="clock-dot" aria-hidden="true"></span>
             <div class="scoreboard__clock" id="clock-display" contenteditable="false"
-                 role="textbox" aria-label="Game clock, editable" data-action="edit-clock"
-                 title="Tap to type a time, e.g. 7:30 or 0500">00:00</div>
+                 role="button" tabindex="0" data-action="toggle-clock"
+                 aria-label="Game clock, tap to start or stop"
+                 title="Tap to start or stop the clock">00:00</div>
           </div>
 
           <div class="clock-nudge" role="group" aria-label="Move the clock on">
@@ -99,7 +103,10 @@
           </div>
         </div>
 
-        <button type="button" class="clock-toggle" data-action="toggle-clock" id="clock-toggle">Start</button>
+        <!-- One word: the card is thin, and the time itself is on the face right
+             beside it, so the button only has to name what it does. -->
+        <button type="button" class="clock-edit" data-action="edit-clock" id="clock-edit"
+                title="Type an exact time, e.g. 7:30 or 0500">Edit</button>
       </div>
     </div>
 
@@ -583,7 +590,8 @@
       </p>
       <dl class="about__keys">
         <dt>Ctrl / Cmd + Z</dt><dd>Undo the last entry</dd>
-        <dt>Tap the clock</dt><dd>Type a time &mdash; 7:30, or 0500 for 5:00</dd>
+        <dt>Tap the clock</dt><dd>Start or stop it</dd>
+        <dt>Edit</dt><dd>Type a time &mdash; 7:30, or 0500 for 5:00</dd>
         <dt>&minus;1 / +1 / &minus;5 / +5</dt><dd>Nudge the clock by seconds</dd>
         <dt>Esc</dt><dd>Close a dialog or abandon a clock edit</dd>
       </dl>

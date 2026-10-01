@@ -589,17 +589,26 @@ ul {
   line-height: 1.1;
   letter-spacing: -0.02em;
   text-align: center;
-  cursor: text;
+  /* The face is the run control now, so it cues like one. */
+  cursor: pointer;
 }
 
 .scoreboard__clock:hover {
   border-color: var(--border-strong);
 }
 
+.scoreboard__clock:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Editing is a different job from running, so it is a different colour: the
+   amber of the Edit button, against the blue a running clock wears. */
 .scoreboard__clock[contenteditable='true'] {
-  border-color: var(--accent);
+  border-color: var(--stat-ast);
   border-style: solid;
-  background: var(--accent-soft);
+  background: #fdf4ec;
+  cursor: text;
   outline: none;
 }
 
@@ -639,9 +648,9 @@ ul {
   color: var(--accent);
 }
 
-.clock-toggle {
-  /* A status pill, not a primary action: the label is one word and the clock
-     beside it is what the scorer is actually reading. */
+.clock-edit {
+  /* A side action, not a primary one: the label is one word and the clock beside
+     it is what the scorer is actually reading. */
   min-width: 84px;
   min-height: 26px;
   padding: 0 var(--sp-2);
@@ -657,20 +666,8 @@ ul {
   cursor: pointer;
 }
 
-.clock-toggle:hover {
+.clock-edit:hover {
   background: #fdf4ec;
-}
-
-/* Running fills the button in. Solid against outline is a difference a glance
-   catches; two words in the same orange were not. */
-.clock-toggle.is-running {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
-}
-
-.clock-toggle.is-running:hover {
-  background: var(--accent-hover);
 }
 
 .topbar__tools {
@@ -2607,7 +2604,7 @@ ul {
     padding: 2px var(--sp-2);
   }
 
-  .clock-toggle {
+  .clock-edit {
     min-width: 62px;
     min-height: 24px;
     padding: 0 var(--sp-1);
@@ -2660,7 +2657,7 @@ ul {
     min-height: 28px;
   }
 
-  .clock-toggle {
+  .clock-edit {
     min-width: 56px;
   }
 
@@ -2774,7 +2771,7 @@ ul {
     height: 8px;
   }
 
-  .clock-toggle {
+  .clock-edit {
     min-width: 0;
     min-height: 26px;
     padding: 0 7px;
