@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.25.0">
-<meta name="app-build" content="2026-10-01H">
+<meta name="app-version" content="0.26.0">
+<meta name="app-build" content="2026-10-01J">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -554,6 +554,8 @@
       a stat that is already logged.
     </p>
     <div class="dialog__actions dialog__actions--split">
+      <button type="button" class="btn btn--sm" data-action="open-copy-game"
+              title="Start the next game with these teams and settings, and no stats.">Copy as a new game&hellip;</button>
       <button type="button" class="btn btn--danger-ghost btn--sm" data-action="new-game"
               title="Start a blank game. This cannot be undone.">Start a blank game</button>
       <button type="button" class="btn btn--danger-ghost btn--sm" data-action="load-sample"
@@ -689,6 +691,48 @@
       <button type="button" class="btn btn--ghost" data-action="close-dialog">Cancel</button>
       <button type="button" class="btn btn--primary" data-action="import-pasted-roster">
         Read these players
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================================
+     Copy as a new game: the next fixture is usually the same venue, the same
+     rules and often the same two clubs, but none of this game's numbers can
+     come with it. Which sides to bring is the one thing only the coach knows.
+     ===================================================================== -->
+<div class="dialog" id="copy-game-dialog" role="dialog" aria-modal="true"
+     aria-labelledby="copy-game-title" hidden>
+  <div class="dialog__panel">
+    <h2 class="dialog__title" id="copy-game-title">Copy as a new game</h2>
+    <p class="dialog__note" id="copy-game-kept"></p>
+    <div class="dialog__mode">
+      <span class="dialog__mode-label">Bring over from this game:</span>
+      <label class="dialog__radio">
+        <input type="checkbox" id="copy-keep-home" checked>
+        <span id="copy-home-label">Home team</span>
+      </label>
+      <label class="dialog__radio">
+        <input type="checkbox" id="copy-keep-away" checked>
+        <span id="copy-away-label">Away team</span>
+      </label>
+    </div>
+    <p class="dialog__note">
+      Scores, quarter totals, the play-by-play and the box score all start empty,
+      and the clock goes back to the first period.
+    </p>
+    <div class="dialog__mode">
+      <span class="dialog__mode-label">Then:</span>
+      <label class="dialog__radio">
+        <input type="checkbox" id="copy-export" checked>
+        <span>Export this game's JSON first</span>
+      </label>
+    </div>
+    <p class="dialog__note" id="copy-game-stake"></p>
+    <div class="dialog__actions">
+      <button type="button" class="btn btn--ghost" data-action="close-dialog">Cancel</button>
+      <button type="button" class="btn btn--primary" data-action="confirm-copy-game">
+        Copy game
       </button>
     </div>
   </div>

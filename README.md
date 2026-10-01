@@ -51,6 +51,15 @@ The app opens with a **sample game** so you can see a populated screen right
 away. Use *Game settings → Start a blank game* when you are ready to log a real
 one, and *Reload the sample game* to bring it back.
 
+**Copy as a new game** sits beside those two, for the same night's second
+fixture or the second game of a tournament. It keeps the settings — date, start
+time, venue, period structure and length — and whichever of the two teams you
+tick, each with its roster and its colour. Everything that happened is left
+behind: the scores, the quarter totals, the play-by-play and the box score all
+start empty and the clock goes back to the first period. The dialog also offers
+to write the finished game's JSON backup on the way through, ticked by default,
+because the copy replaces the game on this device.
+
 The strip under the scoreboard **reports** the game rather than editing it: the
 date, start time, venue and period structure are shown as read-only pills, and
 tapping any one of them opens **Game settings**, where they are actually

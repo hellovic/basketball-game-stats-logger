@@ -1289,6 +1289,88 @@ test('a destructive action asks first, naming what it would discard', async () =
   assert.deepEqual(storedGame().events, [], 'confirming is what starts the blank game');
 });
 
+test('a game can be copied into a new one, keeping the sides you pick', async () => {
+  const dom = await startApp();
+
+  const before = storedGame();
+  assert.ok(before.events.length > 0, 'the sample game has a score to leave behind');
+
+  // The action sits with the other "start a fresh game" buttons.
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  assert.match(html, /data-action="open-copy-game"/);
+
+  emit(dom.listeners, 'click', actionable({ action: 'open-copy-game' }));
+  const dialog = document.getElementById('copy-game-dialog');
+  assert.equal(dialog.hidden, false);
+  assert.deepEqual(storedGame(), before, 'nothing changes while the dialog is open');
+
+  // It names what it will bring over, and offers the backup by default.
+  assert.match(document.getElementById('copy-home-label').textContent, /Northside · 5 players/);
+  assert.match(document.getElementById('copy-away-label').textContent, /Riverside · 5 players/);
+  assert.equal(document.getElementById('copy-keep-home').checked, true);
+  assert.equal(document.getElementById('copy-keep-away').checked, true);
+  assert.equal(document.getElementById('copy-export').checked, true, 'the backup is offered, and on');
+  assert.match(document.getElementById('copy-game-kept').textContent, /4 quarters/);
+  assert.match(
+    document.getElementById('copy-game-stake').textContent,
+    new RegExp(`${before.events.length} recorded entries will be discarded`),
+  );
+
+  // Keep the home side only, and take the backup on the way through.
+  document.getElementById('copy-keep-away').checked = false;
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-copy-game' }));
+
+  assert.equal(dialog.hidden, true);
+  assert.equal(dom.downloads.length, 1, 'the backup was written first');
+  assert.match(dom.downloads[0].filename, /\.json$/);
+
+  const after = storedGame();
+  assert.deepEqual(after.events, [], 'the new game starts with nothing recorded');
+  assert.equal(document.getElementById('score-home').textContent, '0');
+  assert.equal(document.getElementById('period-display').textContent, 'Q1');
+  assert.equal(document.getElementById('clock-display').textContent, '00:00');
+
+  // The kept side arrives whole; the other starts as the placeholder.
+  assert.equal(document.getElementById('score-home-name').textContent, 'Northside');
+  assert.equal(document.getElementById('score-away-name').textContent, 'Away');
+  assert.equal(
+    document.getElementById('player-cards').innerHTML.match(/data-action="player-row"/g).length,
+    5,
+    'the home roster came over',
+  );
+
+  // The settings are the night's arrangements, and they stayed.
+  assert.equal(after.periodsPerGame, before.periodsPerGame);
+  assert.equal(after.periodSeconds, before.periodSeconds);
+  assert.equal(after.venue, before.venue);
+  assert.equal(after.date, before.date);
+
+  // And the old game is still on disk where it was, untouched by the copy.
+  assert.equal(before.events.length > 0, true);
+});
+
+test('the backup can be declined, and an empty copy is offered nothing to keep', async () => {
+  const dom = await startApp();
+  const before = storedGame();
+
+  emit(dom.listeners, 'click', actionable({ action: 'open-copy-game' }));
+  document.getElementById('copy-export').checked = false;
+  document.getElementById('copy-keep-home').checked = false;
+  document.getElementById('copy-keep-away').checked = false;
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-copy-game' }));
+
+  assert.equal(dom.downloads.length, 0, 'no file was asked for');
+
+  const after = storedGame();
+  assert.deepEqual(after.events, []);
+  assert.equal(after.teams[after.homeTeamId].name, 'Home');
+  assert.equal(after.teams[after.awayTeamId].name, 'Away');
+  assert.equal(after.players.length, 0);
+  // The settings still carry over: they are not a thing you can decline.
+  assert.equal(after.venue, before.venue);
+  assert.equal(after.periodSeconds, before.periodSeconds);
+});
+
 test('cancelling the bulk confirmation changes nothing', async () => {
   const dom = await startApp();
   const before = storedGame();

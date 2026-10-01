@@ -113,6 +113,57 @@ function numberValue(number) {
   return isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed;
 }
 
+/**
+ * A fresh game built on this one: the settings, and whichever sides are kept.
+ *
+ * The next game of a league or a tournament is the same venue and the same
+ * rules as the one before it, and often the same two clubs — so setting that up
+ * again by hand is the tedious part of the evening. Only identity and
+ * configuration are copied: every number belongs to a game that has been
+ * played, and none of it can follow.
+ *
+ * A kept team stays on the side it was on, and its players get new ids — they
+ * are new entries in a new game, and a shared id would tie two games together
+ * through a history neither of them has.
+ */
+export function copyGameAsNew(game, { keepHome = true, keepAway = true } = {}) {
+  const next = createGame({
+    date: game.date,
+    time: game.time,
+    venue: game.venue,
+    periodsPerGame: game.periodsPerGame,
+    periodSeconds: game.periodSeconds,
+  });
+
+  for (const slot of ['home', 'away']) {
+    if (slot === 'home' ? !keepHome : !keepAway) continue;
+
+    const fromId = slot === 'home' ? game.homeTeamId : game.awayTeamId;
+    const toId = slot === 'home' ? next.homeTeamId : next.awayTeamId;
+    const team = game.teams?.[fromId];
+    if (!team) continue;
+
+    next.teams[toId] = {
+      id: toId,
+      name: team.name,
+      abbreviation: team.abbreviation,
+      ...(team.color ? { color: team.color } : {}),
+    };
+
+    for (const player of game.players.filter((entry) => entry.teamId === fromId)) {
+      next.players.push({
+        id: makeId('player'),
+        teamId: toId,
+        number: player.number,
+        name: player.name,
+        active: player.active !== false,
+      });
+    }
+  }
+
+  return next;
+}
+
 export function addPlayer(game, teamId, { number = '', name = '' } = {}) {
   if (!game.teams[teamId]) return null;
   const player = {

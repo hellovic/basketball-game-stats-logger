@@ -12,6 +12,7 @@ import {
   addEvent,
   addPlayer,
   createGame,
+  copyGameAsNew,
   deserialize,
   loadState,
   playersOf,
@@ -139,6 +140,82 @@ test('switching to halves moves the period length with it', () => {
 
   assert.equal(game.periodsPerGame, 2);
   assert.equal(game.periodSeconds, DEFAULT_HALF_SECONDS, 'a half is not a quarter');
+});
+
+test('copying a game as a new one keeps the settings and the sides it is told to', () => {
+  const game = createGame({
+    date: '2026-02-14',
+    time: '19:30',
+    venue: 'Northside Gym',
+    periodsPerGame: 2,
+    periodSeconds: 12 * 60,
+  });
+  updateTeam(game, game.homeTeamId, { name: 'LCMBA Malaysia', abbreviation: 'LCM', color: 'teal' });
+  updateTeam(game, game.awayTeamId, { name: 'A1 Singapore', abbreviation: 'A1', color: 'black' });
+
+  const reed = addPlayer(game, game.homeTeamId, { number: '4', name: 'J. Reed' });
+  addPlayer(game, game.awayTeamId, { number: '5', name: 'M. Diaz' });
+  addEvent(game, {
+    teamId: game.homeTeamId,
+    playerId: reed.id,
+    stat: '2PT',
+    result: 'made',
+    period: 1,
+    clockSeconds: 540,
+  });
+  setPeriod(game, 3);
+  setClock(game, 411);
+  setClockRunning(game, true);
+
+  const next = copyGameAsNew(game, { keepHome: true, keepAway: false });
+
+  // The settings are the night's arrangements, and they carry over.
+  assert.equal(next.date, '2026-02-14');
+  assert.equal(next.time, '19:30');
+  assert.equal(next.venue, 'Northside Gym');
+  assert.equal(next.periodsPerGame, 2);
+  assert.equal(next.periodSeconds, 12 * 60);
+
+  // The kept side is the same club, on the same side, with the same roster.
+  const home = next.teams[next.homeTeamId];
+  assert.equal(home.name, 'LCMBA Malaysia');
+  assert.equal(home.abbreviation, 'LCM');
+  assert.equal(home.color, 'teal', 'the colour belongs to the team');
+  assert.deepEqual(
+    playersOf(next, next.homeTeamId).map((player) => `${player.number} ${player.name}`),
+    ['4 J. Reed'],
+  );
+
+  // The side that was not kept starts as the placeholder it always was.
+  const away = next.teams[next.awayTeamId];
+  assert.equal(away.name, 'Away');
+  assert.equal(playersOf(next, next.awayTeamId).length, 0);
+
+  // Nothing that was a fact about the finished game comes with it.
+  assert.deepEqual(next.events, []);
+  assert.equal(next.currentPeriod, 1);
+  assert.deepEqual(next.clock, { running: false, seconds: 0 });
+
+  // New game, new ids: a copied player is not the same entry in a new history.
+  assert.notEqual(next.homeTeamId, game.homeTeamId);
+  assert.notEqual(playersOf(next, next.homeTeamId)[0].id, reed.id);
+});
+
+test('copying a game does not reach back into the one it copies', () => {
+  const game = createGame();
+  const reed = addPlayer(game, game.homeTeamId, { number: '4', name: 'J. Reed' });
+  updateTeam(game, game.homeTeamId, { name: 'Northside' });
+
+  const next = copyGameAsNew(game);
+
+  // The two games share no objects, so editing the new one cannot rewrite the
+  // one that has been played.
+  updateTeam(next, next.homeTeamId, { name: 'Somewhere Else' });
+  addPlayer(next, next.homeTeamId, { number: '9', name: 'A. New' });
+
+  assert.equal(game.teams[game.homeTeamId].name, 'Northside');
+  assert.equal(playersOf(game, game.homeTeamId).length, 1);
+  assert.equal(playersOf(game, game.homeTeamId)[0].id, reed.id);
 });
 
 test('switching back to quarters restores the quarter length', () => {

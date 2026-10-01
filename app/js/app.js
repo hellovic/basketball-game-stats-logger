@@ -15,6 +15,7 @@ import {
   addEvent,
   addPlayer,
   appendRoster,
+  copyGameAsNew,
   createGame,
   deleteEvent,
   loadState,
@@ -1512,6 +1513,66 @@ function startNewGame() {
   });
 }
 
+/**
+ * Set up the next game from this one.
+ *
+ * The dialog carries the two questions only the coach can answer — which sides
+ * to bring over, and whether to take a backup first — and says what is kept, so
+ * the choices are read rather than remembered.
+ */
+function openCopyGame() {
+  const roster = (slot) => playersOf(game, teamIdFor(slot)).length;
+  const describe = (slot) => {
+    const team = teamFor(slot);
+    const count = roster(slot);
+    return `${safeText(team?.name) || 'The ' + slot + ' team'} · ${count} player${
+      count === 1 ? '' : 's'
+    }`;
+  };
+
+  $('copy-home-label').textContent = describe('home');
+  $('copy-away-label').textContent = describe('away');
+  $('copy-keep-home').checked = true;
+  $('copy-keep-away').checked = true;
+  // Offered, and offered checked: the copy replaces the game on this device,
+  // and a backup costs one file.
+  $('copy-export').checked = true;
+
+  $('copy-game-kept').textContent =
+    `Settings kept: ${structureLabel(game.periodsPerGame, game.periodSeconds)}` +
+    `${safeText(game.venue) ? ` · ${game.venue}` : ''} · ${displayDate(game.date)}.`;
+  $('copy-game-stake').textContent = atStake();
+
+  // Two dialogs share one stacking level, so this one opens on its own.
+  closeDialogs();
+  openDialog('copy-game-dialog');
+}
+
+function confirmCopyGame() {
+  const keepHome = $('copy-keep-home').checked;
+  const keepAway = $('copy-keep-away').checked;
+
+  if ($('copy-export').checked) downloadJson(game);
+
+  game = copyGameAsNew(game, { keepHome, keepAway });
+  detailTeamSlot = 'home';
+
+  // View state belongs to the game that has just been filed away.
+  selectedPlayerIds.clear();
+  boxSort = null;
+  boxPick = null;
+  expandedPanel = null;
+
+  save();
+  closeDialogs();
+  render();
+  showToast(
+    keepHome || keepAway
+      ? 'New game ready — same settings, scores cleared.'
+      : 'New game ready. Both rosters start empty.',
+  );
+}
+
 function loadSample() {
   askBefore({
     title: 'Reload the sample game?',
@@ -1709,7 +1770,13 @@ function openDialog(id) {
 }
 
 function closeDialogs() {
-  for (const id of ['settings-dialog', 'summary-dialog', 'about-dialog', 'color-dialog']) {
+  for (const id of [
+    'settings-dialog',
+    'summary-dialog',
+    'about-dialog',
+    'color-dialog',
+    'copy-game-dialog',
+  ]) {
     $(id).hidden = true;
   }
 }
@@ -2021,6 +2088,12 @@ document.addEventListener('click', (event) => {
     case 'confirm-danger':
       runDanger();
       break;
+    case 'open-copy-game':
+      openCopyGame();
+      break;
+    case 'confirm-copy-game':
+      confirmCopyGame();
+      break;
     case 'cancel-danger':
       closeDanger();
       break;
@@ -2082,9 +2155,13 @@ document.addEventListener('mousedown', (event) => {
 document.addEventListener('keydown', (event) => {
   // Escape closes whichever dialog is open, discarding what it holds.
   const importing = !$('load-team-dialog').hidden || !$('paste-roster-dialog').hidden;
-  const viewing = ['settings-dialog', 'summary-dialog', 'about-dialog', 'color-dialog'].some(
-    (id) => !$(id).hidden,
-  );
+  const viewing = [
+    'settings-dialog',
+    'summary-dialog',
+    'about-dialog',
+    'color-dialog',
+    'copy-game-dialog',
+  ].some((id) => !$(id).hidden);
 
   if (event.key === 'Escape' && (importing || viewing || !$('more-menu').hidden) && !clockIsBeingEdited()) {
     closeDialogs();
