@@ -2214,23 +2214,28 @@ test('the headings carry the width control, and live entry a key size', async ()
   assert.doesNotMatch(app, /case 'toggle-collapse'/, 'the fold action should be gone');
 });
 
-test('live entry resizes its keys, and starts on the small side', async () => {
+test('live entry resizes its keys, and starts one step off the smallest', async () => {
   const dom = await startApp();
   const entry = document.getElementById('panel-entry');
   const smaller = document.getElementById('key-down-entry');
   const larger = document.getElementById('key-up-entry');
 
-  assert.equal(entry.getAttribute('data-density'), 'normal');
-  assert.equal(smaller.disabled, false);
+  // The default is the second smallest: a scorer wants the roster on screen
+  // more than a taller key, but the smallest step is still there to take.
+  assert.equal(entry.getAttribute('data-density'), 'compact');
+  assert.equal(smaller.disabled, false, 'there is a smaller size below the default');
   assert.equal(larger.disabled, false);
 
   // Down to the smallest, where the "smaller" end is spent.
   emit(dom.listeners, 'click', actionable({ action: 'key-smaller', panel: 'entry' }));
-  assert.equal(entry.getAttribute('data-density'), 'compact');
+  assert.equal(entry.getAttribute('data-density'), 'tiny');
   assert.equal(smaller.disabled, true, 'the smallest key is a real end');
 
   // And back up through the default to the largest.
   emit(dom.listeners, 'click', actionable({ action: 'key-larger', panel: 'entry' }));
+  assert.equal(entry.getAttribute('data-density'), 'compact', 'back to the default');
+  emit(dom.listeners, 'click', actionable({ action: 'key-larger', panel: 'entry' }));
+  assert.equal(entry.getAttribute('data-density'), 'normal');
   emit(dom.listeners, 'click', actionable({ action: 'key-larger', panel: 'entry' }));
   assert.equal(entry.getAttribute('data-density'), 'roomy');
   assert.equal(larger.disabled, true);
@@ -2251,10 +2256,16 @@ test('live entry resizes its keys, and starts on the small side', async () => {
   };
   const fallback = keyHeight('.panel--entry');
   const roomy = keyHeight(".panel--entry[data-density='roomy']");
+  const compact = keyHeight(".panel--entry[data-density='compact']");
+  const tiny = keyHeight(".panel--entry[data-density='tiny']");
   assert.ok(
     fallback < roomy,
     `the default key (${fallback}px) should be smaller than the roomiest (${roomy}px)`,
   );
+  // The scale runs smallest first, and the default is one step up from the
+  // bottom of it.
+  assert.ok(tiny < compact, `the smallest key (${tiny}px) should be under the default (${compact}px)`);
+  assert.ok(compact < fallback, 'and the default under the built-in fallback');
   const rowRule = css.slice(css.indexOf('\n.entry tbody td {'));
   assert.match(rowRule.slice(0, rowRule.indexOf('}')), /calc\(var\(--key-h/, 'the row follows the key');
 });

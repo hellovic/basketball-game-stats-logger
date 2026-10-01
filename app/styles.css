@@ -1442,7 +1442,10 @@ ul {
   align-items: center;
   justify-content: center;
   width: 26px;
-  height: 26px;
+  /* The tick never sets the row height on its own: at the smallest key size a
+     fixed 26px here would hold every row taller than the keys in it, which is
+     the one thing the size control exists to change. */
+  height: min(26px, var(--key-h, 26px));
   cursor: pointer;
 }
 
@@ -1551,13 +1554,49 @@ ul {
 
 /* How tall the stat keys are, and with them the entry rows. The default is
    deliberately small — twelve players on screen matters more at the table than
-   a taller key — and Live entry's heading steps it up or down from there. */
+   a taller key — and Live entry's heading steps it up or down from there.
+
+   The two smallest sizes also take a little off the type: a key a third
+   shorter with the same 13.5px label in it reads as a squeezed button rather
+   than a smaller one. */
 .panel--entry {
   --key-h: 32px;
 }
 
 .panel--entry[data-density='compact'] {
   --key-h: 26px;
+}
+
+.panel--entry[data-density='tiny'] {
+  --key-h: 20px;
+}
+
+.panel--entry[data-density='tiny'] .stat-btn {
+  border-radius: 7px;
+  font-size: 11.5px;
+}
+
+.panel--entry[data-density='tiny'] .stat-btn--count {
+  font-size: 9.5px;
+}
+
+/* At the smallest size the number and the name sit side by side rather than
+   stacked. Stacked they are two lines of type, which is taller than a 20px key
+   and would hold every row at its old height — the smaller keys would cost tap
+   area and save nothing. One line of "#4 J. Reed" is the same information in
+   half the height. */
+.panel--entry[data-density='tiny'] .player-card__who {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.panel--entry[data-density='tiny'] .player-card__number {
+  flex: none;
+}
+
+.panel--entry[data-density='tiny'] .player-card__name {
+  min-width: 0;
 }
 
 .panel--entry[data-density='roomy'] {

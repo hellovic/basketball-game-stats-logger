@@ -109,12 +109,13 @@ const PANEL_NAMES = { entry: 'live entry', log: 'play-by-play', box: 'box score'
  * How tall Live entry's stat keys are, smallest first.
  *
  * Only Live entry has one: it is the panel a scorer works down, and the whole
- * point is fitting the roster on screen without a scroll. The default sits at
- * the small end already, so the buttons are there to go further in either
- * direction rather than to undo an oversized out-of-the-box key.
+ * point is fitting the roster on screen without a scroll. The default is the
+ * second smallest, because a scorer would rather see two more players than have
+ * a taller key — and the sizes above it are there for a scorer with fewer names
+ * to fit and a finger that wants the room.
  */
-const KEY_SIZES = ['compact', 'normal', 'roomy'];
-let keySize = 'normal';
+const KEY_SIZES = ['tiny', 'compact', 'normal', 'roomy'];
+let keySize = 'compact';
 
 /**
  * Players ticked for removal in the roster panel.

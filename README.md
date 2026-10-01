@@ -176,12 +176,14 @@ carry one each:
 | `−` / `+` | Live entry | Smaller or larger stat keys, so more or fewer of the roster fit on screen |
 | the four-corner icon | every panel | Stretch that section across the whole width, hiding the other two |
 
-The keys start small — fitting the roster on screen is worth more at the table
-than a tall key — at 32px, and the two buttons step up to 40px or down to 26px.
-The row height follows the key, so a smaller key really does mean more players
-in view. The four-corner control is how you see every column of the entry row or
-the box score on a screen too narrow to show them side by side; `Esc` also
-returns to two columns.
+The keys start small, at **26px**, because fitting the roster on screen is worth
+more at the table than a tall key; the buttons step down to 20px and up through
+32px to 40px. The row height follows the key, so a smaller key really does mean
+more players in view — 17 rows at the default, 20 at the smallest. At 20px the
+number and the name share a line rather than stacking, which is what lets the
+row shrink with the keys. The four-corner control is how you see every column of
+the entry row or the box score on a screen too narrow to show them side by side;
+`Esc` also returns to two columns.
 
 The **More** menu holds what does not fit in the top bar: game settings, the
 player roster, swapping the two sides, import/export and team files, the game
