@@ -216,7 +216,6 @@ ul {
 
 /* Numbers everywhere line up column-wise so a column can be read down. */
 .num,
-.entry__num,
 .scoreboard__clock,
 .team-block__score,
 .sheet td,
@@ -1330,30 +1329,95 @@ ul {
   width: 150px;
 }
 
-.roster__toolbar {
+/* The list of players, and the control that takes one off the roster. It takes
+   a whole line of the wrapping bar: a list squeezed in beside the add form is a
+   list nobody reads. */
+.roster-list {
+  flex: 1 0 100%;
+  max-height: 216px;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.roster-list__row {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin-left: auto;
-  padding-left: var(--sp-3);
-  border-left: 1px solid var(--border);
+  padding: var(--sp-1) var(--sp-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
 }
 
-.roster__select-all {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-  font-size: 12px;
+.roster-list__row:last-child {
+  border-bottom: none;
+}
+
+.roster-list__number {
+  flex: none;
+  width: 28px;
+  text-align: center;
+  font-family: var(--font-num);
+  font-weight: 700;
   color: var(--ink-muted);
+}
+
+.roster-list__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.roster-list__remove {
+  flex: none;
+  width: 28px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1;
   cursor: pointer;
 }
 
-.roster__toolbar-count {
-  font-size: 12px;
+.roster-list__remove:hover {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.roster-list__empty {
+  padding: var(--sp-3) var(--sp-2);
+  color: var(--ink-faint);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+/* Saving and loading a team is roster work, so those buttons sit with the
+   roster rather than in the export bar. */
+.rosterbar__files {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border);
+}
+
+.rosterbar__files-label {
+  font-size: 9.5px;
   font-weight: 700;
-  color: var(--accent);
-  white-space: nowrap;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
 }
 
 /* ===========================================================================
@@ -1373,10 +1437,6 @@ ul {
   border-collapse: separate;
   border-spacing: 0;
   font-size: 13px;
-}
-
-.entry__col--check {
-  width: 34px;
 }
 
 /* The number sits inside this cell, above the name, so it needs room for both. */
@@ -1438,11 +1498,6 @@ ul {
   background: #eef3fd;
 }
 
-.entry__num {
-  width: 34px;
-  border-right: 1px solid var(--border);
-}
-
 .entry__who {
   width: 118px;
   border-right: 1px solid var(--border);
@@ -1488,10 +1543,6 @@ ul {
   background: var(--accent-soft);
 }
 
-.entry tbody tr.player-card--selected td {
-  background: #eaf0fb;
-}
-
 /* Who is on the floor. The same two marks the box score uses for a player it is
    following — a bar on the left edge and the number in the team's colour — so
    "this one" reads the same wherever it appears. */
@@ -1524,24 +1575,6 @@ ul {
 .panel--entry.is-subbing .stat-btn {
   pointer-events: none;
   opacity: 0.35;
-}
-
-.entry .roster__check-hit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  /* The tick never sets the row height on its own: at the smallest key size a
-     fixed 26px here would hold every row taller than the keys in it, which is
-     the one thing the size control exists to change. */
-  height: min(26px, var(--key-h, 26px));
-  cursor: pointer;
-}
-
-.entry .roster__check {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent);
 }
 
 .player-card__number {
@@ -2642,10 +2675,6 @@ ul {
    The row is a table row so the keys and the running totals line up down the
    page. These are the cells that only exist in the table layout.
    =========================================================================== */
-
-.player-card__check {
-  width: 34px;
-}
 
 .player-card__who {
   text-align: left;

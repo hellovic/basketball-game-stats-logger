@@ -128,17 +128,6 @@ const KEY_SIZES = ['tiny', 'compact', 'normal', 'roomy'];
 let keySize = 'compact';
 
 /**
- * Players ticked for removal in the roster panel.
- *
- * Held here rather than read back off the checkboxes because every action
- * re-renders the whole panel: anything stored in the DOM would be lost when the
- * user logs a stat between ticking a player and removing them. Ids are pruned
- * against the viewed roster on every render, so a team switch, a new game or a
- * team loaded from file can never leave a stale id armed for deletion.
- */
-let selectedPlayerIds = new Set();
-
-/**
  * The action waiting on a yes/no answer, or null when nothing is pending.
  *
  * Held as a closure rather than as a name to dispatch on later, so a queued
@@ -545,59 +534,40 @@ function recordLineup(changes) {
   render();
 }
 
+/**
+ * The roster list in the Team and players dialog: one line per player, each
+ * with the control that takes them off it.
+ *
+ * Removal lives here rather than on the entry rows because this is where a
+ * roster is edited. The entry table is for recording what happens in the game,
+ * and a tap on one of its rows is a stat, not a selection.
+ */
 function renderRoster() {
-  const teamId = teamIdFor(detailTeamSlot);
-  const roster = playersOf(game, teamId);
+  const list = $('roster-list');
+  if (!list) return;
 
-  // A selection only ever refers to the roster in front of the scorer. Anything
-  // else (the other team, a roster that has since been replaced) is dropped
-  // rather than left armed for deletion.
-  pruneSelection(roster);
-  renderRosterToolbar(roster);
-}
+  const roster = playersOf(game, teamIdFor(detailTeamSlot));
 
-/** Drop selected ids that are no longer on the roster being viewed. */
-function pruneSelection(roster) {
-  const onRoster = new Set(roster.map((player) => player.id));
-  for (const id of [...selectedPlayerIds]) {
-    if (!onRoster.has(id)) selectedPlayerIds.delete(id);
-  }
-}
-
-function renderRosterToolbar(roster) {
-  const toolbar = $('roster-toolbar');
-  if (!toolbar) return;
-
-  const selectedCount = roster.filter((player) => selectedPlayerIds.has(player.id)).length;
-  const allSelected = roster.length > 0 && selectedCount === roster.length;
-
-  // Nothing to select (or remove) until the roster has players.
-  toolbar.hidden = roster.length === 0;
-
-  // The controls live in the document rather than being rebuilt here, so a
-  // re-render cannot replace a checkbox the user is mid-click or the button
-  // they are pressing.
-  const master = $('roster-select-all');
-  if (master) {
-    master.disabled = roster.length === 0;
-    master.checked = allSelected;
-    // A partly ticked roster is neither checked nor unchecked, and the box has
-    // to say so or "select all" looks broken.
-    master.indeterminate = selectedCount > 0 && !allSelected;
-  }
-
-  const count = $('roster-selection-count');
-  if (count) count.textContent = selectedCount === 0 ? '' : `${selectedCount} selected`;
-
-  const remove = $('roster-remove-selected');
-  if (remove) {
-    remove.disabled = selectedCount === 0;
-    remove.textContent = selectedCount > 0 ? `Remove ${selectedCount}` : 'Remove';
-  }
+  list.innerHTML =
+    roster.length === 0
+      ? '<li class="roster-list__empty">No players yet &mdash; add one above.</li>'
+      : roster
+          .map((player) => {
+            const name = escapeHtml(player.name);
+            return `
+        <li class="roster-list__row">
+          <span class="roster-list__number">${escapeHtml(player.number) || '&mdash;'}</span>
+          <span class="roster-list__name" title="${name}">${name}</span>
+          <button type="button" class="roster-list__remove" data-action="remove-player"
+                  data-player-id="${escapeHtml(player.id)}"
+                  aria-label="Remove ${name}" title="Remove ${name}">&times;</button>
+        </li>`;
+          })
+          .join('');
 }
 
 /**
- * Remove every ticked player, along with the entries they logged.
+ * Take one player off the roster, along with the entries they logged.
  *
  * Deleting the entries is what keeps the app's promise intact: a removed
  * player's points leave the scoreboard and the box score at the same moment, so
@@ -605,47 +575,40 @@ function renderRosterToolbar(roster) {
  * gone — leaves points that no player line accounts for, which the app reports
  * as a problem under the scoresheet.
  */
-function removeSelectedPlayers() {
-  const roster = playersOf(game, teamIdFor(detailTeamSlot));
-  const players = roster.filter((player) => selectedPlayerIds.has(player.id));
-  if (players.length === 0) return;
+function removePlayerFromRoster(playerId) {
+  const player = playersOf(game, teamIdFor(detailTeamSlot)).find(
+    (candidate) => candidate.id === playerId,
+  );
+  if (!player) return;
 
-  const ids = new Set(players.map((player) => player.id));
   // A substitution names two players, so a player leaving the roster takes the
   // changes they were part of — either side of them — with them. Leaving one
   // behind would put a stranger on the floor and minutes against nobody.
-  const theirs = (event) => ids.has(event.playerId) || ids.has(event.subInId);
+  const theirs = (event) => event.playerId === playerId || event.subInId === playerId;
   const entries = game.events.filter(theirs).length;
-
-  const who =
-    players.length === 1
-      ? players[0].name
-      : `${players.length} players`;
-  const them = players.length === 1 ? 'this player' : 'them';
   const detail =
     entries > 0
       ? `${entries} recorded ${entries === 1 ? 'entry' : 'entries'} will be deleted ` +
-        `with ${them}, and the score and box score will drop.`
+        'with this player, and the score and box score will drop.'
       : 'Their place in the roster is all that goes.';
 
   askBefore({
-    title: `Remove ${who}?`,
+    title: `Remove ${player.name}?`,
     // Removing a player is not an event, so the ordinary undo (which pops the
     // last entry) cannot reverse this. The confirmation is the safety net.
     text: `${detail} Removing a player cannot be undone.`,
-    confirmLabel: `Remove ${players.length === 1 ? 'player' : `${players.length} players`}`,
+    confirmLabel: 'Remove player',
     run: () => {
-      for (const player of players) removePlayer(game, player.id);
+      removePlayer(game, playerId);
       game.events = game.events.filter((event) => !theirs(event));
 
-      selectedPlayerIds.clear();
       save();
       render();
 
       showToast(
         entries > 0
-          ? `${who} removed with ${entries} ${entries === 1 ? 'entry' : 'entries'}.`
-          : `${who} removed.`,
+          ? `${player.name} removed with ${entries} ${entries === 1 ? 'entry' : 'entries'}.`
+          : `${player.name} removed.`,
       );
     },
   });
@@ -658,8 +621,7 @@ function removeSelectedPlayers() {
  * The row is a table row rather than a card because the keys, the running
  * totals and the column headings all have to line up down the page — a scorer
  * finds "the third player's rebounds" by reading one column, not by re-finding
- * a card. The 17 columns are: check, player, 4 scoring keys, 7 other keys and
- * the 4 live values the keys are already reflected in.
+ * a card. The fourteen columns are the player and thirteen keys.
  */
 function renderEntry(derived) {
   const container = $('player-cards');
@@ -670,7 +632,7 @@ function renderEntry(derived) {
 
   if (roster.length === 0) {
     container.innerHTML =
-      '<tr class="entry__empty"><td colspan="15">No players yet — add them under ' +
+      '<tr class="entry__empty"><td colspan="14">No players yet — add them under ' +
       'More → Team and players.</td></tr>';
     return;
   }
@@ -697,7 +659,6 @@ function renderEntry(derived) {
   container.innerHTML = roster
     .map((player) => {
       const line = derived.playerLines[player.id] || playerLine(game, player.id);
-      const selected = selectedPlayerIds.has(player.id);
       const name = escapeHtml(player.name);
       const isOn = onCourt.has(player.id) || pickedStarters.has(player.id);
 
@@ -737,20 +698,13 @@ function renderEntry(derived) {
           .join('');
 
       return `
-        <tr class="player-card${selected ? ' player-card--selected' : ''}${
-          isOn ? ' player-card--on' : ''
-        }${subStep && wanted ? ' player-card--wanted' : ''}${
+        <tr class="player-card${isOn ? ' player-card--on' : ''}${
+          subStep && wanted ? ' player-card--wanted' : ''
+        }${
           subStep && !wanted ? ' player-card--passed' : ''
         }"
             style="--accent: ${accent}; --wash: ${washFor(teamId)}" data-action="${action}"
             data-player-id="${escapeHtml(player.id)}">
-          <td class="player-card__check">
-            <label class="roster__check-hit">
-              <input type="checkbox" class="roster__check" data-action="toggle-player"
-                     data-player-id="${escapeHtml(player.id)}"
-                     aria-label="Select ${name}"${selected ? ' checked' : ''}>
-            </label>
-          </td>
           <td class="player-card__who">
             <span class="player-card__number">${escapeHtml(player.number) || '—'}</span>
             <span class="player-card__name" title="${name}">${name}</span>
@@ -1792,7 +1746,6 @@ function confirmCopyGame() {
   detailTeamSlot = 'home';
 
   // View state belongs to the game that has just been filed away.
-  selectedPlayerIds.clear();
   boxSort = null;
   boxPick = null;
   expandedPanel = null;
@@ -2237,24 +2190,8 @@ document.addEventListener('click', (event) => {
     case 'delete-event':
       handleDelete(target.dataset.eventId);
       break;
-    case 'toggle-player': {
-      // The checkbox has already flipped itself, so the DOM is the source of
-      // truth for the direction of this toggle.
-      const playerId = target.dataset.playerId;
-      if (target.checked) selectedPlayerIds.add(playerId);
-      else selectedPlayerIds.delete(playerId);
-      render();
-      break;
-    }
-    case 'toggle-all-players': {
-      const roster = playersOf(game, teamIdFor(detailTeamSlot));
-      if (target.checked) for (const player of roster) selectedPlayerIds.add(player.id);
-      else selectedPlayerIds.clear();
-      render();
-      break;
-    }
-    case 'remove-selected-players':
-      removeSelectedPlayers();
+    case 'remove-player':
+      removePlayerFromRoster(target.dataset.playerId);
       break;
     case 'select-team':
       detailTeamSlot = target.dataset.teamSlot;

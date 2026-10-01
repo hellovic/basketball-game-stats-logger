@@ -102,8 +102,8 @@ The consequences are worth being explicit about:
   not see each other's games.
 
 That is why both exports matter: the **Export** group in the file bar
-(**More → Import / export**) backs up a game, and a **team file** backs up a
-roster. See below.
+(**More → Import / export**) backs up a game, and the **team file** buttons in
+**More → Team and players** back up a roster. See below.
 
 ---
 
@@ -198,8 +198,8 @@ the entry row or the box score on a screen too narrow to show them side by side;
 `Esc` also returns to two columns.
 
 The **More** menu holds what does not fit in the top bar: game settings, the
-team and its players, swapping the two sides, import/export and team files, the
-game summary, and help. The file bar it toggles is hidden until you ask for it,
+team and its players, swapping the two sides, the game's own exports, the game
+summary, and help. The file bar it toggles is hidden until you ask for it,
 which is what keeps the two columns tall enough to read at a glance on an iPad.
 Game settings is behind that menu rather than on a button of its own: the date,
 time, venue and period pills on the strip all open it, so the scoreboard keeps
@@ -240,8 +240,10 @@ nothing is exposed to the network at all.
 ### Team files and rosters
 
 Rosters do not change much week to week, so a team can be saved and loaded back
-next game. Writing JSON by hand is the hard way; **Paste roster…** is the easy
-one.
+next game. The roster itself is edited in **More → Team and players**: type a
+number and a name to add a player, and the ✕ beside a name takes that player off
+the roster. Writing a team file by hand is the hard way; **Paste roster…** is the
+easy one.
 
 **Paste roster…** takes the two columns you already have open in a spreadsheet,
 a notes app or a message — one player per line:
@@ -266,8 +268,8 @@ Player  Number
 
 Then choose **Replace it** or **Add to it**. **Replace** keeps the entries those
 players already logged in the score and the play-by-play, and drops the players
-themselves — for deleting players *and* their entries, use the checkboxes in the
-roster instead.
+themselves. It is the ✕ on the roster list, not an import, that deletes a player
+*and* the entries they logged.
 
 - **Load team…** reads a saved team or a `.csv` back,
   deciding by the file extension. A CSV is parsed exactly like a paste.

@@ -893,8 +893,7 @@ test('the mark is dropped when the player leaves the game', async () => {
   // Removing the player from the roster has to take the mark with it: a
   // highlight on somebody who is no longer in the game is a bug you would only
   // notice much later.
-  emit(dom.listeners, 'click', checkbox({ action: 'toggle-player', playerId: player.id }, true));
-  emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+  emit(dom.listeners, 'click', actionable({ action: 'remove-player', playerId: player.id }));
   confirmDanger(dom);
   assert.doesNotMatch(document.getElementById('box-table').innerHTML, /is-picked/);
 });
@@ -1284,15 +1283,8 @@ test('the save button is disabled until the team has a player', async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Bulk roster removal
+// Roster editing
 // ---------------------------------------------------------------------------
-
-/** A checkbox carrying the given data attributes and checked state. */
-function checkbox(dataset, checked) {
-  const el = actionable(dataset);
-  el.checked = checked;
-  return el;
-}
 
 /**
  * Player ids as rendered in the Live entry cards, in row order.
@@ -1308,45 +1300,67 @@ function rosterIds() {
   ].map((match) => match[1]);
 }
 
-test('the entry rows carry a checkbox per player and a disabled remove button', async () => {
+/** Player ids as listed in the Team and players dialog, in roster order. */
+function rosterListIds() {
+  return [
+    ...document.getElementById('roster-list').innerHTML.matchAll(
+      /data-action="remove-player"[\s\S]*?data-player-id="([^"]+)"/g,
+    ),
+  ].map((match) => match[1]);
+}
+
+test('the entry rows carry no checkbox, and the dialog lists the roster', async () => {
   await startApp();
 
   const ids = rosterIds();
   assert.ok(ids.length > 0, 'the seeded game should render a roster');
-  assert.equal(
-    (document.getElementById('player-cards').innerHTML.match(/data-action="toggle-player"/g) || [])
-      .length,
-    ids.length,
-    'every entry row should carry a checkbox',
+  assert.doesNotMatch(
+    document.getElementById('player-cards').innerHTML,
+    /type="checkbox"/,
+    'a tap on an entry row is a stat, not a selection',
   );
 
-  const master = document.getElementById('roster-select-all');
-  assert.ok(master, 'the toolbar should offer a select-all checkbox');
-  assert.equal(master.checked, false);
-  assert.equal(master.indeterminate, false);
-  assert.equal(document.getElementById('roster-remove-selected').disabled, true);
+  // The control that edits the roster lives with the roster, in the dialog.
+  assert.deepEqual(rosterListIds(), ids, 'every player is listed, in roster order');
 });
 
-test('ticking a player removes only that player and their entries', async () => {
+test('the Team and players dialog carries the team file controls', async () => {
+  const dom = await startApp();
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+
+  // The export bar exports the game and nothing else.
+  const intoActionbar = html.slice(html.indexOf('id="actionbar"'));
+  const actionbar = intoActionbar.slice(0, intoActionbar.indexOf('</section>'));
+  assert.doesNotMatch(
+    actionbar,
+    /save-team|open-load-team|open-paste-roster/,
+    'team files should not still be in the export bar',
+  );
+
+  // Saving and loading a roster is roster work, so it sits with the roster.
+  const intoDialog = html.slice(html.indexOf('id="rosterbar"'));
+  const dialog = intoDialog.slice(0, intoDialog.indexOf('</section>'));
+  for (const action of ['save-team', 'open-load-team', 'open-paste-roster']) {
+    assert.match(dialog, new RegExp(`data-action="${action}"`), `${action} lives in the dialog`);
+  }
+
+  // And they work from there.
+  emit(dom.listeners, 'click', actionable({ action: 'open-roster' }));
+  emit(dom.listeners, 'click', actionable({ action: 'save-team' }));
+  assert.equal(dom.downloads.length, 1, 'Save team still downloads the roster');
+});
+
+test('removing a player takes them and their entries off the roster', async () => {
   const dom = await startApp();
 
   const before = storedGame().events.length;
   const ids = rosterIds();
   const target = ids[0];
 
-  emit(dom.listeners, 'click', checkbox({ action: 'toggle-player', playerId: target }, true));
-
-  // The count appears, and the destructive button becomes available.
-  assert.equal(
-    document.getElementById('roster-selection-count').textContent,
-    '1 selected',
-  );
-  assert.equal(document.getElementById('roster-remove-selected').disabled, false);
-  // One of five ticked: neither fully checked nor unchecked.
-  assert.equal(document.getElementById('roster-select-all').indeterminate, true);
-  assert.equal(document.getElementById('roster-select-all').checked, false);
-
-  emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+  emit(dom.listeners, 'click', actionable({ action: 'remove-player', playerId: target }));
+  // The question comes first: removing a player is not an entry, so the
+  // ordinary undo cannot bring them back.
+  assert.equal(document.getElementById('confirm-dialog').hidden, false);
   confirmDanger(dom);
 
   const after = storedGame();
@@ -1356,67 +1370,21 @@ test('ticking a player removes only that player and their entries', async () => 
   // Every other player is untouched.
   assert.equal(rosterIds().includes(target), false);
   assert.equal(rosterIds().length, ids.length - 1);
+  assert.equal(rosterListIds().includes(target), false, 'the list drops them too');
 });
 
-test('select all ticks the whole roster and removes it in one confirmed action', async () => {
+test('the roster list follows the team the tabs have selected', async () => {
   const dom = await startApp();
+  const homePlayer = rosterListIds()[0];
 
-  emit(
-    dom.listeners,
-    'click',
-    checkbox({ action: 'toggle-all-players' }, true),
-  );
-
-  const ids = rosterIds();
-  assert.equal(ids.length, 7, 'the sample home roster has seven players');
-  const master = document.getElementById('roster-select-all');
-  assert.equal(master.checked, true);
-  assert.equal(master.indeterminate, false);
-  assert.equal(
-    document.getElementById('roster-selection-count').textContent,
-    '7 selected',
-  );
-
-  emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
-  confirmDanger(dom);
-
-  const after = storedGame();
-  const homeId = after.homeTeamId;
-  assert.equal(after.players.filter((player) => player.teamId === homeId).length, 0);
-  assert.equal(
-    after.events.filter((event) => event.teamId === homeId).length,
-    0,
-    'the removed players\' entries should leave the scoreboard too',
-  );
-});
-
-test('unticking a player takes them back out of the selection', async () => {
-  const dom = await startApp();
-  const target = rosterIds()[0];
-
-  emit(dom.listeners, 'click', checkbox({ action: 'toggle-player', playerId: target }, true));
-  assert.equal(document.getElementById('roster-selection-count').textContent, '1 selected');
-
-  emit(dom.listeners, 'click', checkbox({ action: 'toggle-player', playerId: target }, false));
-
-  assert.equal(document.getElementById('roster-selection-count').textContent, '');
-  assert.equal(document.getElementById('roster-remove-selected').disabled, true);
-});
-
-test('a selection does not survive switching to the other roster', async () => {
-  const dom = await startApp();
-  const homePlayer = rosterIds()[0];
-
-  emit(dom.listeners, 'click', checkbox({ action: 'toggle-player', playerId: homePlayer }, true));
   emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
 
-  // The away roster must not inherit a selection aimed at the home team.
-  assert.equal(document.getElementById('roster-remove-selected').disabled, true);
-  assert.equal(document.getElementById('roster-selection-count').textContent, '');
+  // The list is the away roster now, so a home player is not in front of the
+  // scorer to be removed by a stray tap.
+  assert.equal(rosterListIds().includes(homePlayer), false);
 
-  // Switching back does not resurrect it either.
   emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'home' }));
-  assert.equal(document.getElementById('roster-selection-count').textContent, '');
+  assert.equal(rosterListIds().includes(homePlayer), true);
 });
 
 test('removing every player on the viewed team zeroes that side only', async () => {
@@ -1424,14 +1392,17 @@ test('removing every player on the viewed team zeroes that side only', async () 
 
   const awayBefore = document.getElementById('score-away').textContent;
 
-  // "Select all" selects the roster being viewed, which is home on load.
-  emit(dom.listeners, 'click', checkbox({ action: 'toggle-all-players' }, true));
-  emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
-  confirmDanger(dom);
+  // The list holds the roster being viewed, which is home on load.
+  const homeIds = rosterListIds();
+  assert.equal(homeIds.length, 7, 'the sample home roster has seven players');
+  for (const id of homeIds) {
+    emit(dom.listeners, 'click', actionable({ action: 'remove-player', playerId: id }));
+    confirmDanger(dom);
+  }
 
   // Home is gone: its players and their entries are both deleted.
   assert.equal(document.getElementById('score-home').textContent, '0');
-  // The other team was never selected, so its players and score survive.
+  // The other team was never touched, so its players and score survive.
   assert.equal(document.getElementById('score-away').textContent, awayBefore);
   assert.equal(
     storedGame().players.filter((player) => player.teamId !== storedGame().homeTeamId).length > 0,
@@ -1441,8 +1412,8 @@ test('removing every player on the viewed team zeroes that side only', async () 
   // The box score still renders; the removed side contributes no players.
   assert.match(document.getElementById('box-table').innerHTML, /Riverside/);
   assert.doesNotMatch(document.getElementById('box-table').innerHTML, /J\. Reed/);
-  // With nobody left to show, the toolbar has nothing to act on.
-  assert.equal(document.getElementById('roster-toolbar').hidden, true);
+  // With nobody left, the list says so rather than going blank.
+  assert.match(document.getElementById('roster-list').innerHTML, /No players yet/);
 });
 
 test('a destructive action asks first, naming what it would discard', async () => {
@@ -1557,24 +1528,24 @@ test('the backup can be declined, and an empty copy is offered nothing to keep',
   assert.equal(after.periodSeconds, before.periodSeconds);
 });
 
-test('cancelling the bulk confirmation changes nothing', async () => {
+test('cancelling the removal confirmation changes nothing', async () => {
   const dom = await startApp();
   const before = storedGame();
 
-  emit(dom.listeners, 'click', checkbox({ action: 'toggle-all-players' }, true));
-  emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+  emit(dom.listeners, 'click', actionable({ action: 'remove-player', playerId: rosterIds()[0] }));
 
   // The question is up, and asking it has not changed anything yet.
   assert.equal(document.getElementById('confirm-dialog').hidden, false);
   assert.deepEqual(storedGame().players, before.players);
+  assert.equal(dom.downloads.length, 0, 'and no file was asked for');
 
   emit(dom.listeners, 'click', actionable({ action: 'cancel-danger' }));
 
   assert.equal(document.getElementById('confirm-dialog').hidden, true);
   assert.deepEqual(storedGame().players, before.players);
   assert.equal(storedGame().events.length, before.events.length);
-  // The selection is kept, so the scorer can retry.
-  assert.equal(document.getElementById('roster-selection-count').textContent, '7 selected');
+  assert.equal(document.getElementById('roster-list').innerHTML.includes('roster-list__row'), true,
+    'the player is still listed, so the scorer can retry');
 });
 
 // ---------------------------------------------------------------------------
@@ -2203,15 +2174,12 @@ test('undo lives on the sticky scoreboard', async () => {
   assert.equal(storedGame().events.length, before - 1, 'the sticky undo still works');
 });
 
-test('an entry-row checkbox bulk-removes the player and their entries', async () => {
+test('the remove control in the roster list takes the player and their entries', async () => {
   const dom = await startApp();
   const ids = rosterIds();
   const target = ids[0];
 
-  emit(dom.listeners, 'click', checkbox({ action: 'toggle-player', playerId: target }, true));
-  assert.equal(document.getElementById('roster-selection-count').textContent, '1 selected');
-
-  emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+  emit(dom.listeners, 'click', actionable({ action: 'remove-player', playerId: target }));
   confirmDanger(dom);
 
   const after = storedGame();
