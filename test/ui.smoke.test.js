@@ -1290,6 +1290,38 @@ test('logging a stat starts the clock, refilling it if it is at zero', async () 
   assert.equal(storedGame().clock.running, true);
   assert.equal(storedGame().clock.seconds, 600, 'the clock should not be left at zero');
   assert.equal(document.getElementById('clock-display').textContent, '10:00');
+
+  // Running and counting are the same fact. The auto-start used to flag the
+  // clock without scheduling a tick, so the face sat green over a stopped clock
+  // until something else — a reload, or a tap to stop and start it — rebuilt it.
+  runTimers();
+  assert.equal(document.getElementById('clock-display').textContent, '09:59', 'the clock must actually run');
+});
+
+test('logging a stat while the clock is running does not stall it', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
+  emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
+  document.getElementById('new-number').value = '12';
+  document.getElementById('new-name').value = 'M. Diaz';
+  emit(dom.listeners, 'submit', document.getElementById('add-player-form'));
+
+  const playerId = document.getElementById('player-cards').innerHTML.match(/data-player-id="([^"]+)"/)[1];
+  const log = () =>
+    emit(dom.listeners, 'click', actionable({ action: 'log-stat', playerId, stat: '2PT', result: 'made' }));
+
+  log();
+  runTimers();
+  assert.equal(document.getElementById('clock-display').textContent, '09:59');
+
+  // Another entry re-renders the board; the pending tick must survive it rather
+  // than being pushed a second further away each time.
+  log();
+  log();
+  runTimers();
+  assert.equal(document.getElementById('clock-display').textContent, '09:58');
 });
 
 test('switching to halves moves the period length to twenty minutes', async () => {

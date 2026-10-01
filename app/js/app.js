@@ -126,6 +126,11 @@ function save() {
 /**
  * Start the clock, refilling it from the period length if it is sitting at
  * 00:00. A clock at zero is between periods, so starting it starts a period.
+ *
+ * Starting and ticking belong together: every way into a running clock goes
+ * through here, and a clock that is flagged as running without a tick pending
+ * is a green face that never counts down. Logging a stat starts the clock, so
+ * that is not a rare state to reach.
  */
 function startClock() {
   if (game.clock.running) return;
@@ -133,6 +138,7 @@ function startClock() {
   const { seconds, fromZero } = clockface.startValue(game);
   setClock(game, seconds);
   setClockRunning(game, true);
+  ensureClockTicking();
 
   if (fromZero) {
     showToast(
@@ -163,7 +169,6 @@ function toggleClock() {
   } else {
     startClock();
     save();
-    ensureClockTicking();
   }
   render();
 }
@@ -213,6 +218,11 @@ function render() {
   $('undo-button').disabled = game.events.length === 0;
 
   renderClockRunState();
+
+  // Running and ticking are the same fact, so a render reconciles them. Anything
+  // that flips the clock — a start from a stat, an undo, an import — passes
+  // through here, and nothing can leave a green face that is not counting.
+  ensureClockTicking();
 
   renderWarnings();
 }
@@ -1428,16 +1438,28 @@ function tickClock() {
 }
 
 /**
- * Tick the clock only while it is running.
+ * Keep the ticking timeout in step with the clock.
  *
  * A self-rescheduling timeout rather than a permanent interval, so an idle app
  * is not waking up once a second all game.
+ *
+ * Safe to call whenever anything might have changed the clock, and called from
+ * render() for that reason: it makes "running" and "a tick is pending" the same
+ * fact rather than two that have to be kept in agreement by hand. A pending tick
+ * is left alone rather than pushed back, so a scorer tapping through entries
+ * between ticks cannot stall the countdown by re-rendering.
  */
 function ensureClockTicking() {
-  clearTimeout(clockTimer);
-  if (!game.clock.running) return;
+  if (!game.clock.running) {
+    clearTimeout(clockTimer);
+    clockTimer = null;
+    return;
+  }
+
+  if (clockTimer !== null) return;
 
   clockTimer = setTimeout(() => {
+    clockTimer = null;
     if (game.clock.running) {
       tickClock();
       // Persist about once a second while running rather than on every tick, so
@@ -1447,6 +1469,13 @@ function ensureClockTicking() {
     ensureClockTicking();
   }, 1000);
 }
+
+// Coming back to the tab is when a tick that was lost to a sleeping tablet
+// shows: the clock is green and the digits have not moved. Rebuilding it is
+// cheap and idempotent.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) ensureClockTicking();
+});
 
 // ---------------------------------------------------------------------------
 // The More menu and the dialogs it opens
@@ -1976,5 +2005,5 @@ function reportStorageAvailability() {
 }
 
 reportStorageAvailability();
-ensureClockTicking();
+// render() starts the ticking loop when the game comes back mid-countdown.
 render();
