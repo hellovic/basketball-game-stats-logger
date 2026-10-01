@@ -150,6 +150,12 @@ white kit with dark numbers reads from the table.
    and that team's players reorder, biggest first, and a second tap on the same
    heading turns it round. Each team sorts inside its own block, so the two are
    never mixed together. See below.
+
+   Tapping a player's row marks it, and tapping it again lets it go: the row is
+   tinted across every column, which is what keeps an eye on one line in the
+   nineteen-column version. The mark follows a player rather than a position, so
+   sorting by a heading moves it with them, and removing a player from the
+   roster takes the mark away with them too.
 6. **Team total** — under the entry table: the points the selected team has
    scored *in the period on the board*, typed rather than tapped. See below.
 

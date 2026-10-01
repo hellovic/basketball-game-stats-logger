@@ -1925,6 +1925,48 @@ ul {
   text-overflow: ellipsis;
 }
 
+/* A marked player. The tint runs the full width of the row, because the table
+   is nineteen columns wide when expanded and the point is to follow one line
+   across it; the bar on the name is what catches the eye when the row is read
+   from the far end. */
+.box__row {
+  cursor: pointer;
+}
+
+.box__row:hover td {
+  background: var(--surface-hover);
+}
+
+.box__row.is-picked td {
+  background: var(--accent-soft);
+}
+
+.box__row.is-picked .js-name {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* The name is a button so the same mark can be set from the keyboard and
+   announced, but it fills its cell and looks like the text it holds. */
+.box__name {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.box__name:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* The expanded box carries the derived rates to the right of the tallies. A rule
    between the two keeps a percentage from being read as a count — they are the
    same numbers in the same row, and only the line says which is which. */

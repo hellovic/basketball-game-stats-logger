@@ -91,6 +91,15 @@ let expandedPanel = null;
 let boxSort = null;
 
 /**
+ * The player the box score is marking, or null.
+ *
+ * A reading aid, not a selection to act on: the table is wide, and a marked row
+ * is one that can be followed across it without the eye slipping to the row
+ * above. Like the sort, it is not saved with the game.
+ */
+let boxPick = null;
+
+/**
  * How the panel chrome names itself in tooltips and labels.
  */
 const PANEL_NAMES = { entry: 'live entry', log: 'play-by-play', box: 'box score' };
@@ -776,6 +785,11 @@ function renderBox(derived) {
   const table = $('box-table');
   const expanded = expandedPanel === 'box';
 
+  // The mark is a player, so it cannot outlive the player's place in the game:
+  // a roster replaced or a player removed drops it rather than leaving a
+  // highlight on nobody.
+  if (boxPick && !game.players.some((player) => player.id === boxPick)) boxPick = null;
+
   // Each column knows what it prints and what it sorts on — the two are not the
   // same: a made–attempted column prints "4-5" and sorts on the four.
   const columns = [
@@ -890,8 +904,17 @@ function renderBox(derived) {
         .map((player) => {
           const line = derived.playerLines[player.id];
           if (!line) return '';
-          return `<tr>
-            <td class="js-name">${escapeHtml(player.number) ? `#${escapeHtml(player.number)} ` : ''}${escapeHtml(player.name)}</td>
+          const picked = boxPick === player.id;
+          const name = `${escapeHtml(player.number) ? `#${escapeHtml(player.number)} ` : ''}${escapeHtml(player.name)}`;
+
+          // The row is the target — a coach marking a player is reading down a
+          // line that runs the width of the table — and the name is a button so
+          // the same mark can be set from the keyboard and announced.
+          return `<tr class="box__row${picked ? ' is-picked' : ''}"
+                      data-action="pick-box-row" data-player-id="${escapeHtml(player.id)}">
+            <td class="js-name"><button type="button" class="box__name"
+              data-action="pick-box-row" data-player-id="${escapeHtml(player.id)}"
+              aria-pressed="${picked ? 'true' : 'false'}">${name}</button></td>
             ${columns
               .map(({ value }, index) => `<td${cellClass(index)}>${escapeHtml(value(line))}</td>`)
               .join('')}
@@ -1831,6 +1854,14 @@ document.addEventListener('click', (event) => {
         boxSort?.key === key && boxSort.direction === 'desc'
           ? { key, direction: 'asc' }
           : { key, direction: 'desc' };
+      render();
+      break;
+    }
+    case 'pick-box-row': {
+      // Tapping a row marks it; tapping it again lets it go, and tapping round
+      // the table moves the mark rather than stacking marks up.
+      const playerId = target.dataset.playerId;
+      boxPick = boxPick === playerId ? null : playerId;
       render();
       break;
     }

@@ -514,7 +514,12 @@ test('expanding the box score adds the shooting percentages and efficiency', asy
   // Read one player's row as rendered, so the assertions are on what a coach
   // would actually be reading rather than on the model underneath it.
   const rows = () => document.getElementById('box-table').innerHTML.split('<tr').slice(1);
-  const cells = (row) => [...row.matchAll(/<td[^>]*>([^<]*)</g)].map((match) => match[1]);
+  // Cells are read as text: the name cell holds a button, and a button is not
+  // part of what the table says.
+  const cells = (row) =>
+    [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((match) =>
+      match[1].replace(/<[^>]*>/g, '').trim(),
+    );
   const rowFor = (name) => {
     const row = rows().find((chunk) => chunk.includes(name));
     assert.ok(row, `expected a row for ${name}`);
@@ -571,7 +576,11 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
       .getElementById('box-table')
       .innerHTML.split('<tr')
       .slice(1)
-      .map((chunk) => [...chunk.matchAll(/<td[^>]*>([^<]*)</g)].map((m) => m[1]));
+      .map((chunk) =>
+        [...chunk.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) =>
+          m[1].replace(/<[^>]*>/g, '').trim(),
+        ),
+      );
 
     const heading = rows.findIndex((cells) => cells[0] === team);
     assert.ok(heading !== -1, `expected a heading for ${team}`);
@@ -652,6 +661,62 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
     'L. Mwangi',
     'K. Boyd',
   ]);
+});
+
+test('a box score row can be marked, and only one at a time', async () => {
+  const dom = await startApp();
+
+  const rowFor = (playerId) => {
+    const rows = document.getElementById('box-table').innerHTML.split('<tr');
+    const at = rows.findIndex((chunk) => chunk.includes(`data-player-id="${playerId}"`));
+    assert.ok(at !== -1, `expected a row for ${playerId}`);
+    return rows[at];
+  };
+  const pickedIds = () =>
+    [...document.getElementById('box-table').innerHTML.matchAll(
+      /<tr class="box__row is-picked"[^>]*data-player-id="([^"]+)"/g,
+    )].map((match) => match[1]);
+
+  const game = storedGame();
+  const [first, second] = game.players.map((player) => player.id);
+
+  // Nothing is marked to begin with.
+  assert.deepEqual(pickedIds(), []);
+
+  // Tapping a row marks it, and the mark is on the row and on its name button,
+  // so it can also be set with the keyboard and announced.
+  emit(dom.listeners, 'click', actionable({ action: 'pick-box-row', playerId: first }));
+  assert.deepEqual(pickedIds(), [first]);
+  assert.match(rowFor(first), /aria-pressed="true"/);
+  assert.match(rowFor(second), /aria-pressed="false"/, 'the other rows are unmarked');
+
+  // Marking another player moves the mark rather than adding one.
+  emit(dom.listeners, 'click', actionable({ action: 'pick-box-row', playerId: second }));
+  assert.deepEqual(pickedIds(), [second]);
+
+  // Tapping the marked row again lets it go.
+  emit(dom.listeners, 'click', actionable({ action: 'pick-box-row', playerId: second }));
+  assert.deepEqual(pickedIds(), []);
+});
+
+test('the mark is dropped when the player leaves the game', async () => {
+  const dom = await startApp();
+
+  const game = storedGame();
+  const player = game.players.find((candidate) => candidate.teamId === game.homeTeamId);
+  const roster = rosterIds();
+  assert.ok(roster.includes(player.id), 'the sample roster feeds the box score');
+
+  emit(dom.listeners, 'click', actionable({ action: 'pick-box-row', playerId: player.id }));
+  assert.match(document.getElementById('box-table').innerHTML, /is-picked/);
+
+  // Removing the player from the roster has to take the mark with it: a
+  // highlight on somebody who is no longer in the game is a bug you would only
+  // notice much later.
+  emit(dom.listeners, 'click', checkbox({ action: 'toggle-player', playerId: player.id }, true));
+  emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
+  confirmDanger(dom);
+  assert.doesNotMatch(document.getElementById('box-table').innerHTML, /is-picked/);
 });
 
 test('the play-by-play lists the seeded entries newest first', async () => {
