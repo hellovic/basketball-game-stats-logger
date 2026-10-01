@@ -150,9 +150,16 @@ the box score on a screen too narrow to show them side by side; `Esc` also
 returns to two columns.
 
 The **More** menu holds what does not fit in the top bar: game settings, the
-player roster, import/export and team files, the game summary, and help. The
-file bar it toggles is hidden until you ask for it, which is what keeps the two
-columns tall enough to read at a glance on an iPad.
+player roster, swapping the two sides, import/export and team files, the game
+summary, and help. The file bar it toggles is hidden until you ask for it, which
+is what keeps the two columns tall enough to read at a glance on an iPad.
+
+**Swap home and away** puts both teams on the other side, for the game set up the
+wrong way round or noticed only once the scoreboard is up. Only the sides change:
+a team's name, abbreviation, roster and every entry travel with it, because they
+are attached to the team rather than to the side it is drawn on. That also makes
+the swap its own undo — swap twice and you are where you started — and it means
+the export file names change with it, since they are built from who is home.
 
 ### Scoring from a phone or tablet
 

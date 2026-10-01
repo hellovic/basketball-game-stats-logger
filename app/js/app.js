@@ -27,6 +27,7 @@ import {
   setPeriod,
   setPeriodsPerGame,
   setTeamPeriodTotal,
+  swapSides,
   teamPeriodTotal,
   undoLastEvent,
   updateEvent,
@@ -1574,6 +1575,16 @@ document.addEventListener('click', (event) => {
       const field = $('team-name-input');
       field.focus();
       field.select();
+      break;
+    }
+    case 'swap-sides': {
+      closeMenu();
+      swapSides(game);
+      save();
+      render();
+      showToast(
+        `Swapped: ${safeText(teamFor('home')?.name, 'Home')} are now at home.`,
+      );
       break;
     }
     case 'toggle-actionbar': {

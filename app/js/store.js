@@ -84,6 +84,21 @@ export function updateTeam(game, teamId, patch) {
   return touch(game);
 }
 
+/**
+ * Put each team on the other side.
+ *
+ * Only the two ids are exchanged. Players and entries point at a team id rather
+ * than at a side, so a team's name, abbreviation, roster and points all travel
+ * with it and nothing has to be rewritten — which also means this is its own
+ * undo: swapping twice is where you started.
+ */
+export function swapSides(game) {
+  const home = game.homeTeamId;
+  game.homeTeamId = game.awayTeamId;
+  game.awayTeamId = home;
+  return touch(game);
+}
+
 /** Players belonging to a team, in jersey-number order. */
 export function playersOf(game, teamId) {
   return game.players

@@ -1835,3 +1835,24 @@ test('the team total box scores the selected team for the current period', async
   emit(dom.listeners, 'change', input);
   assert.equal(document.getElementById('score-home').textContent, '26');
 });
+
+test('the menu puts each team on the other side', async () => {
+  const dom = await startApp();
+  assert.equal(document.getElementById('score-home-name').textContent, 'Northside');
+  assert.equal(document.getElementById('score-away-name').textContent, 'Riverside');
+
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  assert.match(html, /data-action="swap-sides"/, 'the action is offered in the menu');
+
+  emit(dom.listeners, 'click', actionable({ action: 'swap-sides' }));
+
+  // The names are the point of the swap; the scores follow them, because a
+  // score belongs to the team and not to the side it is drawn on.
+  assert.equal(document.getElementById('score-home-name').textContent, 'Riverside');
+  assert.equal(document.getElementById('score-away-name').textContent, 'Northside');
+  assert.equal(document.getElementById('score-home').textContent, '21');
+  assert.equal(document.getElementById('score-away').textContent, '26');
+
+  const game = storedGame();
+  assert.equal(game.teams[game.homeTeamId].name, 'Riverside', 'and it was saved');
+});

@@ -23,6 +23,7 @@ import {
   setPeriodSeconds,
   setPeriodsPerGame,
   setTeamPeriodTotal,
+  swapSides,
   teamPeriodTotal,
   updateTeam,
 } from '../app/js/store.js';
@@ -294,4 +295,37 @@ test('a serialised game round trips with all settings intact', () => {
   setPeriodSeconds(game, 6 * 60);
 
   assert.deepEqual(deserialize(serialize(game)), game);
+});
+
+test('swapping sides moves the teams and not their contents', () => {
+  const game = createGame();
+  const home = game.homeTeamId;
+  const away = game.awayTeamId;
+
+  updateTeam(game, home, { name: 'Northside', abbreviation: 'NOR' });
+  updateTeam(game, away, { name: 'Riverside', abbreviation: 'RIV' });
+  const player = addPlayer(game, home, { number: '4', name: 'J. Reed' });
+  addEvent(game, { teamId: home, playerId: player.id, stat: '2PT', result: 'made' });
+
+  swapSides(game);
+
+  assert.equal(game.homeTeamId, away, 'the two sides exchanged');
+  assert.equal(game.awayTeamId, home);
+  assert.equal(game.teams[game.homeTeamId].name, 'Riverside');
+  assert.equal(game.teams[game.awayTeamId].name, 'Northside');
+
+  // Everything a team owns travels with it, because players and events point at
+  // a team id rather than at a side.
+  assert.deepEqual(
+    playersOf(game, game.awayTeamId).map((p) => p.name),
+    ['J. Reed'],
+    'the roster moved with its team',
+  );
+  assert.equal(periodScore(game, game.awayTeamId, 1), 2, 'so did the points');
+  assert.equal(periodScore(game, game.homeTeamId, 1), 0);
+
+  // Which makes the swap its own undo.
+  swapSides(game);
+  assert.equal(game.homeTeamId, home);
+  assert.equal(periodScore(game, home, 1), 2);
 });
