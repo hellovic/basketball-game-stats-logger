@@ -24,6 +24,10 @@
   --surface-sunken: #f7f8fd;
   --surface-hover: #eef1fa;
   --surface-ink: #111827;
+  /* The alternate band on the entry rows. A neutral grey on purpose: a tint
+     with a hue of its own would compete with the key colours it sits behind. */
+  --row-stripe: #e9edf5;
+  --row-hover: #dde3ee;
 
   /* Ink */
   --ink: #141a2e;
@@ -1143,8 +1147,17 @@ ul {
   border-bottom: none;
 }
 
+/* Alternate bands, because a row is thirteen keys wide: without one the eye has
+   nothing to follow from a name across to the key it belongs to. The band is
+   set below the hover and selection rules on purpose — they are the same
+   specificity, so the later ones win and a hovered or ticked row still reads as
+   itself rather than as a stripe. */
+.entry tbody tr:nth-child(even) td {
+  background: var(--row-stripe);
+}
+
 .entry tbody tr:hover td {
-  background: var(--surface-sunken);
+  background: var(--row-hover);
 }
 
 /* The row a stat was just logged on flashes, so a mis-tap is visible. */
