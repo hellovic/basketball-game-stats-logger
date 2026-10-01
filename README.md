@@ -314,10 +314,11 @@ towards means the key is where the finger is already going. They work while the
 clock is running, which is when the drift is noticed. They will not take it past
 the end of its period or below `00:00`.
 
-**A running clock looks running.** The face turns blue — the digits, the box
-around them and the dot beside them, which beats — and the whole bar is a shade
-louder than the stopped one. Stopped is the plain white face. The tell used to
-be the dot alone, which was too small to catch while play was going on.
+**A running clock looks running.** The face turns green — the digits, the box
+around them and the dot beside them, which beats — so the one thing on the page
+that is a state rather than a count reads as "go" from across the table. Stopped
+is the plain white face, and open for typing is the Edit button's amber. The tell
+used to be the dot alone, which was too small to catch while play was going on.
 
 The clock bar is deliberately thin, and it is sticky — so every pixel it takes is
 permanently lost from the scoring area below. That is why the labels are one word

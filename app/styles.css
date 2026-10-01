@@ -15,6 +15,8 @@
      - the home and away accents are the only other colour on the page, so a
        score can be traced to a team at a glance. Away is the red side, home the
        blue one, and the side being scored carries the raised card.
+     - the clock is the one thing that is not a count: green means it is running,
+       amber means it is open for typing, and plain white means it is stopped.
    =========================================================================== */
 
 :root {
@@ -46,6 +48,13 @@
   --away-soft: #fdecec;
   --home-accent: #2563eb;
   --home-soft: #e8efff;
+
+  /* The clock's own colour, for the one thing on the page that is a state
+     rather than a count. Deliberately not the steal green: a running clock
+     wants to read as "go" from across the room, and borrowing a stat colour
+     would make the two mean each other. */
+  --live: #16a34a;
+  --live-soft: #e6f6ec;
 
   /* Stat colours */
   --stat-made: #e5484d;
@@ -531,28 +540,28 @@ ul {
 
 /* A stopped clock is the plain box above. A running one has to be readable from
    across the table, so the face carries the state on three channels at once —
-   blue digits, a blue box, and a dot that beats — plus a ring that flares once
+   green digits, a green box, and a dot that beats — plus a ring that flares once
    as it starts, so the moment of starting is felt and not just inferred. */
 .clock-box.is-running {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--live);
+  background: var(--live-soft);
   animation: clock-start 0.45s ease-out;
 }
 
 .clock-box.is-running .scoreboard__clock {
-  color: var(--accent);
+  color: var(--live);
 }
 
 @keyframes clock-start {
   0% {
-    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5);
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
   }
   100% {
-    box-shadow: 0 0 0 12px rgba(37, 99, 235, 0);
+    box-shadow: 0 0 0 12px rgba(22, 163, 74, 0);
   }
 }
 
-/* Small status dot: filled and blue while the clock is counting down. */
+/* Small status dot: filled and green while the clock is counting down. */
 .clock-box__dot {
   flex: none;
   width: 10px;
@@ -563,8 +572,8 @@ ul {
 }
 
 .clock-box__dot.is-running {
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  background: var(--live);
+  box-shadow: 0 0 0 3px var(--live-soft);
   animation: clock-beat 1.6s ease-in-out infinite;
 }
 
