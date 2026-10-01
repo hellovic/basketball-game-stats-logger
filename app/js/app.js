@@ -34,7 +34,7 @@ import {
   updateEvent,
   updateTeam,
 } from './store.js';
-import { describeEvent, entryButtons, eventPoints, getStat } from './stats.js';
+import { LINEUP, describeEvent, entryButtons, eventPoints, getStat } from './stats.js';
 import { parseTeamFile, teamFileJson, teamFileName, teamFromGame } from './teamfile.js';
 import { parseRosterText } from './rosterimport.js';
 import {
@@ -99,6 +99,16 @@ let boxSort = null;
  * above. Like the sort, it is not saved with the game.
  */
 let boxPick = null;
+
+/**
+ * The substitution being entered, or null.
+ *
+ * Two taps in order — who comes off, then who comes on — held here rather than
+ * as a mode on the panel, because a half-finished substitution is a real state:
+ * the scorer looks up, the ball goes the other way, and the banner has to be
+ * able to say what it is still waiting for.
+ */
+let subStep = null;
 
 /**
  * How the panel chrome names itself in tooltips and labels.
@@ -260,6 +270,7 @@ function render() {
   renderRoster(derived);
   renderTeamFields();
   renderEntry(derived);
+  renderSubbar();
   renderTeamTotal();
   renderLog(derived);
   renderBox(derived);
@@ -413,6 +424,117 @@ function renderTeamColors() {
   $('team-colors').setAttribute('aria-label', `Colour for ${team}`);
 }
 
+/**
+ * The strip that walks a substitution through its two taps.
+ *
+ * It says what the next tap is for, in the panel where the taps happen, and it
+ * carries the way out: a scorer who starts a substitution and then sees the
+ * ball go the other way should not have to guess how to abandon it.
+ */
+function renderSubbar() {
+  const bar = $('subbar');
+  const text = $('subbar-text');
+
+  if (!subStep) {
+    bar.hidden = true;
+    $('sub-entry').textContent = 'Sub';
+    return;
+  }
+
+  bar.hidden = false;
+
+  if (subStep.stage === 'start') {
+    const left = 5 - subStep.picked.length;
+    $('sub-entry').textContent = 'Start';
+    text.textContent =
+      `Tap ${left === 5 ? 'the five' : `${left} more`} starting: ` +
+      (subStep.picked.length ? subStep.picked.map(nameOfPlayer).join(', ') : 'nobody yet');
+    return;
+  }
+
+  $('sub-entry').textContent = 'Sub';
+  text.textContent =
+    subStep.stage === 'off'
+      ? 'Substitution — tap the player coming off'
+      : `Substitution — ${nameOfPlayer(subStep.offId)} off: tap the player coming on`;
+}
+
+/** A player's name as the scorer reads it, number first. */
+function nameOfPlayer(playerId) {
+  const player = game.players.find((entry) => entry.id === playerId);
+  if (!player) return '';
+  return `${player.number ? `#${player.number} ` : ''}${player.name}`;
+}
+
+/** The same, for a player already in hand. */
+function playerLabel(player) {
+  return `${player.number ? `#${player.number} ` : ''}${player.name}`;
+}
+
+/**
+ * One tap of the substitution flow.
+ *
+ * Which tap it is decides what counts as an answer: a player already on the
+ * floor cannot come on, and one sitting down cannot come off.
+ */
+function pickSubPlayer(playerId) {
+  if (!subStep) return;
+
+  const teamId = teamIdFor(detailTeamSlot);
+  const onCourt = new Set(computeGame(game).floor.onCourt[teamId] ?? []);
+
+  if (subStep.stage === 'start') {
+    if (onCourt.has(playerId) || subStep.picked.includes(playerId)) return;
+    subStep.picked.push(playerId);
+    if (subStep.picked.length === 5) {
+      const starters = subStep.picked;
+      subStep = null;
+      recordLineup(starters.map((id) => ({ teamId, subInId: id })));
+      showToast('Five on the floor. Minutes and +/- will follow them.');
+      return;
+    }
+    render();
+    return;
+  }
+
+  if (subStep.stage === 'off') {
+    if (!onCourt.has(playerId)) return;
+    subStep = { stage: 'on', offId: playerId };
+    render();
+    return;
+  }
+
+  if (onCourt.has(playerId) || playerId === subStep.offId) return;
+  const { offId } = subStep;
+  subStep = null;
+  recordLineup([{ teamId, playerId: offId, subInId: playerId }]);
+  showToast(`${nameOfPlayer(playerId)} is on for ${nameOfPlayer(offId)}.`);
+}
+
+/**
+ * Write one or more lineup changes and re-render.
+ *
+ * The starting five is five of these at the same moment; a substitution is one.
+ * They go through `addEvent` like everything else, so undo and the play-by-play
+ * treat them the same way as a basket does.
+ */
+function recordLineup(changes) {
+  for (const change of changes) {
+    const outcome = addEvent(game, {
+      teamId: change.teamId,
+      playerId: change.playerId ?? null,
+      subInId: change.subInId ?? null,
+      stat: 'SUB',
+    });
+    if (outcome.error) {
+      showToast(outcome.error);
+      break;
+    }
+  }
+  save();
+  render();
+}
+
 function renderRoster() {
   const teamId = teamIdFor(detailTeamSlot);
   const roster = playersOf(game, teamId);
@@ -479,7 +601,11 @@ function removeSelectedPlayers() {
   if (players.length === 0) return;
 
   const ids = new Set(players.map((player) => player.id));
-  const entries = game.events.filter((event) => ids.has(event.playerId)).length;
+  // A substitution names two players, so a player leaving the roster takes the
+  // changes they were part of — either side of them — with them. Leaving one
+  // behind would put a stranger on the floor and minutes against nobody.
+  const theirs = (event) => ids.has(event.playerId) || ids.has(event.subInId);
+  const entries = game.events.filter(theirs).length;
 
   const who =
     players.length === 1
@@ -500,7 +626,7 @@ function removeSelectedPlayers() {
     confirmLabel: `Remove ${players.length === 1 ? 'player' : `${players.length} players`}`,
     run: () => {
       for (const player of players) removePlayer(game, player.id);
-      game.events = game.events.filter((event) => !ids.has(event.playerId));
+      game.events = game.events.filter((event) => !theirs(event));
 
       selectedPlayerIds.clear();
       save();
@@ -540,6 +666,15 @@ function renderEntry(derived) {
 
   const accent = accentFor(teamId);
 
+  // Who is on the floor decides both the shading on each row and which rows a
+  // substitution can use.
+  const onCourt = new Set(derived.floor.onCourt[teamId] ?? []);
+  const pickedStarters = subStep?.stage === 'start' ? new Set(subStep.picked) : new Set();
+
+  // The keys go quiet while a substitution is being entered: the next tap is a
+  // player, and a stat key under the scorer's finger is the wrong answer.
+  $('panel-entry').classList.toggle('is-subbing', Boolean(subStep));
+
   // Every button the app can record, in catalog order. Team events are not
   // here: they belong to no player, so they get their own strip under the
   // table. The three groups below line up with the three column groups.
@@ -553,6 +688,19 @@ function renderEntry(derived) {
       const line = derived.playerLines[player.id] || playerLine(game, player.id);
       const selected = selectedPlayerIds.has(player.id);
       const name = escapeHtml(player.name);
+      const isOn = onCourt.has(player.id) || pickedStarters.has(player.id);
+
+      /**
+       * In the middle of a substitution only some rows are the right answer:
+       * whoever is on the floor comes off, whoever is not comes on. The rest
+       * are dimmed rather than hidden, so the roster stays where the scorer
+       * left it.
+       */
+      const wanted =
+        !subStep ||
+        subStep.stage === 'start' ||
+        (subStep.stage === 'off' ? isOn : !isOn);
+      const action = subStep ? 'sub-pick' : 'player-row';
 
       /**
        * One cell per key, so every button shares a table column with the
@@ -578,8 +726,12 @@ function renderEntry(derived) {
           .join('');
 
       return `
-        <tr class="player-card${selected ? ' player-card--selected' : ''}"
-            style="--accent: ${accent}" data-action="player-row"
+        <tr class="player-card${selected ? ' player-card--selected' : ''}${
+          isOn ? ' player-card--on' : ''
+        }${subStep && wanted ? ' player-card--wanted' : ''}${
+          subStep && !wanted ? ' player-card--passed' : ''
+        }"
+            style="--accent: ${accent}" data-action="${action}"
             data-player-id="${escapeHtml(player.id)}">
           <td class="player-card__check">
             <label class="roster__check-hit">
@@ -703,7 +855,39 @@ function renderLog(derived) {
   list.innerHTML = ordered
     .map((event) => {
       const player = game.players.find((p) => p.id === event.playerId);
-    const points = eventPoints(event);
+      const incoming = event.subInId
+        ? game.players.find((p) => p.id === event.subInId)
+        : null;
+      const points = eventPoints(event);
+
+      // A substitution is one act at the table, so it is one row: the pair is
+      // named together and deleted together. Nothing else can be done to it —
+      // re-attributing a swap of two players has no meaning.
+      const isSub = getStat(event.stat)?.kind === LINEUP;
+      if (isSub) {
+        const off = player ? playerLabel(player) : null;
+        const on = incoming ? playerLabel(incoming) : null;
+        const who = off || on || 'TEAM';
+        const what = on && off
+          ? `${on} on for ${off}`
+          : on
+            ? `${on} onto the floor`
+            : `${off} off the floor`;
+
+        return `
+        <li class="log__row log__row--team" style="--accent: ${accentFor(event.teamId)}">
+          <span class="log__time">${escapeHtml(eventClock(clockface.elapsedInPeriod(game, event)))}</span>
+          <span class="log__period">${escapeHtml(periodLabel(event.period, game.periodsPerGame))}</span>
+          <span class="log__who">${escapeHtml(who)}</span>
+          <span class="log__what">${escapeHtml(what)}</span>
+          <span class="log__points"></span>
+          <span class="log__reassign"></span>
+          <button type="button" class="log__delete" data-action="delete-event"
+                  data-event-id="${escapeHtml(event.id)}"
+                  aria-label="Delete this substitution">&times;</button>
+        </li>`;
+      }
+
       const who = player
         ? `${player.number ? `#${player.number} ` : ''}${player.name}`
         : 'TEAM';
@@ -763,7 +947,9 @@ function sortBoxRoster(roster, columns, derived) {
   if (!column && boxSort.key !== 'name') return roster;
 
   const valueOf = (player) =>
-    boxSort.key === 'name' ? player.name : column.sort(derived.playerLines[player.id]);
+    boxSort.key === 'name'
+      ? player.name
+      : column.sort(derived.playerLines[player.id], player);
   const slope = boxSort.direction === 'desc' ? -1 : 1;
 
   return [...roster].sort((a, b) => {
@@ -841,6 +1027,36 @@ function renderBox(derived) {
       { key: 'tsPct', label: 'TS%', value: (l) => pct(l.tsPct), sort: (l) => l.tsPct },
       { key: 'eff', label: 'EFF', value: (l) => l.eff, sort: (l) => l.eff },
     );
+
+    // Minutes and plus/minus are about time and about who was out there, not
+    // about the stat line: the column reads the floor report for the player in
+    // the row. A team's row has no single answer to either, so it stays blank.
+    if (derived.floor.tracked) {
+      const { minutes, plusMinus } = derived.floor;
+      const perPlayer = (pick, format) => ({
+        value: (l, player) => (player ? format(pick(player)) : '—'),
+        sort: (l, player) => (player ? pick(player) : null),
+      });
+
+      columns.push(
+        {
+          key: 'min',
+          label: 'MIN',
+          ...perPlayer(
+            (player) => minutes[player.id] ?? 0,
+            (seconds) => clockface.display(Math.round(seconds)),
+          ),
+        },
+        {
+          key: 'plusMinus',
+          label: '+/-',
+          ...perPlayer(
+            (player) => plusMinus[player.id] ?? 0,
+            (swing) => (swing > 0 ? `+${swing}` : String(swing)),
+          ),
+        },
+      );
+    }
   }
 
   // Everything after the counting columns is derived rather than recorded, so it
@@ -918,7 +1134,10 @@ function renderBox(derived) {
               data-action="pick-box-row" data-player-id="${escapeHtml(player.id)}"
               aria-pressed="${picked ? 'true' : 'false'}">${name}</button></td>
             ${columns
-              .map(({ value }, index) => `<td${cellClass(index)}>${escapeHtml(value(line))}</td>`)
+              .map(
+                ({ value }, index) =>
+                  `<td${cellClass(index)}>${escapeHtml(value(line, player))}</td>`,
+              )
               .join('')}
           </tr>`;
         })
@@ -927,7 +1146,10 @@ function renderBox(derived) {
       const totals = `<tr class="row--team">
         <td>Team totals</td>
         ${columns
-          .map(({ value }, index) => `<td${cellClass(index)}>${escapeHtml(value(teamLineValues))}</td>`)
+          .map(
+            ({ value }, index) =>
+              `<td${cellClass(index)}>${escapeHtml(value(teamLineValues, null))}</td>`,
+          )
           .join('')}
       </tr>`;
 
@@ -1700,6 +1922,13 @@ function tickClock() {
     if (!clockIsBeingEdited()) {
       $('clock-display').textContent = clockface.display(result.seconds);
     }
+
+    // The one exception is a box score that is on screen with a lineup behind
+    // it: minutes on the floor are running, and a coach watching them should
+    // see them run. It is one table, once a second, only while it is open.
+    if (expandedPanel === 'box' && computeGame(game).floor.tracked) {
+      renderBox(computeGame(game));
+    }
     return;
   }
 
@@ -1906,6 +2135,10 @@ document.addEventListener('click', (event) => {
 
   switch (action) {
     case 'log-stat':
+      // Half-way through a substitution the next tap is a player, not a key.
+      // The keys are dimmed and made inert while the banner is up, so a tap
+      // that lands on one cannot be mistaken for the answer the app wants.
+      if (subStep) break;
       logStat(target.dataset.playerId, target.dataset.stat, target.dataset.result);
       break;
     case 'toggle-expand': {
@@ -2011,6 +2244,22 @@ document.addEventListener('click', (event) => {
       break;
     case 'select-team':
       detailTeamSlot = target.dataset.teamSlot;
+      // A substitution belongs to the roster it was started from.
+      subStep = null;
+      render();
+      break;
+    case 'start-sub': {
+      // Nothing on the floor yet means this is the five who start the game.
+      const onCourt = computeGame(game).floor.onCourt[teamIdFor(detailTeamSlot)] ?? [];
+      subStep = onCourt.length === 0 ? { stage: 'start', picked: [] } : { stage: 'off' };
+      render();
+      break;
+    }
+    case 'sub-pick':
+      pickSubPlayer(target.dataset.playerId);
+      break;
+    case 'cancel-sub':
+      subStep = null;
       render();
       break;
     case 'set-team-color': {
@@ -2168,6 +2417,15 @@ document.addEventListener('keydown', (event) => {
     closeDialogs();
     closeImportDialogs();
     closeMenu();
+    return;
+  }
+
+  // Escape also abandons a substitution that is half entered, which is the
+  // same promise it makes about a clock edit: nothing is recorded until the
+  // second tap lands.
+  if (event.key === 'Escape' && subStep) {
+    subStep = null;
+    render();
     return;
   }
 

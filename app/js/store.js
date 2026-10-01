@@ -9,7 +9,7 @@
  * No DOM access in this module, so the tests can drive it directly.
  */
 
-import { getStat, isShooting, isTeamTotal } from './stats.js';
+import { LINEUP, getStat, isShooting, isTeamTotal } from './stats.js';
 import { defaultPeriodSeconds } from './clock.js';
 
 const SCHEMA_VERSION = 1;
@@ -283,6 +283,28 @@ export function validateEvent(event, game = null) {
   }
   if (!event.teamId) return 'An event needs a team.';
 
+  // A substitution names two players — or one, at the tip-off or when a player
+  // leaves with nobody coming on. It is checked here, before the rule that every
+  // event has a player, because a starter has no player coming off.
+  if (stat.kind === LINEUP) {
+    const off = event.playerId || null;
+    const on = event.subInId || null;
+    if (!off && !on) return 'A substitution needs a player coming off or coming on.';
+    if (off && on && off === on) return 'A player cannot come on for themselves.';
+
+    if (game) {
+      for (const playerId of [off, on]) {
+        if (!playerId) continue;
+        const player = game.players.find((entry) => entry.id === playerId);
+        if (!player) return 'That player is no longer on the roster.';
+        if (player.teamId !== event.teamId) {
+          return `${player.name} is not on that team.`;
+        }
+      }
+    }
+    return null;
+  }
+
   // The one entry that scores without naming a player: the scorer typed the
   // team's total for the period. It is checked here so every other event can
   // still assume it has a player.
@@ -325,7 +347,19 @@ export function validateEvent(event, game = null) {
  */
 export function addEvent(
   game,
-  { teamId, playerId, stat, result = null, period, source = 'entry', ts, id, clockSeconds, points },
+  {
+    teamId,
+    playerId,
+    subInId,
+    stat,
+    result = null,
+    period,
+    source = 'entry',
+    ts,
+    id,
+    clockSeconds,
+    points,
+  },
 ) {
   const event = {
     id: id || makeId('event'),
@@ -340,6 +374,10 @@ export function addEvent(
     result: result ?? null,
     source,
   };
+
+  // The player coming on, for the one entry that has two players in it. Written
+  // only when it is given, so no other event carries a field it cannot use.
+  if (subInId !== undefined) event.subInId = subInId || null;
 
   // Only a team total carries its own value; every other stat takes its points
   // from the catalog, so the field is written only when one is given.

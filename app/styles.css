@@ -999,6 +999,38 @@ ul {
   cursor: pointer;
 }
 
+/* The one tool with a word on it: a substitution is not a shape anyone would
+   guess, and it is the only control here that starts a two-tap sequence. */
+.panel-tool--text {
+  width: auto;
+  min-width: 52px;
+  padding: 0 var(--sp-2);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* The strip that says what the next tap is for, in the panel where the taps
+   happen. It sits between the heading and the table so it cannot be missed. */
+.subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border-bottom: 1px solid var(--accent);
+  background: var(--accent-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.subbar__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .panel-tool:hover:not(:disabled) {
   background: var(--surface-hover);
   color: var(--ink);
@@ -1435,6 +1467,40 @@ ul {
 
 .entry tbody tr.player-card--selected td {
   background: #eaf0fb;
+}
+
+/* Who is on the floor. The same two marks the box score uses for a player it is
+   following — a bar on the left edge and the number in the team's colour — so
+   "this one" reads the same wherever it appears. */
+.entry tbody tr.player-card--on td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.entry tbody tr.player-card--on .player-card__number {
+  color: var(--accent);
+}
+
+/* Half-way through a substitution only some rows are the right answer: the ones
+   on the floor come off, the ones sitting down come on. The others stay in place
+   and go quiet, so the roster does not reorder under the scorer's finger. */
+.entry tbody tr.player-card--passed td {
+  opacity: 0.4;
+}
+
+.entry tbody tr.player-card--wanted {
+  cursor: pointer;
+}
+
+.entry tbody tr.player-card--wanted:hover td {
+  background: var(--accent-soft);
+}
+
+/* While a substitution is being entered the keys are not the next answer, so
+   they stop being tap targets: a tap meant for a player has to reach the row,
+   not the key sitting on top of it. */
+.panel--entry.is-subbing .stat-btn {
+  pointer-events: none;
+  opacity: 0.35;
 }
 
 .entry .roster__check-hit {

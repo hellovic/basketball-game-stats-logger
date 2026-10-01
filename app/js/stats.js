@@ -15,6 +15,15 @@ export const REBOUND = 'rebound';
 export const COUNTING = 'counting';
 
 /**
+ * A change to who is on the floor.
+ *
+ * It is an event like any other — it is when it happened that matters — but it
+ * counts for nothing on its own: minutes and plus/minus are read off the lineup
+ * it describes, not off this row.
+ */
+export const LINEUP = 'lineup';
+
+/**
  * A hand-entered total for one team in one period.
  *
  * This is the one entry that carries no player and still scores, so it gets a
@@ -98,6 +107,14 @@ export const STATS = [
     points: 0,
   },
   {
+    key: 'SUB',
+    kind: LINEUP,
+    label: 'Sub',
+    longLabel: 'Substitution',
+    short: 'SUB',
+    points: 0,
+  },
+  {
     key: 'TEAM_TOTAL',
     kind: TEAM_TOTAL,
     label: 'Team total',
@@ -170,8 +187,9 @@ export function describeEvent(key, result) {
 export function entryButtons() {
   const buttons = [];
   for (const stat of STATS) {
-    // A team total is typed into its own box, not tapped along a player's row.
-    if (stat.kind === TEAM_TOTAL) continue;
+    // A team total is typed into its own box, not tapped along a player's row,
+    // and a substitution is two players rather than one tap on a key.
+    if (stat.kind === TEAM_TOTAL || stat.kind === LINEUP) continue;
 
     if (stat.kind === SHOOTING) {
       buttons.push({

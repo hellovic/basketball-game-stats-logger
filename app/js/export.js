@@ -9,7 +9,7 @@
  * output directly; only `download` touches the DOM.
  */
 
-import { describeEvent, eventPoints } from './stats.js';
+import { LINEUP, describeEvent, eventPoints, getStat } from './stats.js';
 import { computeGame } from './derive.js';
 import { eventClock, periodLabel, safeText } from './format.js';
 import { elapsedInPeriod } from './clock.js';
@@ -82,9 +82,14 @@ export function boxScoreCsv(game) {
     'eFG%',
     'TS%',
     'EFF',
+    // Time on the floor and the points swing while out there. Both stay empty
+    // in a game where no lineup was recorded, rather than reading as zero.
+    'MIN',
+    '+/-',
   ];
 
   const rows = [header];
+  const floor = derived.floor;
 
   const teamIds = [game.awayTeamId, game.homeTeamId].filter(Boolean);
   for (const teamId of teamIds) {
@@ -96,19 +101,24 @@ export function boxScoreCsv(game) {
     for (const player of roster) {
       const line = derived.playerLines[player.id];
       if (!line) continue;
-      rows.push(playerRow(team.name || team.abbreviation || 'Team', player.number, player.name, line));
+      rows.push(
+        playerRow(team.name || team.abbreviation || 'Team', player.number, player.name, line, {
+          floor,
+          playerId: player.id,
+        }),
+      );
     }
 
     const teamLineValues = derived.teamTotals[teamId];
     if (teamLineValues) {
-      rows.push(playerRow(team.name || 'Team', '', 'TEAM TOTALS', teamLineValues));
+      rows.push(playerRow(team.name || 'Team', '', 'TEAM TOTALS', teamLineValues, { floor }));
     }
   }
 
   return toCsv(rows);
 }
 
-function playerRow(teamName, number, playerName, line) {
+function playerRow(teamName, number, playerName, line, { floor, playerId } = {}) {
   return [
     teamName,
     number,
@@ -136,7 +146,18 @@ function playerRow(teamName, number, playerName, line) {
     percent(line.efgPct),
     percent(line.tsPct),
     line.eff,
+    // A team's totals row has no single answer to either number, and a game
+    // with no lineup recorded has none at all — so those cells stay empty
+    // rather than reading as zero.
+    floor?.tracked && playerId ? minutesText(floor.minutes[playerId] ?? 0) : '',
+    floor?.tracked && playerId ? floor.plusMinus[playerId] ?? 0 : '',
   ];
+}
+
+/** Minutes in the form a spreadsheet reads back as a duration: "8:30". */
+function minutesText(seconds) {
+  const whole = Math.max(0, Math.round(seconds));
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 }
 
 /**
@@ -161,16 +182,29 @@ export function playByPlayCsv(game) {
     const player = event.playerId
       ? game.players.find((p) => p.id === event.playerId)
       : null;
+    const incoming = event.subInId
+      ? game.players.find((p) => p.id === event.subInId)
+      : null;
 
     const points = eventPoints(event);
+
+    // A substitution is one row here too, and both players have to be named in
+    // it: the reader of a CSV has no second line to look at.
+    const isSub = getStat(event.stat)?.kind === LINEUP;
+    const named = (entry) =>
+      entry ? `${entry.number ? `#${entry.number} ` : ''}${entry.name}` : '';
 
     rows.push([
       index + 1,
       eventClock(elapsedInPeriod(game, event)),
       periodLabel(event.period, game.periodsPerGame),
       team.name || team.abbreviation || '',
-      player ? `${player.number ? `#${player.number} ` : ''}${player.name}` : 'TEAM',
-      describeEvent(event.stat, event.result),
+      player ? named(player) : isSub && incoming ? named(incoming) : 'TEAM',
+      isSub
+        ? `${describeEvent(event.stat, event.result)}: ${named(incoming) || 'nobody'} on, ${
+            named(player) || 'nobody'
+          } off`
+        : describeEvent(event.stat, event.result),
       event.result ?? '',
       points,
     ]);

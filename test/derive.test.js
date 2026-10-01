@@ -22,6 +22,7 @@ import {
   playersOf,
   saveState,
   serialize,
+  setClock,
   setPeriod,
   setTeamPeriodTotal,
   undoLastEvent,
@@ -31,6 +32,7 @@ import {
   computeGame,
   consistencyWarnings,
   derivedPeriodPoints,
+  floorReport,
   listPeriods,
   periodScore,
   playerLine,
@@ -133,6 +135,28 @@ function log(game, stat, result, { team = 'home', player = null, period = 1 } = 
     period,
   });
   assert.equal(outcome.error, null, `logging ${stat}/${result} failed: ${outcome.error}`);
+  return outcome.event;
+}
+
+/**
+ * `sub(game, { off, on, period, clockSeconds })`.
+ *
+ * A lineup change is an event like any other, and it is the clock it carries —
+ * not the order it was recorded in — that decides how long a stint lasted.
+ */
+function sub(game, { off = null, on = null, period = 1, clockSeconds = 0 } = {}) {
+  const teamId = off
+    ? game.players.find((player) => player.id === off).teamId
+    : game.players.find((player) => player.id === on).teamId;
+  const outcome = addEvent(game, {
+    teamId,
+    playerId: off,
+    subInId: on,
+    stat: 'SUB',
+    period,
+    clockSeconds,
+  });
+  assert.equal(outcome.error, null, `sub failed: ${outcome.error}`);
   return outcome.event;
 }
 
@@ -664,4 +688,109 @@ test('period scores, grid totals and box score all reconcile on a mixed game', (
   // Home team rebounds: 1 offensive (home1) + 1 defensive (team-level) = 2.
   assert.equal(derived.teamTotals[game.homeTeamId].reb, 2);
   assert.equal(derived.playerLines[home1.id].reb, 1);
+});
+
+// ---------------------------------------------------------------------------
+// Minutes on the floor and plus/minus
+// ---------------------------------------------------------------------------
+
+test('nobody is tracked until a lineup is recorded', () => {
+  const { game } = fixture();
+  const report = floorReport(game);
+
+  assert.equal(report.tracked, false, 'a game with no substitutions has no floor');
+  assert.deepEqual(report.onCourt, {});
+});
+
+test('minutes run from a player coming on to coming off, across the period break', () => {
+  const { game, players } = fixture();
+  const { home1, home2 } = players;
+
+  // home1 starts the game and plays the first eight minutes; the clock in the
+  // second period is stopped at 6:00 left.
+  setPeriod(game, 1);
+  sub(game, { on: home1.id, period: 1, clockSeconds: 600 });
+  // At 8:00 elapsed in the first period, home1 comes off for home2 — a stint
+  // that runs over the period break.
+  sub(game, { off: home1.id, on: home2.id, period: 1, clockSeconds: 120 });
+
+  // The game has moved on: the second period, with 6:00 left on the clock.
+  setPeriod(game, 2);
+  setClock(game, 360);
+
+  const report = floorReport(game);
+
+  assert.equal(report.tracked, true);
+  assert.equal(report.minutes[home1.id], 8 * 60, 'eight minutes in the first period');
+  // home2 is still on, so their stint runs to the live clock: the rest of the
+  // first period, plus the four minutes played so far in the second.
+  assert.equal(report.minutes[home2.id], 2 * 60 + 4 * 60);
+});
+
+test('a period the clock never ran contributes no minutes', () => {
+  const { game, players } = fixture();
+  const { home1 } = players;
+
+  // Every reading is zero: the scorer never started the clock.
+  sub(game, { on: home1.id, period: 1, clockSeconds: 0 });
+  log(game, '2PT', 'made', { player: home1, period: 1 });
+  sub(game, { off: home1.id, period: 1, clockSeconds: 0 });
+
+  const report = floorReport(game);
+
+  assert.equal(report.minutes[home1.id], 0, 'no clock, no minutes');
+  assert.deepEqual(report.untimedPeriods, [1], 'and the period is named');
+});
+
+test('plus/minus credits the five on the floor and debits the other five', () => {
+  const { game, players } = fixture();
+  const { home1, home2, away1, away2 } = players;
+
+  sub(game, { on: home1.id, period: 1, clockSeconds: 600 });
+  sub(game, { on: away1.id, period: 1, clockSeconds: 600 });
+
+  // Home scores a three while both are out there.
+  log(game, '3PT', 'made', { player: home1, period: 1 });
+  assert.deepEqual(
+    [floorReport(game).plusMinus[home1.id], floorReport(game).plusMinus[away1.id]],
+    [3, -3],
+  );
+
+  // The away side answers, and then a player who was sitting down comes on for
+  // the last basket of the run — while a home player watches it from the bench.
+  log(game, '2PT', 'made', { player: away1, team: 'away', period: 1 });
+  sub(game, { off: away1.id, on: away2.id, period: 1, clockSeconds: 300 });
+  log(game, '2PT', 'made', { player: home2, period: 1 });
+
+  const report = floorReport(game);
+
+  assert.equal(report.plusMinus[home1.id], 3 - 2 + 2, 'both home baskets, less the away one');
+  assert.equal(report.plusMinus[away1.id], -3 + 2, 'on for the three against, and the two for');
+  assert.equal(report.plusMinus[away2.id], -2, 'only the basket after they came on');
+  assert.equal(
+    report.plusMinus[home2.id],
+    0,
+    'a player on the bench takes nothing from the baskets they watched',
+  );
+});
+
+test('a substitution is refused when it makes no sense', () => {
+  const { game, players } = fixture();
+  const { home1, home2, away1 } = players;
+
+  const attempt = (fields) =>
+    addEvent(game, { teamId: game.homeTeamId, stat: 'SUB', ...fields });
+
+  assert.match(attempt({}).error ?? '', /coming off or coming on/);
+  assert.equal(attempt({ playerId: home1.id }).error, null, 'off with no replacement');
+  assert.equal(attempt({ subInId: home2.id }).error, null, 'on with nobody coming off');
+  assert.match(
+    attempt({ playerId: home1.id, subInId: home1.id }).error ?? '',
+    /come on for themselves/,
+  );
+  assert.match(
+    attempt({ playerId: home1.id, subInId: away1.id }).error ?? '',
+    /not on that team/,
+    'a substitute has to come from the same bench',
+  );
 });

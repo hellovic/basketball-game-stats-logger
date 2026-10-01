@@ -24,6 +24,8 @@ const ROSTER = {
     { id: 'player_h11', number: '11', name: 'D. Okafor' },
     { id: 'player_h23', number: '23', name: 'T. Nguyen' },
     { id: 'player_h32', number: '32', name: 'S. Whitfield' },
+    { id: 'player_h15', number: '15', name: 'M. Ferrer' },
+    { id: 'player_h41', number: '41', name: 'A. Bergstrom' },
   ],
   away: [
     { id: 'player_a5', number: '5', name: 'M. Diaz' },
@@ -31,8 +33,37 @@ const ROSTER = {
     { id: 'player_a12', number: '12', name: 'K. Boyd' },
     { id: 'player_a21', number: '21', name: 'L. Mwangi' },
     { id: 'player_a34', number: '34', name: 'P. Alvarez' },
+    { id: 'player_a2', number: '2', name: 'T. Okonkwo' },
+    { id: 'player_a44', number: '44', name: 'D. Lindqvist' },
   ],
 };
+
+/**
+ * The five each side starts with, and the changes it makes.
+ *
+ * A game with nobody on the floor has no minutes and no plus/minus, and the
+ * sample exists to show what a populated screen looks like — so it carries a
+ * bench and a substitution or two, the same way it carries a score.
+ */
+const LINEUP_EVENTS = [
+  { t: 0, team: 'home', on: 'player_h4' },
+  { t: 0, team: 'home', on: 'player_h7' },
+  { t: 0, team: 'home', on: 'player_h11' },
+  { t: 0, team: 'home', on: 'player_h23' },
+  { t: 0, team: 'home', on: 'player_h32' },
+  { t: 0, team: 'away', on: 'player_a5' },
+  { t: 0, team: 'away', on: 'player_a8' },
+  { t: 0, team: 'away', on: 'player_a12' },
+  { t: 0, team: 'away', on: 'player_a21' },
+  { t: 0, team: 'away', on: 'player_a34' },
+  // The bench gets a run in the second quarter, and again in the third — both
+  // before the moment the clock is sitting at, so the sample has players on the
+  // floor rather than substitutions that have not happened yet.
+  { t: 12.5, team: 'home', off: 'player_h32', on: 'player_h15' },
+  { t: 14.0, team: 'away', off: 'player_a8', on: 'player_a2' },
+  { t: 21.2, team: 'home', off: 'player_h15', on: 'player_h41' },
+  { t: 21.8, team: 'away', off: 'player_a2', on: 'player_a44' },
+];
 
 /**
  * A hand-built timeline. `t` is the offset in minutes from tip-off, which is
@@ -133,10 +164,31 @@ export function sampleGame() {
   }
 
   game.events = [];
-  for (const entry of TIMELINE) {
+
+  // The lineup changes are interleaved with the plays by their minute offset,
+  // because who is on the floor when a basket goes in is what plus/minus reads.
+  const script = [
+    ...TIMELINE,
+    ...LINEUP_EVENTS.map((entry) => ({ ...entry, stat: 'SUB' })),
+  ].sort((a, b) => a.t - b.t);
+
+  for (const entry of script) {
     const teamId = entry.team === 'home' ? HOME_TEAM : AWAY_TEAM;
     const ts = BASE_TIME + Math.round(entry.t * 60 * 1000);
     const period = periodOf(entry.t);
+
+    if (entry.stat === 'SUB') {
+      addEvent(game, {
+        teamId,
+        playerId: entry.off ?? null,
+        subInId: entry.on ?? null,
+        stat: 'SUB',
+        period,
+        ts,
+        clockSeconds: clockAt(game, entry.t),
+      });
+      continue;
+    }
 
     addEvent(game, {
       teamId,

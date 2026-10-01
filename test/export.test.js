@@ -21,7 +21,7 @@ import {
   summaryCsv,
   toCsv,
 } from '../app/js/export.js';
-import { addEvent, addPlayer, createGame, updateTeam } from '../app/js/store.js';
+import { addEvent, addPlayer, createGame, setClock, setPeriod, updateTeam } from '../app/js/store.js';
 
 function fixture() {
   const game = createGame();
@@ -46,6 +46,21 @@ function log(game, stat, result, { team = 'home', player = null, period = 1 } = 
     stat,
     result,
     period,
+  });
+  assert.equal(outcome.error, null, outcome.error);
+  return outcome.event;
+}
+
+/** A lineup change, for the games that carry one. */
+function sub(game, { off = null, on = null, period = 1, clockSeconds = 0 } = {}) {
+  const teamId = (off ?? on) && game.players.find((p) => p.id === (off ?? on)).teamId;
+  const outcome = addEvent(game, {
+    teamId,
+    playerId: off,
+    subInId: on,
+    stat: 'SUB',
+    period,
+    clockSeconds,
   });
   assert.equal(outcome.error, null, outcome.error);
   return outcome.event;
@@ -161,10 +176,16 @@ test('box score has one row per player plus a team totals row', () => {
 
   // The expanded box's rates export too, after the counting columns so a
   // spreadsheet built on the earlier ones keeps its references.
-  assert.equal(header[header.length - 4], '3P%');
-  assert.equal(header[header.length - 3], 'eFG%');
-  assert.equal(header[header.length - 2], 'TS%');
-  assert.equal(header[header.length - 1], 'EFF');
+  assert.equal(header[header.length - 6], '3P%');
+  assert.equal(header[header.length - 5], 'eFG%');
+  assert.equal(header[header.length - 4], 'TS%');
+  assert.equal(header[header.length - 3], 'EFF');
+  // Minutes and plus/minus land at the very end, and stay empty in a game where
+  // no lineup was recorded rather than reading as zero.
+  assert.equal(header[header.length - 2], 'MIN');
+  assert.equal(header[header.length - 1], '+/-');
+  assert.equal(reed[cols.MIN], '');
+  assert.equal(reed[cols['+/-']], '');
   assert.equal(header.indexOf('PF') < header.indexOf('3P%'), true);
 
   // A. Cole: one three, no other shot, so 100% from three and 150% effective
@@ -339,4 +360,52 @@ test('a corrupt or unrelated file is rejected with a clear message', () => {
 test('download refuses to run outside a browser', () => {
   // The tests run in Node, where there is no document to click.
   assert.throws(() => download('x.csv', 'a,b'), /only available in a browser/);
+});
+
+// ---------------------------------------------------------------------------
+// Minutes and plus/minus in the exports
+// ---------------------------------------------------------------------------
+
+test('the box score carries minutes and plus/minus when a lineup was recorded', () => {
+  const { game, home1, home2, away1 } = fixture();
+
+  // Both sides start with one player named, and the clock is running.
+  setClock(game, 600);
+  sub(game, { on: home1.id, period: 1, clockSeconds: 600 });
+  sub(game, { on: away1.id, period: 1, clockSeconds: 600 });
+
+  // Nine minutes in, the home player swaps: 9:00 on the clock means one minute
+  // left, so home1 has played nine minutes and home2 takes over from there.
+  setClock(game, 60);
+  sub(game, { off: home1.id, on: home2.id, period: 1, clockSeconds: 60 });
+
+  // A three goes in while the substitute is on, four minutes into the second.
+  setPeriod(game, 2);
+  setClock(game, 360);
+  log(game, '3PT', 'made', { player: home2, period: 2 });
+
+  const rows = parseCsv(boxScoreCsv(game));
+  const cols = Object.fromEntries(rows[0].map((name, index) => [name, index]));
+  const byName = Object.fromEntries(rows.slice(1).map((row) => [row[2], row]));
+
+  assert.equal(cols.MIN > cols.EFF, true, 'minutes sit after efficiency');
+  assert.equal(byName['J. Reed'][cols.MIN], '9:00', 'on from the tip-off until the swap');
+  assert.equal(byName['J. Reed'][cols['+/-']], '0');
+  assert.equal(byName['A. Cole'][cols.MIN], '5:00', 'and on from the swap to the live clock');
+  assert.equal(byName['A. Cole'][cols['+/-']], '3', 'the three that went in while they were on');
+  assert.equal(byName['M. Diaz'][cols.MIN], '14:00', 'on throughout, so the clock so far');
+  assert.equal(byName['M. Diaz'][cols['+/-']], '-3', 'and the other side of it');
+  assert.equal(byName['TEAM TOTALS'][cols.MIN], '', 'a team has no single minutes figure');
+});
+
+test('the play-by-play names both players in a substitution', () => {
+  const { game, home1, home2 } = fixture();
+  sub(game, { off: home1.id, on: home2.id, period: 1, clockSeconds: 480 });
+
+  const rows = parseCsv(playByPlayCsv(game));
+  const row = rows.find((line) => line[5].startsWith('Substitution'));
+  assert.ok(row, 'the substitution is in the log');
+  assert.equal(row[4], '#4 J. Reed', 'the player column is whoever came off');
+  assert.match(row[5], /#7 A. Cole on/);
+  assert.match(row[5], /#4 J. Reed off/);
 });

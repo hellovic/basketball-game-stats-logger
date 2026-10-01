@@ -145,6 +145,12 @@ white kit with dark numbers reads from the table.
    box score below, so the entry row carries nothing but the keys. The thirteen
    keys share out the panel rather than each claiming its own width, so the
    matrix fits without scrolling sideways.
+
+   **Sub** in that panel's heading records the lineup. Before the first
+   substitution it asks for the five who start, one tap each; after that it is
+   two taps — the player coming off, then the player coming on — with the strip
+   above the table saying which tap it is waiting for and offering a way out.
+   Whoever is on the floor carries a bar down the left of their row.
 3. **Undo** — the button on the scoreboard (it stays pinned, so it is always in
    reach), or `Ctrl`/`Cmd` + `Z`. The toast after each entry also offers a
    one-tap undo.
@@ -380,6 +386,7 @@ stands.
 | `AST` `STL` `BLK` `TO` `PF` | Assists, steals, blocks, turnovers, personal fouls |
 | `3P%` `eFG%` `TS%` | Three-point, effective field goal and true shooting percentages |
 | `EFF` | FIBA efficiency |
+| `MIN` / `+/-` | Minutes on the floor, and the points swing while out there |
 
 **Misses are recorded, not skipped.** Tapping `2`, `3` or `1` is what makes the
 percentage columns real. A game logged with only made shots shows `100%` rather
@@ -402,6 +409,21 @@ can go negative for one who only missed.
 Sorting by a rate skips the players who have nothing to sort: someone with no
 shot attempts has no percentage, so they sit at the bottom whichever way the
 column is turned rather than leading it as a 0%.
+
+**`MIN` and `+/-` come from the substitutions**, so they appear once a lineup has
+been recorded and stay away until then rather than showing a table of zeros.
+Minutes are game-clock time — a stint measured on the clock, split at the period
+boundaries it crosses, and counting up live for whoever is on the floor while
+the box score is open. Plus/minus needs no clock at all: it is the points for,
+less the points against, while that player was out there, read off the entries
+you already logged. A team's totals row leaves both blank, because a team has no
+single answer to either.
+
+Minutes need the clock to be run. A period whose readings never leave the start
+of the period was not timed, so it contributes no minutes to anybody and the
+game says so rather than guessing from the wall clock. Plus/minus is unaffected:
+it is about who was on the floor when the ball went in, not how long they were
+there.
 
 ### How the score is calculated
 

@@ -9,8 +9,9 @@
  * This module is intentionally free of DOM access so the tests can import it.
  */
 
-import { SHOOTING, REBOUND, STATS, eventPoints, getStat, isShooting } from './stats.js';
+import { LINEUP, SHOOTING, REBOUND, STATS, eventPoints, getStat, isShooting } from './stats.js';
 import { periodLabel } from './format.js';
+import { elapsedInPeriod, periodLength } from './clock.js';
 
 /** Is this event attributed to a specific player? */
 function hasPlayer(event) {
@@ -248,6 +249,10 @@ export function computeGame(game) {
     grid: periodGrid(game),
     playerLines: lines,
     teamTotals,
+    // Minutes on the floor and plus/minus, with the five each team has out
+    // there now. Derived with everything else, so a deleted substitution takes
+    // its minutes with it.
+    floor: floorReport(game),
     // Keyed by team id, matching grid.rows, so callers can cross-check
     // `row.total === scores[row.teamId]` without knowing which slot it is.
     scores: {
@@ -259,6 +264,154 @@ export function computeGame(game) {
       home: teamTotal(game, game.homeTeamId),
     },
   };
+}
+
+/**
+ * Seconds of game clock before the given period starts.
+ *
+ * Minutes are measured on this timeline rather than on a counter that ticks
+ * while the clock runs: the scorer can correct the clock at any point in a game,
+ * and a stint measured between two timestamps survives that, where an
+ * accumulator would not.
+ */
+function periodStart(game, period) {
+  let total = 0;
+  for (let earlier = 1; earlier < period; earlier += 1) {
+    total += periodLength(game, earlier);
+  }
+  return total;
+}
+
+/** Where an event sits on that timeline. */
+function eventSeconds(game, event) {
+  return periodStart(game, event.period) + (elapsedInPeriod(game, event) ?? 0);
+}
+
+/**
+ * Who was on the floor, and what that is worth.
+ *
+ * Two numbers come out of one pass over the events, because both need the same
+ * fact — who was on the floor when a thing happened — and neither is stored:
+ * delete a substitution and the minutes and the plus/minus both recompute, the
+ * same as every other total in the app.
+ *
+ * The clock is what makes minutes real. A period whose readings never leave the
+ * start of the period was never run, so it contributes no time to anybody; that
+ * is reported rather than papered over with wall-clock guesses. Plus/minus needs
+ * no clock at all — it is points for and against while a player was on — so it
+ * stays correct even in a game that was never timed.
+ */
+export function floorReport(game) {
+  const periods = listPeriods(game);
+  const minutes = {};
+  const plusMinus = {};
+  for (const player of game.players) {
+    minutes[player.id] = 0;
+    plusMinus[player.id] = 0;
+  }
+
+  // A period is timed as soon as one reading sits inside it: at 0 or at the full
+  // length the clock has not moved, so there is nothing to measure against. Two
+  // cases have no reading to judge from — a period the game has already moved
+  // past, and the one being played right now — and both are taken as timed
+  // unless the live clock says otherwise, because the alternative is to throw
+  // away the minutes in a period nobody disputed.
+  const interior = (reading, length) =>
+    typeof reading === 'number' && reading > 0 && reading < length;
+
+  const timed = new Set();
+  for (const period of periods) {
+    const length = periodLength(game, period);
+    const inPeriod = game.events.filter((event) => event.period === period);
+
+    if (inPeriod.length === 0) {
+      const current = game.currentPeriod || 1;
+      if (period < current || (period === current && interior(game.clock?.seconds, length))) {
+        timed.add(period);
+      }
+      continue;
+    }
+
+    if (inPeriod.some((event) => interior(event.clockSeconds, length))) timed.add(period);
+  }
+
+  const untimedPeriods = periods.filter(
+    (period) =>
+      !timed.has(period) && game.events.some((event) => event.period === period),
+  );
+
+  const onFloor = new Map();
+  const cameOnAt = new Map();
+  let tracked = false;
+
+  const floorOf = (teamId) => {
+    if (!onFloor.has(teamId)) onFloor.set(teamId, new Set());
+    return onFloor.get(teamId);
+  };
+
+  // Credit a stint, split at the period boundaries it crosses so an untimed
+  // period inside it can be left out.
+  const closeStint = (playerId, from, to) => {
+    if (!(playerId in minutes) || to <= from) return;
+    for (const period of periods) {
+      if (!timed.has(period)) continue;
+      const start = periodStart(game, period);
+      const overlap = Math.max(0, Math.min(to, start + periodLength(game, period)) - Math.max(from, start));
+      minutes[playerId] += overlap;
+    }
+  };
+
+  for (const event of game.events) {
+    const stat = getStat(event.stat);
+
+    if (stat && stat.kind === LINEUP) {
+      tracked = true;
+      const at = eventSeconds(game, event);
+      const floor = floorOf(event.teamId);
+
+      if (event.playerId && floor.has(event.playerId)) {
+        floor.delete(event.playerId);
+        closeStint(event.playerId, cameOnAt.get(event.playerId) ?? at, at);
+        cameOnAt.delete(event.playerId);
+      }
+      if (event.subInId && !floor.has(event.subInId)) {
+        floor.add(event.subInId);
+        cameOnAt.set(event.subInId, at);
+      }
+      continue;
+    }
+
+    const points = eventPoints(event);
+    if (points <= 0) continue;
+
+    // Plus/minus is read off the floor as it stands: the five out there while
+    // the ball goes in take the credit, the other five take the debit.
+    for (const [teamId, players] of onFloor) {
+      const swing = teamId === event.teamId ? points : -points;
+      for (const playerId of players) {
+        if (playerId in plusMinus) plusMinus[playerId] += swing;
+      }
+    }
+  }
+
+  // A stint still open at the end runs to the live clock, so minutes read as
+  // "so far" during a game rather than only settling at the next substitution.
+  const now = periodStart(game, game.currentPeriod || 1) + elapsedInPeriod(game, {
+    period: game.currentPeriod || 1,
+    clockSeconds: game.clock?.seconds ?? 0,
+  });
+  for (const [, players] of onFloor) {
+    for (const playerId of players) {
+      closeStint(playerId, cameOnAt.get(playerId) ?? now, now);
+    }
+  }
+
+  // Who is on the floor right now, as plain data: the entry table shades those
+  // rows and the substitution flow offers only the ones that make sense.
+  const onCourt = {};
+  for (const [teamId, players] of onFloor) onCourt[teamId] = [...players];
+
+  return { tracked, minutes, plusMinus, untimedPeriods, onCourt };
 }
 
 /**

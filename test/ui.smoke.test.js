@@ -543,23 +543,28 @@ test('expanding the box score adds the shooting percentages and efficiency', asy
   emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
 
   const box = document.getElementById('box-table').innerHTML;
-  assert.equal(columnCount(), 19, 'Player, twelve tallies, six rates');
-  for (const label of ['FG%', '3P%', 'FT%', 'eFG%', 'TS%', 'EFF']) {
+  assert.equal(columnCount(), 21, 'Player, twelve tallies, six rates, minutes and +/-');
+  for (const label of ['FG%', '3P%', 'FT%', 'eFG%', 'TS%', 'EFF', 'MIN', '+/-']) {
     assert.ok(box.includes(`>${label}<`), `expected a ${label} column`);
   }
   // The derived columns are ruled off from the tallies they are read from.
   assert.match(box, /<th class="is-advanced" aria-sort="none"><button[^>]*>FG%</);
 
   // J. Reed: 9 points on 4 of 5 from the field, 1 of 2 from three, no free
-  // throws, plus a rebound and an assist.
+  // throws, plus a rebound and an assist. He starts and never comes off, so his
+  // minutes run to the live clock — 23:08 into a game sitting at 3:08 of Q3.
   const reed = rowFor('J. Reed');
-  assert.deepEqual(reed.slice(13), ['80%', '50%', '—', '90%', '90%', '10']);
+  assert.deepEqual(reed.slice(13, 19), ['80%', '50%', '—', '90%', '90%', '10']);
+  assert.equal(reed[19], '23:08', 'minutes so far, from the live clock');
+  assert.match(reed[20], /^[+-]?\d+$/, 'and a signed points swing');
 
   // Riverside's team row: 21 points on 9 of 10 from the field, all of them
   // threes. Effective and true shooting can pass 100% — a three is worth more
-  // than the two points a plain percentage assumes.
+  // than the two points a plain percentage assumes. A team has no single answer
+  // to minutes or to plus/minus, so its row leaves both blank.
   const away = totalsFor('Riverside');
-  assert.deepEqual(away.slice(13), ['90%', '100%', '—', '105%', '105%', '24']);
+  assert.deepEqual(away.slice(13, 19), ['90%', '100%', '—', '105%', '105%', '24']);
+  assert.deepEqual(away.slice(19), ['—', '—']);
 
   // Collapsing puts the compact table back exactly as it was.
   emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
@@ -601,7 +606,15 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
     emit(dom.listeners, 'click', actionable({ action: 'sort-box', column }));
 
   const jerseyOrder = teamOrder('Northside').players;
-  assert.deepEqual(jerseyOrder, ['J. Reed', 'A. Cole', 'D. Okafor', 'T. Nguyen', 'S. Whitfield']);
+  assert.deepEqual(jerseyOrder, [
+    'J. Reed',
+    'A. Cole',
+    'D. Okafor',
+    'M. Ferrer',
+    'T. Nguyen',
+    'S. Whitfield',
+    'A. Bergstrom',
+  ]);
 
   // Nothing is sortable until the panel has the room for the headings to be
   // worth tapping.
@@ -617,8 +630,10 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
     'D. Okafor',
     'J. Reed',
     'A. Cole',
+    'M. Ferrer',
     'T. Nguyen',
     'S. Whitfield',
+    'A. Bergstrom',
   ]);
   assert.equal(teamOrder('Northside').last, 'Team totals', 'totals stay at the foot of the team');
 
@@ -626,8 +641,10 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
   sortBy('reb');
   assert.deepEqual(teamOrder('Northside').players, [
     'A. Cole',
+    'M. Ferrer',
     'T. Nguyen',
     'S. Whitfield',
+    'A. Bergstrom',
     'J. Reed',
     'D. Okafor',
   ]);
@@ -640,7 +657,9 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
     'J. Reed',
     'A. Cole',
     'D. Okafor',
+    'M. Ferrer',
     'T. Nguyen',
+    'A. Bergstrom',
   ]);
 
   // The player column sorts on the name.
@@ -648,19 +667,147 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
   assert.deepEqual(teamOrder('Northside').players, [
     'T. Nguyen',
     'S. Whitfield',
+    'M. Ferrer',
     'J. Reed',
     'D. Okafor',
     'A. Cole',
+    'A. Bergstrom',
   ]);
   // Each team is sorted inside its own block: the away side is reverse
   // alphabetical too, and still under its own heading.
   assert.deepEqual(teamOrder('Riverside').players, [
+    'T. Okonkwo',
     'R. Feldman',
     'P. Alvarez',
     'M. Diaz',
     'L. Mwangi',
     'K. Boyd',
+    'D. Lindqvist',
   ]);
+});
+
+test('the five who start are named by tapping them one at a time', async () => {
+  const dom = await startApp();
+
+  // A roster with no lineup behind it: the copy keeps the home side and clears
+  // everything that was recorded, which is exactly the state at tip-off.
+  emit(dom.listeners, 'click', actionable({ action: 'open-copy-game' }));
+  document.getElementById('copy-keep-away').checked = false;
+  document.getElementById('copy-export').checked = false;
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-copy-game' }));
+  assert.deepEqual(storedGame().events, []);
+
+  // The stub DOM has no selector engine, so state is read off the markup — the
+  // same way the other tests read a rendered table.
+  const countIn = (marker) =>
+    (document.getElementById('player-cards').innerHTML.match(new RegExp(marker, 'g')) || [])
+      .length;
+  const onCourt = () => countIn('player-card--on');
+  assert.equal(onCourt(), 0, 'nobody is on the floor yet');
+
+  // The control asks for the five, and counts them off as they are tapped.
+  const subControl = document.getElementById('sub-entry');
+  assert.equal(subControl.textContent, 'Sub');
+  emit(dom.listeners, 'click', actionable({ action: 'start-sub' }));
+  assert.equal(document.getElementById('subbar').hidden, false);
+  assert.match(document.getElementById('subbar-text').textContent, /Tap the five starting/);
+
+  const ids = rosterIds().slice(0, 5);
+  ids.forEach((playerId) => {
+    emit(dom.listeners, 'click', actionable({ action: 'sub-pick', playerId }));
+  });
+
+  assert.equal(onCourt(), 5, 'the five tapped are on the floor');
+
+  // Five onto the floor, one event each, and the strip gets out of the way.
+  const subs = storedGame().events.filter((event) => event.stat === 'SUB');
+  assert.equal(subs.length, 5);
+  assert.deepEqual(
+    subs.map((event) => event.playerId),
+    [null, null, null, null, null],
+    'a starter has nobody coming off',
+  );
+  assert.deepEqual(subs.map((event) => event.subInId), ids);
+  assert.equal(document.getElementById('subbar').hidden, true);
+});
+
+test('a substitution takes one player off and puts another on', async () => {
+  const dom = await startApp();
+  const before = storedGame();
+
+  // The sample has a lineup, so its five are already on the floor.
+  const onCourt = () =>
+    [...document.getElementById('player-cards').innerHTML.matchAll(
+      /<tr class="player-card[^"]*player-card--on"[^>]*data-player-id="([^"]+)"/g,
+    )].map((match) => match[1]);
+  const wantedCount = () =>
+    (document.getElementById('player-cards').innerHTML.match(/player-card--wanted/g) || [])
+      .length;
+  const bench = () => rosterIds().filter((id) => !onCourt().includes(id));
+  assert.equal(onCourt().length, 5);
+  assert.equal(bench().length, 2, 'the sample carries a bench');
+
+  const comingOff = onCourt()[0];
+  const comingOn = bench()[0];
+
+  emit(dom.listeners, 'click', actionable({ action: 'start-sub' }));
+  assert.match(document.getElementById('subbar-text').textContent, /tap the player coming off/);
+
+  // Only the five on the floor answer the first tap: the bench is dimmed.
+  assert.equal(wantedCount(), 5);
+  emit(dom.listeners, 'click', actionable({ action: 'sub-pick', playerId: comingOn }));
+  assert.equal(storedGame().events.length, before.events.length, 'a bench player cannot come off');
+
+  emit(dom.listeners, 'click', actionable({ action: 'sub-pick', playerId: comingOff }));
+  assert.match(document.getElementById('subbar-text').textContent, /tap the player coming on/);
+  assert.equal(wantedCount(), 2);
+
+  emit(dom.listeners, 'click', actionable({ action: 'sub-pick', playerId: comingOn }));
+
+  // One event, naming both players, and the two rows swap places.
+  const added = storedGame().events.filter((event) => event.stat === 'SUB');
+  assert.equal(added.length, before.events.filter((event) => event.stat === 'SUB').length + 1);
+  const last = added.at(-1);
+  assert.equal(last.playerId, comingOff);
+  assert.equal(last.subInId, comingOn);
+  assert.equal(onCourt().includes(comingOff), false, 'off the floor');
+  assert.equal(onCourt().includes(comingOn), true, 'and the substitute is on it');
+  assert.equal(document.getElementById('subbar').hidden, true);
+
+  // The play-by-play names both, in one row with one delete button.
+  const log = document.getElementById('log-list').innerHTML;
+  const row = log.split('<li').find((chunk) => chunk.includes('on for'));
+  assert.ok(row, 'the substitution is in the log');
+  assert.match(row, /on for/);
+  assert.doesNotMatch(row, /reassign-event/, 'a swap of two players has nothing to re-attribute');
+});
+
+test('a half-entered substitution can be abandoned without changing anything', async () => {
+  const dom = await startApp();
+  const before = storedGame();
+
+  emit(dom.listeners, 'click', actionable({ action: 'start-sub' }));
+  emit(dom.listeners, 'click', actionable({ action: 'sub-pick', playerId: rosterIds()[0] }));
+  assert.match(document.getElementById('subbar-text').textContent, /coming on/);
+
+  // A tap that lands on a stat key while the banner is up is not a stat: the
+  // next answer is a player, and the keys are inert until the flow is over.
+  emit(
+    dom.listeners,
+    'click',
+    actionable({ action: 'log-stat', playerId: rosterIds()[0], stat: '2PT', result: 'made' }),
+  );
+  assert.deepEqual(storedGame(), before, 'no stat was recorded mid-substitution');
+
+  // Cancel is a button, and Escape does the same thing.
+  emit(dom.listeners, 'click', actionable({ action: 'cancel-sub' }));
+  assert.equal(document.getElementById('subbar').hidden, true);
+  assert.deepEqual(storedGame(), before, 'nothing recorded');
+
+  emit(dom.listeners, 'click', actionable({ action: 'start-sub' }));
+  emit(dom.listeners, 'keydown', document.body, { key: 'Escape' });
+  assert.equal(document.getElementById('subbar').hidden, true);
+  assert.deepEqual(storedGame(), before, 'still nothing recorded');
 });
 
 test('a box score row can be marked, and only one at a time', async () => {
@@ -743,11 +890,12 @@ test('the play-by-play counts up from 00:00, not down from the period length', a
     assert.match(time, /^\d{2}:\d{2}$/, `"${time}" should be MM:SS`);
   }
 
-  // The list is newest first, so the last row is the opening play at 0:30 and
-  // the first row is the final play of the third period at 9:42. A countdown
+  // The list is newest first, so the first row is the final play of the third
+  // period at 9:42 and the last row is the tip-off itself — the five who start
+  // are recorded at 00:00, which is the oldest thing in the game. A countdown
   // would report those two values the other way round.
   assert.equal(times[0], '09:42', 'the newest entry reads late in its period');
-  assert.equal(times[times.length - 1], '00:30', 'the oldest entry reads early');
+  assert.equal(times[times.length - 1], '00:00', 'the oldest entry reads early');
 });
 
 test('a logged stat updates the scoreboard, roster and box score together', async () => {
@@ -822,10 +970,10 @@ test('saving a team triggers a JSON file download named after the team', async (
 
   const name = document.getElementById('score-home-name').textContent;
   // Count rows, not id attributes: each row emits its player id three times
-  // (row, checkbox, and every stat button). An unselected row is marked with
-  // the bare class, which is what this matches.
+  // (row, checkbox, and every stat button). The trailing character keeps the
+  // rows that carry a state class — selected, on the floor — in the count.
   const rosterSize = (document.getElementById('player-cards').innerHTML.match(
-    /<tr class="player-card"/g,
+    /<tr class="player-card[ "]/g,
   ) || []).length;
   assert.ok(rosterSize > 0, 'the seeded game should have a home roster');
 
@@ -871,7 +1019,7 @@ test('a picked team file asks for confirmation before replacing the roster', asy
   // and that the entries they logged are kept.
   const summary = document.getElementById('load-team-target').textContent;
   assert.match(summary, /Riverside_team\.json/);
-  assert.match(summary, /Replace the 5 players on Northside with 2/);
+  assert.match(summary, /Replace the 7 players on Northside with 2/);
   assert.match(summary, /recorded entr/);
   assert.equal(document.getElementById('load-team-mode').hidden, true, 'a file replaces, so no mode choice');
 
@@ -958,7 +1106,7 @@ test('pasting a roster asks to replace or add, then imports on confirm', async (
   // A paste supplies players, not an identity, and it offers both choices.
   assert.equal(document.getElementById('load-team-mode').hidden, false);
   assert.match(document.getElementById('load-team-target').textContent, /the pasted roster/);
-  assert.match(document.getElementById('load-team-target').textContent, /Replace the 5 players/);
+  assert.match(document.getElementById('load-team-target').textContent, /Replace the 7 players/);
   assert.equal(document.getElementById('load-team-target').textContent.includes('陳大文'), false);
 
   // Nothing changes until the confirmation is accepted.
@@ -1113,11 +1261,16 @@ function checkbox(dataset, checked) {
   return el;
 }
 
-/** Player ids as rendered in the Live entry cards, in row order. */
+/**
+ * Player ids as rendered in the Live entry cards, in row order.
+ *
+ * Read off the row itself rather than off its action: a row's action changes
+ * while a substitution is being entered, but the roster does not.
+ */
 function rosterIds() {
   return [
     ...document.getElementById('player-cards').innerHTML.matchAll(
-      /data-action="player-row"\s+data-player-id="([^"]+)"/g,
+      /<tr class="player-card[^"]*"[^>]*data-player-id="([^"]+)"/g,
     ),
   ].map((match) => match[1]);
 }
@@ -1182,13 +1335,13 @@ test('select all ticks the whole roster and removes it in one confirmed action',
   );
 
   const ids = rosterIds();
-  assert.equal(ids.length, 5, 'the sample home roster has five players');
+  assert.equal(ids.length, 7, 'the sample home roster has seven players');
   const master = document.getElementById('roster-select-all');
   assert.equal(master.checked, true);
   assert.equal(master.indeterminate, false);
   assert.equal(
     document.getElementById('roster-selection-count').textContent,
-    '5 selected',
+    '7 selected',
   );
 
   emit(dom.listeners, 'click', actionable({ action: 'remove-selected-players' }));
@@ -1305,8 +1458,8 @@ test('a game can be copied into a new one, keeping the sides you pick', async ()
   assert.deepEqual(storedGame(), before, 'nothing changes while the dialog is open');
 
   // It names what it will bring over, and offers the backup by default.
-  assert.match(document.getElementById('copy-home-label').textContent, /Northside · 5 players/);
-  assert.match(document.getElementById('copy-away-label').textContent, /Riverside · 5 players/);
+  assert.match(document.getElementById('copy-home-label').textContent, /Northside · 7 players/);
+  assert.match(document.getElementById('copy-away-label').textContent, /Riverside · 7 players/);
   assert.equal(document.getElementById('copy-keep-home').checked, true);
   assert.equal(document.getElementById('copy-keep-away').checked, true);
   assert.equal(document.getElementById('copy-export').checked, true, 'the backup is offered, and on');
@@ -1335,7 +1488,7 @@ test('a game can be copied into a new one, keeping the sides you pick', async ()
   assert.equal(document.getElementById('score-away-name').textContent, 'Away');
   assert.equal(
     document.getElementById('player-cards').innerHTML.match(/data-action="player-row"/g).length,
-    5,
+    7,
     'the home roster came over',
   );
 
@@ -1388,7 +1541,7 @@ test('cancelling the bulk confirmation changes nothing', async () => {
   assert.deepEqual(storedGame().players, before.players);
   assert.equal(storedGame().events.length, before.events.length);
   // The selection is kept, so the scorer can retry.
-  assert.equal(document.getElementById('roster-selection-count').textContent, '5 selected');
+  assert.equal(document.getElementById('roster-selection-count').textContent, '7 selected');
 });
 
 // ---------------------------------------------------------------------------
@@ -2205,7 +2358,7 @@ test('the headings carry the width control, and live entry a key size', async ()
     return (chunk.match(/class="panel-tool[ "]/g) || []).length;
   };
 
-  assert.equal(controlsIn('entry'), 3, 'live entry: smaller, larger, full width');
+  assert.equal(controlsIn('entry'), 4, 'live entry: sub, smaller, larger, full width');
   assert.equal(controlsIn('log'), 1, 'the play-by-play keeps just the width control');
   assert.equal(controlsIn('box'), 1, 'so does the box score');
 
