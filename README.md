@@ -169,8 +169,10 @@ white kit with dark numbers reads from the table.
    the next tap will land. Its **Full width** button adds the shooting
    percentages and efficiency, and turns every heading into a sort key — tap one
    and that team's players reorder, biggest first, and a second tap on the same
-   heading turns it round. Each team sorts inside its own block, so the two are
-   never mixed together. See below.
+   heading turns it round. The **Player** heading is the exception: it sorts by
+   jersey number, counting up from the lowest, because that is how a roster is
+   printed and how a coach finds a name. Each team sorts inside its own block,
+   so the two are never mixed together. See below.
 
    Tapping a player's row marks it, and tapping it again lets it go: the row is
    tinted across every column, which is what keeps an eye on one line in the

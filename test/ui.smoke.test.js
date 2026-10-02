@@ -663,27 +663,43 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
     'A. Bergstrom',
   ]);
 
-  // The player column sorts on the name.
+  // The Player heading counts jerseys, not names, and it counts up first: a
+  // roster is printed 4, 7, 11, so the lowest number leads. That is the order
+  // the rows already come in, which is the point — it is where a coach looks
+  // for a player.
   sortBy('name');
-  assert.deepEqual(teamOrder('Northside').players, [
-    'T. Nguyen',
-    'S. Whitfield',
-    'M. Ferrer',
-    'J. Reed',
-    'D. Okafor',
-    'A. Cole',
-    'A. Bergstrom',
-  ]);
-  // Each team is sorted inside its own block: the away side is reverse
-  // alphabetical too, and still under its own heading.
+  assert.deepEqual(teamOrder('Northside').players, jerseyOrder);
   assert.deepEqual(teamOrder('Riverside').players, [
     'T. Okonkwo',
-    'R. Feldman',
-    'P. Alvarez',
     'M. Diaz',
+    'R. Feldman',
+    'K. Boyd',
+    'L. Mwangi',
+    'P. Alvarez',
+    'D. Lindqvist',
+  ]);
+
+  // A second tap counts down from the highest number, which is neither the
+  // roster order nor anything alphabetical.
+  sortBy('name');
+  assert.deepEqual(teamOrder('Northside').players, [
+    'A. Bergstrom',
+    'S. Whitfield',
+    'T. Nguyen',
+    'M. Ferrer',
+    'D. Okafor',
+    'A. Cole',
+    'J. Reed',
+  ]);
+  // Each team is still sorted inside its own block, under its own heading.
+  assert.deepEqual(teamOrder('Riverside').players, [
+    'D. Lindqvist',
+    'P. Alvarez',
     'L. Mwangi',
     'K. Boyd',
-    'D. Lindqvist',
+    'R. Feldman',
+    'M. Diaz',
+    'T. Okonkwo',
   ]);
 });
 

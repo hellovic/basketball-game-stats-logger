@@ -898,12 +898,29 @@ function reassignSelect(event) {
 }
 
 /**
+ * A player's jersey number as something a sort can use.
+ *
+ * Numbers are stored as text, because a squad has numbers that are not plain
+ * numerals (U14) and rows with none at all. The first run of digits is the
+ * number a scorer reads off the back of a shirt; a player without one has no
+ * rank, so they sink with the blanks rather than sorting as a zero.
+ */
+function jerseyNumber(number) {
+  const digits = String(number ?? '').match(/\d+/);
+  return digits ? Number(digits[0]) : null;
+}
+
+/**
  * The roster in the order the box score should read it.
  *
  * `boxSort` holds a column key and a direction; the column itself says what to
  * compare, which is not always what it prints. A rate with nothing behind it —
  * no attempts — has no rank at all, so it sinks to the bottom in either
  * direction rather than being read as a zero and winning "worst shooter".
+ *
+ * The Player heading is the one that sorts on something other than what it
+ * prints: a box score is looked up by number, so it counts jerseys rather than
+ * names — a name is how a player is recognised, a number is how they are found.
  */
 function sortBoxRoster(roster, columns, derived) {
   if (!boxSort) return roster;
@@ -913,7 +930,7 @@ function sortBoxRoster(roster, columns, derived) {
 
   const valueOf = (player) =>
     boxSort.key === 'name'
-      ? player.name
+      ? jerseyNumber(player.number)
       : column.sort(derived.playerLines[player.id], player);
   const slope = boxSort.direction === 'desc' ? -1 : 1;
 
@@ -1032,7 +1049,7 @@ function renderBox(derived) {
   // the column a coach reads a box score for — points, efficiency — should be
   // the fastest way to answer "who is on top", so the first tap sorts it that
   // way round and the second turns it over.
-  const headCell = (key, label, index) => {
+  const headCell = (key, label, index, title = label) => {
     const advanced = cellClass(index);
     if (!expanded) return `<th${advanced}>${label}</th>`;
 
@@ -1045,12 +1062,12 @@ function renderBox(derived) {
       `<th${advanced} aria-sort="${ariaSort}">` +
       `<button type="button" class="box__sort${active ? ' is-sorted' : ''}"` +
       ` data-action="sort-box" data-column="${key}"` +
-      ` title="Sort by ${label}">${label}` +
+      ` title="Sort by ${title}">${label}` +
       `<span class="box__sort-arrow" aria-hidden="true">${arrow}</span></button></th>`
     );
   };
 
-  const head = `<thead><tr>${headCell('name', 'Player', -1)}${columns
+  const head = `<thead><tr>${headCell('name', 'Player', -1, 'jersey number')}${columns
     .map(({ key, label }, index) => headCell(key, label, index))
     .join('')}</tr></thead>`;
 
@@ -2113,13 +2130,14 @@ document.addEventListener('click', (event) => {
       break;
     }
     case 'sort-box': {
-      // First tap puts the biggest number on top — the way a box score is read
-      // — and a second tap on the same heading turns it round.
       const key = target.dataset.column;
-      boxSort =
-        boxSort?.key === key && boxSort.direction === 'desc'
-          ? { key, direction: 'asc' }
-          : { key, direction: 'desc' };
+      // A stat heading is tapped to put the biggest number on top, which is how
+      // a box score is read, and a second tap turns the same heading round. The
+      // Player heading counts jerseys instead: a roster is printed 4, 7, 11, so
+      // that one counts up.
+      const first = key === 'name' ? 'asc' : 'desc';
+      const same = boxSort?.key === key && boxSort.direction === first;
+      boxSort = { key, direction: same ? (first === 'asc' ? 'desc' : 'asc') : first };
       render();
       break;
     }
