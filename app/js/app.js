@@ -642,10 +642,9 @@ function renderEntry(derived) {
   // Who is on the floor decides both the shading on each row and which rows a
   // substitution can use.
   const onCourt = new Set(derived.floor.onCourt[teamId] ?? []);
-  // A team whose five have never been named has no bench to speak of. Dimming
-  // the rows before the start of a game would say "none of these players can be
-  // scored", which is the opposite of what the panel is for, so the quiet rows
-  // only arrive once there is a floor to be left off.
+  // A team whose five have never been named has no bench to speak of: until
+  // there is a floor to be left off, every row is one the scorer may need, and
+  // none of them lose their keys.
   const floorKnown = Array.isArray(derived.floor.onCourt[teamId]);
   const pickedStarters = subStep?.stage === 'start' ? new Set(subStep.picked) : new Set();
 
@@ -666,6 +665,7 @@ function renderEntry(derived) {
       const line = derived.playerLines[player.id] || playerLine(game, player.id);
       const name = escapeHtml(player.name);
       const isOn = onCourt.has(player.id) || pickedStarters.has(player.id);
+      const benched = floorKnown && !isOn;
 
       /**
        * In the middle of a substitution only some rows are the right answer:
@@ -684,11 +684,20 @@ function renderEntry(derived) {
        * heading above it. A single spanning cell laid out by flexbox drifts:
        * the buttons size themselves and the headings stay where the table put
        * them, which is what put "+1" over the wrong button.
+       *
+       * A player on the bench keeps the cells and loses what is in them. Their
+       * row still spans the thirteen columns and their name still reads at full
+       * strength — a bench is a list of names to be recognised, not a screen of
+       * keys to be tapped — and the keys a player off the floor cannot be
+       * scoring from are not there to be hit by mistake.
        */
       const keys = (list, group) =>
         list
           .map(
-            (b) => `
+            (b) =>
+              benched
+                ? `<td class="player-card__key player-card__keys--${group}"></td>`
+                : `
           <td class="player-card__key player-card__keys--${group}">
             <button type="button"
                     class="stat-btn stat-btn--${b.kind}"

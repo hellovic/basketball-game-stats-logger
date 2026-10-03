@@ -780,37 +780,43 @@ test('a player on the floor carries their team colour across the row', async () 
   assert.match(css, /\.entry tbody tr\.player-card--on td \{\s*background: var\(--wash/);
 });
 
-test('the bench steps back, and the five on the floor do not', async () => {
+test('a player on the bench keeps their name and loses their keys', async () => {
   await startApp();
 
   const cards = () => document.getElementById('player-cards').innerHTML;
-  const count = (name) => (cards().match(new RegExp(name, 'g')) || []).length;
+  const rows = () => cards().split('<tr class="player-card').slice(1);
 
   // The sample game carries a lineup, so there is a bench to tell from the five.
-  assert.equal(count('player-card--on'), 5);
-  assert.equal(count('player-card--bench'), 2);
+  assert.equal(rows().length, 7);
+  const benched = rows().filter((row) => /player-card--bench/.test(row));
+  const onFloor = rows().filter((row) => /player-card--on/.test(row));
+  assert.equal(onFloor.length, 5);
+  assert.equal(benched.length, 2);
 
-  // Dimmed and on the floor are opposites: every row sitting down is marked,
-  // and no row out there is.
-  for (const row of cards().split('<tr class="player-card').slice(1)) {
-    assert.equal(
-      /player-card--bench/.test(row),
-      !/player-card--on/.test(row),
-      'a row is either on the floor or sitting down',
-    );
+  // The five keep every key. A player sitting down keeps none of them — not
+  // greyed out, not disabled, simply not there to be hit.
+  for (const row of onFloor) {
+    assert.equal((row.match(/data-action="log-stat"/g) || []).length, 13);
+  }
+  for (const row of benched) {
+    assert.equal((row.match(/data-action="log-stat"/g) || []).length, 0);
+    // And their name is still on the panel, at full strength: nothing about a
+    // bench row is faded, which is what made it hard to read.
+    assert.match(row, /player-card__name/);
   }
 
-  // It is the styling that does the dimming, and it takes the keys on the row
-  // with it, because they are cells of the same row.
-  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
-  assert.match(css, /\.entry tbody tr\.player-card--bench td \{\s*opacity: 0\.[0-9]+;/);
+  // Their cells stay, though, so the row still spans the thirteen columns the
+  // headings sit over.
+  for (const row of rows()) {
+    assert.equal((row.match(/class="player-card__key/g) || []).length, 13);
+  }
 
-  // Half-way through a substitution the bench is the answer, so it comes back
-  // to full strength while the banner is asking for one of them.
-  assert.match(css, /\.entry tbody tr\.player-card--wanted td \{\s*opacity: 1;/);
+  // Nothing is dimmed anywhere: the bench is quiet because it has no keys.
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  assert.doesNotMatch(css, /player-card--bench/);
 });
 
-test('nobody is held back before the five have been named', async () => {
+test('every row keeps its keys until the five have been named', async () => {
   const dom = await startApp();
 
   // A blank game with two players on it, neither of them put on the floor yet.
@@ -825,10 +831,11 @@ test('nobody is held back before the five have been named', async () => {
   const cards = document.getElementById('player-cards').innerHTML;
   assert.match(cards, /J\. Reed/, 'both players are on the panel');
   assert.match(cards, /A\. Cole/);
-  // No floor has been recorded, so there is no bench to hold back either:
-  // dimming every row here would read as "nobody can be scored".
+  // No floor is recorded yet, so every row is one the scorer may still need:
+  // taking the keys off a whole roster would look like the panel had broken.
   assert.equal((cards.match(/player-card--on/g) || []).length, 0);
   assert.equal((cards.match(/player-card--bench/g) || []).length, 0);
+  assert.equal((cards.match(/data-action="log-stat"/g) || []).length, 26);
 });
 
 test('a substitution takes one player off and puts another on', async () => {
@@ -2127,15 +2134,18 @@ test('an entry row combines the box-score columns with the stat buttons', async 
   assert.ok(!labels.includes('FG%'), 'FG% should not be a column');
   assert.ok(!labels.includes('FT%'), 'FT% should not be a column');
 
-  // One table row per player, and every row carries all thirteen keys, which
-  // is what makes the columns line up.
+  // One table row per player. Every row spans the thirteen key columns, which is
+  // what lines them up under the headings, but only a row on the floor carries
+  // the keys themselves — the bench is names.
   const rows = cards.split('<tr class="player-card').slice(1);
   assert.ok(rows.length > 0, 'the seeded game should have a home roster');
   for (const row of rows) {
+    const benched = /player-card--bench/.test(row);
+    assert.equal((row.match(/class="player-card__key/g) || []).length, 13);
     assert.equal(
       (row.match(/data-action="log-stat"/g) || []).length,
-      13,
-      'every key should be on every row',
+      benched ? 0 : 13,
+      benched ? 'a player on the bench has no keys' : 'the floor has all thirteen',
     );
   }
 

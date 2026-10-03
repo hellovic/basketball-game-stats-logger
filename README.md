@@ -156,10 +156,9 @@ white kit with dark numbers reads from the table.
    above the table saying which tap it is waiting for and offering a way out.
    Whoever is on the floor carries their team's colour: a bar down the left of
    the row, the number in the same colour, and a wash across the row itself, so
-   the five out there can be found without reading a name. Everyone sitting down
-   steps back behind them — the row and every key on it go quiet, so the five are
-   the only rows at full strength, and the keys still work if a stat lands on the
-   wrong row.
+   the five out there can be found without reading a name. A player sitting down
+   keeps their name and loses their keys: every name stays at full strength, and
+   the row is there to be read with nothing on it to hit by mistake.
 3. **Undo** — the button on the scoreboard (it stays pinned, so it is always in
    reach), or `Ctrl`/`Cmd` + `Z`. The toast after each entry also offers a
    one-tap undo.
