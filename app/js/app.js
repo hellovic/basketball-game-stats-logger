@@ -1275,10 +1275,10 @@ function shotTable(rows) {
     <thead>
       <tr>
         <th scope="col">Player</th>
+        <th scope="col" class="shot__made">Made</th>
         <th scope="col">Two-point</th>
         <th scope="col">Three-point</th>
         <th scope="col">Free throw</th>
-        <th scope="col" class="shot__made">Made</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>
@@ -1302,8 +1302,9 @@ function shotTeamRows(teamId, team, rows, taken, scored) {
 
   const head = `
     <tr class="shot__team" style="--team-accent: ${accentFor(teamId)}; --team-soft: ${softFor(teamId)}">
-      <th scope="rowgroup" colspan="4">${escapeHtml(team?.name || 'Team')}</th>
+      <th scope="rowgroup">${escapeHtml(team?.name || 'Team')}</th>
       <th scope="col" class="shot__made"><span class="shot__count">${scored} / ${taken}</span></th>
+      <th colspan="3" aria-hidden="true"></th>
     </tr>`;
 
   return (
@@ -1314,12 +1315,12 @@ function shotTeamRows(teamId, team, rows, taken, scored) {
         return `
     <tr class="shot__row">
       <th scope="row">${name}</th>
-      <td class="shot__cell">${chips(shots.two)}</td>
-      <td class="shot__cell">${chips(shots.three)}</td>
-      <td class="shot__cell">${chips(shots.free)}</td>
       <td class="shot__cell shot__made">${
         shots.attempts === 0 ? '&mdash;' : `${shots.made} / ${shots.attempts}`
       }</td>
+      <td class="shot__cell">${chips(shots.two)}</td>
+      <td class="shot__cell">${chips(shots.three)}</td>
+      <td class="shot__cell">${chips(shots.free)}</td>
     </tr>`;
       })
       .join('')

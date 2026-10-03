@@ -210,11 +210,12 @@ white kit with dark numbers reads from the table.
 
    The same width buys a **shot profile** below the table: one square per
    attempt, in the order it was taken, split into two-point, three-point and
-   free-throw columns with a made-of-taken count at the foot of each row. Solid
-   is a make and an outline is a miss — the entry keys' own language — so a cold
-   run and a hot one are told apart at a glance instead of hiding behind a
-   percentage. It follows the table — the same side, in the same order — so the
-   Away / Home tabs and a sort move both halves together.
+   free-throw columns, with the made-of-taken count right beside the name and
+   the team's own total heading that same column. Solid is a make and an outline
+   is a miss — the entry keys' own language — so a cold run and a hot one are
+   told apart at a glance instead of hiding behind a percentage. It follows the
+   table — the same side, in the same order — so the Away / Home tabs and a sort
+   move both halves together.
 6. **Team total** — under the entry table: the points the selected team has
    scored *in the period on the board*, typed rather than tapped. It is the
    scoreboard reading and nothing else; for the team's rebounds, turnovers and

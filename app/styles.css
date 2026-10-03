@@ -1507,12 +1507,13 @@ ul {
   color: var(--ink-faint);
 }
 
-/* The Made column reads down: a heading, a row of counts, and the team's own
-   total at the top of its block. One right edge holds all of them, so the
-   team's figure lands over the players' rather than floating at the end of
-   the name. */
+/* The Made column stands beside the name, so a player's count is read in the
+   same glance as the player it belongs to. It is kept to the width of its own
+   text — the room this panel buys is for the squares, not the figures — and the
+   team's total heads the same column, over the counts it adds up. */
 .shot__table .shot__made {
-  text-align: right;
+  width: 1%;
+  white-space: nowrap;
 }
 
 .shot__row th {
@@ -1556,7 +1557,6 @@ ul {
 .shot__made {
   font-family: var(--font-num);
   font-weight: 800;
-  text-align: right;
   white-space: nowrap;
 }
 
