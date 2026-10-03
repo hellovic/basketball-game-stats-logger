@@ -2672,21 +2672,27 @@ document.addEventListener('change', (event) => {
     return;
   }
 
+  // The strip under the board is the read-out of these three, so a change has to
+  // reach the page and not only the model: a scorer who sets the venue and sees
+  // the old one still on the strip has no way to tell it was kept.
   if (id === 'game-date') {
     game.date = event.target.value;
     save();
+    render();
     return;
   }
 
   if (id === 'game-time') {
     game.time = event.target.value;
     save();
+    render();
     return;
   }
 
   if (id === 'game-venue') {
     game.venue = event.target.value;
     save();
+    render();
     return;
   }
 

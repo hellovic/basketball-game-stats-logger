@@ -2063,9 +2063,9 @@ test('a clock left behind the last entry is said out loud', async () => {
 
   const note = document.getElementById('warning-note');
   assert.equal(note.hidden, false);
-  assert.match(note.textContent, /clock reads 05:00 in Q3/);
-  assert.match(note.textContent, /09:42/);
-  assert.match(note.textContent, /04:42 short/);
+  assert.match(note.textContent, /clock reads 05:00 left in Q3/);
+  assert.match(note.textContent, /09:42 into the quarter/);
+  assert.match(note.textContent, /04:42 behind/);
 
   // Put it back where the play is and the note goes away again.
   emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
@@ -2364,6 +2364,36 @@ test('the game settings bar sits between the scoreboard and the quarter totals',
   assert.equal(document.getElementById('game-time').value, '14:30');
   assert.equal(document.getElementById('game-periods').value, '4');
   assert.ok(document.getElementById('game-period-length').innerHTML.length > 0);
+});
+
+test('a setting change reaches the strip behind the dialog', async () => {
+  const dom = await startApp();
+
+  const date = document.getElementById('game-date');
+  const time = document.getElementById('game-time');
+  const venue = document.getElementById('game-venue');
+
+  // One at a time, the way a scorer fills them in: a render puts the model
+  // back into these fields, so a value typed but not yet committed is its own
+  // business until its change fires.
+  date.value = '2026-02-03';
+  emit(dom.listeners, 'change', date);
+  venue.value = 'Northside Sports Hall';
+  emit(dom.listeners, 'change', venue);
+  time.value = '19:15';
+  emit(dom.listeners, 'change', time);
+
+  // The strip under the board is the read-out of these three, so it has to
+  // follow: a scorer who sets the venue and sees the old one still showing has
+  // no way to tell whether it was kept.
+  assert.equal(document.getElementById('game-date-display').textContent, '03/02/2026');
+  assert.equal(document.getElementById('game-venue-display').textContent, 'Northside Sports Hall');
+  assert.equal(document.getElementById('game-time-display').textContent, '07:15 PM');
+
+  const stored = storedGame();
+  assert.equal(stored.date, '2026-02-03');
+  assert.equal(stored.venue, 'Northside Sports Hall');
+  assert.equal(stored.time, '19:15');
 });
 
 test('the game time sits beside the date and saves as it is set', async () => {

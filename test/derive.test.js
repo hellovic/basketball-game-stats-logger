@@ -783,9 +783,11 @@ test('a clock lagging the last entry is named, and only while it lags', () => {
   setClock(game, 300);
   const warnings = consistencyWarnings(game).filter((w) => /clock reads/.test(w.message));
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0].message, /05:00 in Q1/);
-  assert.match(warnings[0].message, /09:50/);
-  assert.match(warnings[0].message, /04:50 short/);
+  assert.match(warnings[0].message, /05:00 left in Q1/);
+  assert.match(warnings[0].message, /09:50 into the quarter/);
+  // The gap, not a shortfall: the minutes already logged are counted either
+  // way, so what the note is really about is the next entry.
+  assert.match(warnings[0].message, /04:50 behind/);
 
   // A clock ahead of the play is the ordinary case, not a problem.
   setClock(game, 0);

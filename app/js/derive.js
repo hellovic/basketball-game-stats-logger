@@ -499,9 +499,13 @@ export function consistencyWarnings(game) {
       warnings.push({
         level: 'warn',
         message:
-          `The clock reads ${clock(game.clock?.seconds ?? 0)} in ${periodLabel(period, game.periodsPerGame)} ` +
-          `but the last entry is at ${clock(furthest)}, so on-court minutes are ` +
-          `${clock(furthest - live)} short until they agree.`,
+          // The note names the gap, not a shortfall: time already logged is
+          // counted either way, so what is at stake is the *next* entry, which
+          // will be stamped against a clock that is behind the play.
+          `The clock reads ${clock(game.clock?.seconds ?? 0)} left in ` +
+          `${periodLabel(period, game.periodsPerGame)} but the last entry is ` +
+          `${clock(furthest)} into the quarter: it is ${clock(furthest - live)} ` +
+          'behind, so anything logged from here is timed against it.',
       });
     }
   }

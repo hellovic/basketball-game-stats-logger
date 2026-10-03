@@ -464,8 +464,9 @@ edited to an earlier time — is handled from both ends. The last stint of anyon
 still on the floor runs to whichever is later, the clock or the last entry
 recorded in that period, so time that was played and logged is never handed to
 nobody. And while the clock is still behind, the strip under the quarter totals
-says so, naming both readings and how much time is at stake. Neither blocks
-anything: a scorer mid-game has no time to untangle a clock.
+says so — both readings, and how far behind the clock is — because the entry
+logged next is stamped against that clock. Neither blocks anything: a scorer
+mid-game has no time to untangle a clock.
 
 ### How the score is calculated
 
