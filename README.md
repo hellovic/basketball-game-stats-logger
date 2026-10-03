@@ -161,6 +161,14 @@ white kit with dark numbers reads from the table.
    the five out there can be found without reading a name. A player sitting down
    keeps their name and loses their keys: every name stays at full strength, and
    the row is there to be read with nothing on it to hit by mistake.
+   **The team gets a row of its own**, at the foot of the table and below a
+   heavier rule, carrying the same thirteen keys — because a side nobody has
+   typed a roster for still has a score and still takes rebounds. A tap there
+   records the stat against the team instead of against a name: it counts for
+   the team's line and column in the box score, inflates no player, and still
+   swings the +/- of the five who were on the floor. It is the row that works
+   when there is no roster at all, and it is always there, so a rebound nobody
+   claimed has somewhere to go on a fully-rostered side too.
 3. **Undo** — the button on the scoreboard (it stays pinned, so it is always in
    reach), or `Ctrl`/`Cmd` + `Z`. The toast after each entry also offers a
    one-tap undo.
@@ -192,7 +200,9 @@ white kit with dark numbers reads from the table.
    sorting by a heading moves it with them, and removing a player from the
    roster takes the mark away with them too.
 6. **Team total** — under the entry table: the points the selected team has
-   scored *in the period on the board*, typed rather than tapped. See below.
+   scored *in the period on the board*, typed rather than tapped. It is the
+   scoreboard reading and nothing else; for the team's rebounds, turnovers and
+   baskets as they happen, use the team row in the table above. See below.
 
 Live entry's heading carries three controls; the play-by-play and the box score
 carry one each:

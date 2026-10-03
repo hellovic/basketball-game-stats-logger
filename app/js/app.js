@@ -621,12 +621,48 @@ function removePlayerFromRoster(playerId) {
 
 
 /**
- * The live entry table: one row per player on the team being scored.
+ * One cell per key, so every button shares a table column with the heading
+ * above it. A single spanning cell laid out by flexbox drifts: the buttons size
+ * themselves and the headings stay where the table put them, which is what put
+ * "+1" over the wrong button.
+ *
+ * `owner` says whose tap it is: a player, or the team itself when the sides are
+ * being scored without a roster. A row whose owner is off the floor keeps its
+ * cells and loses what is in them — the names still read, and the keys a player
+ * on the bench cannot be scoring from are not there to be hit by mistake.
+ */
+function keyCells(list, group, owner) {
+  return list
+    .map((b) =>
+      owner.benched
+        ? `<td class="player-card__key player-card__keys--${group}"></td>`
+        : `
+          <td class="player-card__key player-card__keys--${group}">
+            <button type="button"
+                    class="stat-btn stat-btn--${b.kind}"
+                    data-action="${owner.action}"
+                    ${owner.playerId ? `data-player-id="${escapeHtml(owner.playerId)}"` : ''}
+                    data-stat="${b.key}"
+                    data-result="${b.result ?? ''}"
+                    title="${escapeHtml(b.title)}"
+                    aria-label="${escapeHtml(`${b.title} for ${owner.name}`)}">${escapeHtml(b.label)}</button>
+          </td>`,
+    )
+    .join('');
+}
+
+/**
+ * The live entry table: one row per player, and the team's own row at the foot.
  *
  * The row is a table row rather than a card because the keys, the running
  * totals and the column headings all have to line up down the page — a scorer
  * finds "the third player's rebounds" by reading one column, not by re-finding
  * a card. The fourteen columns are the player and thirteen keys.
+ *
+ * The team row is always there, roster or not. A side whose players are not
+ * being tracked still has a score and still takes rebounds, and the team's line
+ * is what the box score reads for it — so the same keys, addressed to the team
+ * instead of to a name, are the difference between a scoresheet and nothing.
  */
 function renderEntry(derived) {
   const container = $('player-cards');
@@ -634,13 +670,7 @@ function renderEntry(derived) {
   // Entry works for one team at a time: a scorer is entering one team's events.
   const teamId = teamIdFor(detailTeamSlot);
   const roster = playersOf(game, teamId).filter((player) => player.active !== false);
-
-  if (roster.length === 0) {
-    container.innerHTML =
-      '<tr class="entry__empty"><td colspan="14">No players yet — add them under ' +
-      'More → Team and players.</td></tr>';
-    return;
-  }
+  const teamName = safeText(game.teams[teamId]?.name, 'this team');
 
   const accent = accentFor(teamId);
 
@@ -657,15 +687,14 @@ function renderEntry(derived) {
   // player, and a stat key under the scorer's finger is the wrong answer.
   $('panel-entry').classList.toggle('is-subbing', Boolean(subStep));
 
-  // Every button the app can record, in catalog order. Team events are not
-  // here: they belong to no player, so they get their own strip under the
-  // table. The three groups below line up with the three column groups.
+  // Every button the app can record, in catalog order. The three groups below
+  // line up with the three column groups.
   const buttons = entryButtons();
   const makes = buttons.filter((b) => b.kind === 'made');
   const misses = buttons.filter((b) => b.kind === 'miss');
   const counts = buttons.filter((b) => b.kind === 'count');
 
-  container.innerHTML = roster
+  const playerRows = roster
     .map((player) => {
       const line = derived.playerLines[player.id] || playerLine(game, player.id);
       const name = escapeHtml(player.name);
@@ -684,37 +713,12 @@ function renderEntry(derived) {
         (subStep.stage === 'off' ? isOn : !isOn);
       const action = subStep ? 'sub-pick' : 'player-row';
 
-      /**
-       * One cell per key, so every button shares a table column with the
-       * heading above it. A single spanning cell laid out by flexbox drifts:
-       * the buttons size themselves and the headings stay where the table put
-       * them, which is what put "+1" over the wrong button.
-       *
-       * A player on the bench keeps the cells and loses what is in them. Their
-       * row still spans the thirteen columns and their name still reads at full
-       * strength — a bench is a list of names to be recognised, not a screen of
-       * keys to be tapped — and the keys a player off the floor cannot be
-       * scoring from are not there to be hit by mistake.
-       */
-      const keys = (list, group) =>
-        list
-          .map(
-            (b) =>
-              benched
-                ? `<td class="player-card__key player-card__keys--${group}"></td>`
-                : `
-          <td class="player-card__key player-card__keys--${group}">
-            <button type="button"
-                    class="stat-btn stat-btn--${b.kind}"
-                    data-action="log-stat"
-                    data-player-id="${escapeHtml(player.id)}"
-                    data-stat="${b.key}"
-                    data-result="${b.result ?? ''}"
-                    title="${escapeHtml(b.title)}"
-                    aria-label="${escapeHtml(`${b.title} for ${player.name}`)}">${escapeHtml(b.label)}</button>
-          </td>`,
-          )
-          .join('');
+      const owner = {
+        action: 'log-stat',
+        playerId: player.id,
+        name: player.name,
+        benched,
+      };
 
       return `
         <tr class="player-card${isOn ? ' player-card--on' : ''}${
@@ -730,10 +734,32 @@ function renderEntry(derived) {
             <span class="player-card__number">${escapeHtml(player.number) || '—'}</span>
             <span class="player-card__name" title="${name}">${name}</span>
           </td>
-          ${keys(makes, 'scoring')}${keys(misses, 'scoring')}${keys(counts, 'other')}
+          ${keyCells(makes, 'scoring', owner)}${keyCells(misses, 'scoring', owner)}${keyCells(counts, 'other', owner)}
         </tr>`;
     })
     .join('');
+
+  // The team's own row: no jersey, no floor, and no substitutions — it is not a
+  // person. Everything else it wears is what a player's row wears, because a tap
+  // on it records exactly the same kind of entry, addressed to the side.
+  const teamRow = `
+        <tr class="entry__team" style="--accent: ${accent}" data-team-id="${escapeHtml(teamId)}">
+          <td class="player-card__who">
+            <span class="player-card__number">&mdash;</span>
+            <span class="player-card__name" title="Stats for ${escapeHtml(teamName)} itself, not for a player">Team</span>
+          </td>
+          ${keyCells(makes, 'scoring', { action: 'log-team-stat', name: 'the team' })}${keyCells(misses, 'scoring', { action: 'log-team-stat', name: 'the team' })}${keyCells(counts, 'other', { action: 'log-team-stat', name: 'the team' })}
+        </tr>`;
+
+  // A roster that has not been set up yet says so above the team row, which is
+  // the row that works without one.
+  const noRoster =
+    roster.length === 0
+      ? '<tr class="entry__empty"><td colspan="14">No players yet — tap the team ' +
+        'row below, or add players under More → Team and players.</td></tr>'
+      : '';
+
+  container.innerHTML = `${noRoster}${playerRows}${teamRow}`;
 }
 
 /**
@@ -939,6 +965,9 @@ function periodEditor(event) {
 function reassignSelect(event) {
   const roster = playersOf(game, event.teamId);
   const options = [
+    // The team itself is a place an entry can belong: a rebound logged for the
+    // side can turn out to be nobody's, and the other way round.
+    `<option value=""${event.playerId ? '' : ' selected'}>TEAM</option>`,
     ...roster.map(
       (player) =>
         `<option value="${escapeHtml(player.id)}"${
@@ -1335,12 +1364,22 @@ function flashLogRow(eventId) {
   setTimeout(() => row.classList.remove('is-hit'), 600);
 }
 
-/** Flash a player card so a tap is visibly acknowledged. */
+/** Flash a row so a tap is visibly acknowledged. */
+function flashRow(selector) {
+  const row = document.querySelector(selector);
+  if (!row) return;
+  row.classList.add('is-hit');
+  setTimeout(() => row.classList.remove('is-hit'), 220);
+}
+
+/** The same, for a player's row. */
 function flashCard(playerId) {
-  const card = document.querySelector(`.player-card[data-player-id="${CSS.escape(playerId)}"]`);
-  if (!card) return;
-  card.classList.add('is-hit');
-  setTimeout(() => card.classList.remove('is-hit'), 220);
+  flashRow(`.player-card[data-player-id="${CSS.escape(playerId)}"]`);
+}
+
+/** And for the team's. */
+function flashTeamRow() {
+  flashRow('.entry__team');
 }
 
 // ---------------------------------------------------------------------------
@@ -1375,6 +1414,42 @@ function logStat(playerId, stat, result) {
   announce(`${player.name} ${descriptor}`);
 }
 
+
+/**
+ * Record a stat against the team itself.
+ *
+ * A side being scored without a roster — the opponent whose players nobody
+ * tracks, or a squad that has not been typed in yet — still has a score and
+ * still takes rebounds, and the team's line is where that belongs. The entry
+ * carries no player, which is what keeps it out of every player's line while
+ * still counting for the team.
+ */
+function logTeamStat(stat, result) {
+  const teamId = teamIdFor(detailTeamSlot);
+  const outcome = addEvent(game, {
+    teamId,
+    playerId: null,
+    stat,
+    result: result === '' ? null : result,
+    period: game.currentPeriod,
+  });
+
+  if (outcome.error) {
+    showToast(outcome.error);
+    return;
+  }
+
+  startClockIfIdle();
+  save();
+  render();
+  flashTeamRow();
+
+  const teamName = safeText(game.teams[teamId]?.name, 'The team');
+  const descriptor = describeEvent(stat, result === '' ? null : result);
+  const points = result === 'made' ? (getStat(stat)?.points ?? 0) : 0;
+  showToast(`${teamName}: ${descriptor}${points ? ` (+${points})` : ''}`, { undo: true });
+  announce(`${teamName} ${descriptor}`);
+}
 
 function performUndo() {
   const removed = undoLastEvent(game);
@@ -1416,7 +1491,8 @@ function reassignEvent(eventId, playerId) {
   render();
 
   const target = game.players.find((p) => p.id === playerId);
-  showToast(`Moved ${describeEvent(previous.stat, previous.result)} to ${target?.name ?? 'another player'}.`);
+  const to = target ? target.name : `the ${safeText(game.teams[previous.teamId]?.name, 'team')} line`;
+  showToast(`Moved ${describeEvent(previous.stat, previous.result)} to ${to}.`);
 }
 
 function addPlayerFromForm(event) {
@@ -2352,6 +2428,11 @@ document.addEventListener('click', (event) => {
       // that lands on one cannot be mistaken for the answer the app wants.
       if (subStep) break;
       logStat(target.dataset.playerId, target.dataset.stat, target.dataset.result);
+      break;
+    case 'log-team-stat':
+      // Half-way through a substitution the next tap is a player, not a key.
+      if (subStep) break;
+      logTeamStat(target.dataset.stat, target.dataset.result);
       break;
     case 'toggle-expand': {
       const panel = target.dataset.panel;

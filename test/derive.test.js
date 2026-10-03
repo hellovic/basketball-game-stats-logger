@@ -847,6 +847,43 @@ test('a clock lagging the last entry is named, and only while it lags', () => {
   );
 });
 
+test('a stat logged for the team lands on the team and on no player', () => {
+  const { game, players } = fixture();
+  const { home1 } = players;
+
+  sub(game, { on: home1.id, period: 1, clockSeconds: 600 });
+  // A side being scored without a roster: a rebound nobody is credited with,
+  // and a basket. Both are entries like any other — addressed to the team.
+  addEvent(game, {
+    teamId: game.homeTeamId,
+    playerId: null,
+    stat: 'REB',
+    result: 'DEF',
+    period: 1,
+    clockSeconds: 500,
+  });
+  addEvent(game, {
+    teamId: game.homeTeamId,
+    playerId: null,
+    stat: '2PT',
+    result: 'made',
+    period: 1,
+    clockSeconds: 480,
+  });
+
+  const team = computeGame(game).teamTotals[game.homeTeamId];
+  assert.equal(team.reb, 1, 'the team takes the rebound');
+  assert.equal(team.points, 2, 'and the points');
+
+  const player = computeGame(game).playerLines[home1.id];
+  assert.equal(player.reb, 0, 'no player line is inflated by it');
+  assert.equal(player.points, 0);
+
+  // And the five out there still swing: a basket nobody is named for is still
+  // a basket they played through.
+  assert.equal(floorReport(game).plusMinus[home1.id], 2);
+});
+
 test('a period the clock never ran contributes no minutes', () => {
   const { game, players } = fixture();
   const { home1 } = players;

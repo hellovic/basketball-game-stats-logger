@@ -765,6 +765,42 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
   ]);
 });
 
+test('a team with no roster at all can still be scored', async () => {
+  const dom = await startApp();
+
+  // A blank game: nobody on either side.
+  emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
+
+  const cards = () => document.getElementById('player-cards').innerHTML;
+  assert.match(cards(), /entry__empty/, 'the panel says there is no roster');
+  assert.match(cards(), /entry__team/, 'and offers the team its own row');
+  assert.equal(
+    (cards().match(/data-action="log-team-stat"/g) || []).length,
+    13,
+    'the same thirteen keys a player gets',
+  );
+
+  // And it spans the same fourteen columns, so the keys still sit under the
+  // headings they belong to.
+  const teamRow = /<tr class="entry__team"[\s\S]*?<\/tr>/.exec(cards())[0];
+  assert.equal((teamRow.match(/<td/g) || []).length, 14);
+
+  // A tap records an entry with no player on it — the side takes it.
+  emit(dom.listeners, 'click', actionable({ action: 'log-team-stat', stat: '2PT', result: 'made' }));
+  assert.equal(document.getElementById('score-home').textContent, '2');
+  const entry = storedGame().events.at(-1);
+  assert.equal(entry.playerId, null, 'no player is named');
+  assert.equal(entry.teamId, storedGame().homeTeamId);
+
+  // It reads as the team's in the log, and the quarter strip has it.
+  assert.match(document.getElementById('log-list').innerHTML, /TEAM/);
+  assert.match(document.getElementById('sheet-table').innerHTML, />2</);
+
+  // Nothing on the player side of the box score was invented.
+  assert.doesNotMatch(document.getElementById('box-table').innerHTML, /data-player-id/);
+});
+
 test('the five who start are named by tapping them one at a time', async () => {
   const dom = await startApp();
 
@@ -846,7 +882,7 @@ test('a player on the bench keeps their name and loses their keys', async () => 
   await startApp();
 
   const cards = () => document.getElementById('player-cards').innerHTML;
-  const rows = () => cards().split('<tr class="player-card').slice(1);
+  const rows = () => playerRowChunks();
 
   // The sample game carries a lineup, so there is a bench to tell from the five.
   assert.equal(rows().length, 7);
@@ -1483,6 +1519,22 @@ function rosterIds() {
       /<tr class="player-card[^"]*"[^>]*data-player-id="([^"]+)"/g,
     ),
   ].map((match) => match[1]);
+}
+
+/**
+ * The player rows of the live entry table, one chunk of markup each.
+ *
+ * The team's own row follows them and carries the same thirteen keys, so a
+ * plain split on the row tag lets it leak into the last player's chunk.
+ */
+function playerRowChunks() {
+  return document.getElementById('player-cards').innerHTML
+    .split('<tr class="player-card')
+    .slice(1)
+    .map((chunk) => {
+      const next = chunk.indexOf('<tr ');
+      return next === -1 ? chunk : chunk.slice(0, next);
+    });
 }
 
 /** Player ids as listed in the Team and players dialog, in roster order. */
@@ -2333,7 +2385,7 @@ test('an entry row combines the box-score columns with the stat buttons', async 
   // One table row per player. Every row spans the thirteen key columns, which is
   // what lines them up under the headings, but only a row on the floor carries
   // the keys themselves — the bench is names.
-  const rows = cards.split('<tr class="player-card').slice(1);
+  const rows = playerRowChunks();
   assert.ok(rows.length > 0, 'the seeded game should have a home roster');
   for (const row of rows) {
     const benched = /player-card--bench/.test(row);

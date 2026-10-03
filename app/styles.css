@@ -2715,6 +2715,22 @@ ul {
   padding: 0 2px;
 }
 
+/* The team's own row, at the foot of the roster.
+   A side nobody has typed a roster for still has a score and still takes
+   rebounds, so the team gets the same keys as a player. What it does not get is
+   anything to do with being on the floor: no bar, no wash, and no substitution.
+   The heavier rule above it is what says these keys are the side's, not a
+   nineteenth player's. */
+.entry tbody tr.entry__team td {
+  border-top: 1px solid var(--border-strong);
+}
+
+.entry tbody tr.entry__team .player-card__name {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
 .entry__empty td {
   padding: var(--sp-4);
   color: var(--ink-faint);

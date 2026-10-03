@@ -326,10 +326,12 @@ export function validateEvent(event, game = null) {
     return null;
   }
 
-  // Catching a player/team mismatch here prevents the box score and the
-  // scoreboard from silently disagreeing: the points would land on one team
+  // A stat with no player belongs to the team: it is how a side with no roster,
+  // or a rebound nobody claimed, gets a line of its own. Everything else names a
+  // player, and catching a player/team mismatch there prevents the box score and
+  // the scoreboard from silently disagreeing: the points would land on one team
   // while the player line showed up on the other.
-  if (!event.playerId) return 'An event needs a player.';
+  if (!event.playerId) return null;
   if (game) {
     const player = game.players.find((p) => p.id === event.playerId);
     if (!player) return 'That player is no longer on the roster.';
