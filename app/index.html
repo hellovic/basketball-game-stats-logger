@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.39.0">
-<meta name="app-build" content="2026-10-03L">
+<meta name="app-version" content="0.40.0">
+<meta name="app-build" content="2026-10-03M">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -182,13 +182,12 @@
               <span class="menu__sub">Put each team on the other side</span>
             </span>
           </button>
-          <button type="button" class="menu__item" role="menuitem" data-action="toggle-actionbar" id="menu-toggle-files">
+          <button type="button" class="menu__item" role="menuitem" data-action="open-export" id="menu-open-files">
             <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10.6V1.8M5.2 4.6 8 1.8l2.8 2.8"/><path d="M2 11v2.6h12V11"/></svg>
             <span class="menu__text">
               <span class="menu__label">Save / load / export</span>
               <span class="menu__sub">Game, box score, plays</span>
             </span>
-            <span class="menu__state" id="menu-files-state">Shown</span>
           </button>
           <button type="button" class="menu__item" role="menuitem" data-action="open-summary">
             <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13.4V2.6M2 13.4h12"/><path d="M4.6 11.2 7.4 6.9l2.2 2.2 3-4.4"/></svg>
@@ -498,44 +497,58 @@
   </div>
 </main>
 
-<!-- =====================================================================
-     The bottom strip: everything that gets data in or out of the app.
-     Exports and team files both answer "how do I get this elsewhere?", so
-     they live together in one horizontal bar rather than inside panels.
-     The bar collapses from the More menu so the scoring area can have the
-     room back on a short screen.
-     ===================================================================== -->
-<section class="actionbar" id="actionbar" aria-label="Export and team files" hidden>
-  <div class="actionbar__group actionbar__group--export">
-    <h2 class="actionbar__title"
-        title="The only durable copy — clearing this browser's site data erases the game.">
-      Export
-    </h2>
-    <div class="actionbar__buttons">
-      <button type="button" class="btn btn--primary btn--sm" data-action="export-csv" data-kind="box-score"
-              title="One row per player, plus a team totals row.">
-        Box score CSV
-      </button>
-      <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="play-by-play"
-              title="The full entry log, oldest first.">
-        Play-by-play CSV
-      </button>
-      <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="summary"
-              title="The quarter grid plus the leading scorers.">
-        Game summary CSV
-      </button>
-      <button type="button" class="btn btn--sm" data-action="export-json"
-              title="Write the whole game to a file, to keep or to carry.">Save game</button>
-      <button type="button" class="btn btn--sm btn--ghost" data-action="import-json"
-              title="Read a saved game back from a file.">
-        Load game&hellip;
-      </button>
+<!-- ===================================================================
+     Save / load / export: the file end of the app, behind the More menu
+     like every other job that is set up once rather than tapped all game.
+     It sits before the load-team and paste-roster dialogs, which open from
+     inside it and so have to drawn on top.
+     =================================================================== -->
+<div class="dialog" id="export-dialog" role="dialog" aria-modal="true"
+     aria-labelledby="export-title" hidden>
+  <div class="dialog__panel dialog__panel--wide">
+    <h2 class="dialog__title" id="export-title">Save / load / export</h2>
+    <p class="dialog__note">
+      These are the copies that outlive the browser: the game itself lives in
+      this tablet's storage, and clearing the site data erases it.
+    </p>
+
+    <section class="file-group" aria-label="Export">
+      <h3 class="file-group__title">Export</h3>
+      <div class="file-group__buttons">
+        <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="box-score"
+                title="One row per player, plus a team totals row.">
+          Box score CSV
+        </button>
+        <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="play-by-play"
+                title="The full entry log, oldest first.">
+          Play-by-play CSV
+        </button>
+        <button type="button" class="btn btn--sm" data-action="export-csv" data-kind="summary"
+                title="The settings, the score and both rosters.">
+          Game summary CSV
+        </button>
+      </div>
+    </section>
+
+    <section class="file-group" aria-label="Game file">
+      <h3 class="file-group__title">Game file</h3>
+      <div class="file-group__buttons">
+        <button type="button" class="btn btn--primary btn--sm" data-action="export-json"
+                title="Write the whole game to a file, to keep or to carry.">Save game</button>
+        <button type="button" class="btn btn--sm btn--ghost" data-action="import-json"
+                title="Read a saved game back from a file.">
+          Load game&hellip;
+        </button>
+      </div>
+    </section>
+
+    <div class="dialog__actions">
+      <span class="dialog__version" id="app-version"></span>
+      <button type="button" class="btn btn--primary" data-action="close-dialog">Done</button>
     </div>
   </div>
-
-  <span class="actionbar__version" id="app-version"></span>
   <input type="file" id="import-file" accept="application/json,.json" hidden>
-</section>
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div class="sr-only" id="live-region" aria-live="polite"></div>

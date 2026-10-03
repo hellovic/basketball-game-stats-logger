@@ -2300,61 +2300,44 @@ ul {
 }
 
 /* ===========================================================================
-   Action bar
+   The export dialog
+
+   A titled group of buttons per kind of file. The bar this used to be is gone:
+   the files are set up once a game and then left alone, so they belong behind
+   the More menu with the rest of the setup rather than across the scoring area,
+   where they cost two columns of screen for the whole game.
    =========================================================================== */
 
-.actionbar {
-  /* Floats at the foot of the screen while it is open rather than sitting at the
-     very end of the page, where reaching it meant scrolling past the panels it
-     exists to back up. Sticky rather than fixed, so the browser still reserves
-     its place at the end of the scroll and nothing is trapped underneath. */
-  position: sticky;
-  bottom: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  padding: var(--sp-1) var(--sp-3);
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  box-shadow: 0 -2px 12px rgba(16, 24, 40, 0.08);
-  overflow-x: auto;
+.file-group {
+  margin-top: var(--sp-4);
 }
 
-.actionbar__group {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-}
-
-.actionbar__group--team {
-  padding-left: var(--sp-4);
-  border-left: 1px solid var(--border);
-}
-
-.actionbar__title {
+.file-group__title {
+  margin: 0 0 var(--sp-2);
   font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  white-space: nowrap;
 }
 
-.actionbar__buttons {
+.file-group__buttons {
   display: flex;
-  align-items: center;
-  gap: var(--sp-1);
+  flex-wrap: wrap;
+  gap: var(--sp-2);
 }
 
-.actionbar__version {
-  margin-left: auto;
+/* The build stamp sits at the left of the dialog's foot, where the export bar
+   used to keep it: it is how a stale cached bundle is spotted at a glance.
+   The button beside it stays on the right, where a Done always is. */
+.dialog__version {
+  margin-right: auto;
+  align-self: center;
   font-family: var(--font-num);
   font-size: 10.5px;
   color: var(--ink-faint);
   white-space: nowrap;
 }
-
 /* ===========================================================================
    Toast
    =========================================================================== */
@@ -3295,8 +3278,8 @@ ul {
     min-height: 320px;
   }
 
-  .actionbar {
-    flex-wrap: wrap;
+  .file-group__buttons .btn {
+    flex: 1 1 auto;
   }
 }
 

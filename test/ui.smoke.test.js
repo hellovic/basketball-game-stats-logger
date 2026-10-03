@@ -1561,18 +1561,50 @@ test('the entry rows carry no checkbox, and the dialog lists the roster', async 
   assert.deepEqual(rosterListIds(), ids, 'every player is listed, in roster order');
 });
 
+test('the files live in a dialog behind the menu, not in a bar', async () => {
+  const dom = await startApp();
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+
+  assert.doesNotMatch(html, /id="actionbar"/, 'the bottom bar is gone');
+  assert.doesNotMatch(html, /toggle-actionbar/, 'and so is the action that opened it');
+
+  const dialog = document.getElementById('export-dialog');
+  assert.equal(dialog.hidden, true, 'closed until asked for');
+
+  emit(dom.listeners, 'click', actionable({ action: 'open-export' }));
+  assert.equal(dialog.hidden, false);
+  assert.equal(document.getElementById('more-menu').hidden, true, 'the menu gets out of the way');
+
+  // The files work from in there, and the dialog closes the way the others do.
+  emit(dom.listeners, 'click', actionable({ action: 'export-csv', kind: 'box-score' }));
+  assert.equal(dom.downloads.length, 1, 'the box score still downloads');
+  emit(dom.listeners, 'keydown', document.getElementById('clock-display'), { key: 'Escape' });
+  assert.equal(dialog.hidden, true, 'and Escape shuts it');
+
+  // Done, too, for anyone who would rather tap it.
+  emit(dom.listeners, 'click', actionable({ action: 'open-export' }));
+  emit(dom.listeners, 'click', actionable({ action: 'close-dialog' }));
+  assert.equal(dialog.hidden, true);
+});
+
 test('the Team and players dialog carries the team file controls', async () => {
   const dom = await startApp();
   const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
 
-  // The export bar exports the game and nothing else.
-  const intoActionbar = html.slice(html.indexOf('id="actionbar"'));
-  const actionbar = intoActionbar.slice(0, intoActionbar.indexOf('</section>'));
+  // The export dialog hands out the game's own files and nothing else.
+  const at = html.indexOf('id="export-dialog"');
+  assert.ok(at > 0, 'the export dialog should exist');
+  const end = html.indexOf('<!-- =', at);
+  const exports = html.slice(at, end === -1 ? undefined : end);
+
   assert.doesNotMatch(
-    actionbar,
+    exports,
     /save-team|open-load-team|open-paste-roster/,
-    'team files should not still be in the export bar',
+    'team files should not be in the export dialog',
   );
+  for (const action of ['export-csv', 'export-json', 'import-json']) {
+    assert.match(exports, new RegExp(`data-action="${action}"`), `${action} lives there`);
+  }
 
   // Saving and loading a roster is roster work, so it sits with the roster.
   const intoDialog = html.slice(html.indexOf('id="rosterbar"'));

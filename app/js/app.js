@@ -2136,6 +2136,7 @@ function closeDialogs() {
     'color-dialog',
     'roster-dialog',
     'copy-game-dialog',
+    'export-dialog',
   ]) {
     $(id).hidden = true;
   }
@@ -2157,18 +2158,10 @@ function toggleMenu() {
 }
 
 /**
- * Say whether the import/export bar is showing.
- *
- * The menu item toggles the bar rather than opening something, so it carries
- * its own state: a menu entry that looks like the others but leaves a mark
- * elsewhere on the screen is otherwise impossible to read.
+ * The one menu item whose wording follows the game: ending a game and reopening
+ * one are the same door, so it carries whichever way it currently leads.
  */
 function renderMenuState() {
-  const bar = $('actionbar');
-  $('menu-files-state').textContent = bar.hidden ? 'Hidden' : 'Shown';
-
-  // Ending a game and reopening one are the same door, so the item carries the
-  // wording of whichever way it currently leads.
   const finished = Boolean(game.finishedAt);
   $('menu-end-label').textContent = finished ? 'Reopen the game' : 'End game';
   $('menu-end-sub').textContent = finished
@@ -2489,12 +2482,12 @@ document.addEventListener('click', (event) => {
       );
       break;
     }
-    case 'toggle-actionbar': {
-      const bar = $('actionbar');
-      bar.hidden = !bar.hidden;
-      renderMenuState();
+    case 'open-export':
+      // The files are set up once a game and then left alone, so they belong
+      // with the other dialogs rather than in a bar across the scoring area.
+      closeMenu();
+      openDialog('export-dialog');
       break;
-    }
     case 'open-summary':
       closeMenu();
       renderSummary();
@@ -2699,6 +2692,7 @@ document.addEventListener('keydown', (event) => {
     'color-dialog',
     'roster-dialog',
     'copy-game-dialog',
+    'export-dialog',
   ].some((id) => !$(id).hidden);
 
   if (event.key === 'Escape' && (importing || viewing || !$('more-menu').hidden) && !clockIsBeingEdited()) {
