@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 296" width="1040" height="296" role="img" aria-label="Making a substitution in two taps">
+<rect width="1040" height="296" fill="#f3f4fb"/>
+<text x="40" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#141a2e">Making a substitution</text>
+<text x="40" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#667085">Two taps, in the Live entry heading. Nothing is recorded until the second one.</text>
+<rect x="40" y="84" width="280" height="104" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<circle cx="60" cy="104" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="60" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">1</text>
+<text x="80" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">Tap Sub</text>
+<text x="60" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">In the Live entry heading.</text>
+<text x="60" y="153" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">The strip above the table says</text>
+<text x="60" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">what the next tap is for.</text>
+<path d="M330 136 h26" stroke="#98a2b3" stroke-width="1.6" fill="none"/><path d="M356 136 l-6 -4 v8 z" fill="#98a2b3"/>
+<rect x="370" y="84" width="280" height="104" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<circle cx="390" cy="104" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="390" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">2</text>
+<text x="410" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">Tap who comes off</text>
+<text x="390" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">The five on the floor are the</text>
+<text x="390" y="153" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">ones offered, in their team colour.</text>
+<path d="M660 136 h26" stroke="#98a2b3" stroke-width="1.6" fill="none"/><path d="M686 136 l-6 -4 v8 z" fill="#98a2b3"/>
+<rect x="700" y="84" width="280" height="104" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<circle cx="720" cy="104" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="720" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">3</text>
+<text x="740" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">Tap who comes on</text>
+<text x="720" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">The bench is offered.</text>
+<text x="720" y="153" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">The swap is recorded and the</text>
+<text x="720" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">two rows change places.</text>
+<rect x="40" y="208" width="940" height="44" rx="10" fill="#e8efff" stroke="#e8efff" stroke-width="1"/>
+<text x="60" y="228" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#141a2e">The first time you tap Sub, it asks for the five who are starting — tap five players, one after another.</text>
+<text x="60" y="244" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">Cancel, or the Esc key, abandons a substitution halfway. Nothing has been recorded until then.</text>
+<text x="40" y="276" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">The bench sits in the same table, further down: their names stay readable, but their keys are off so a tap cannot land on the wrong row.</text>
+</svg>

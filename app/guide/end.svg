@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 376" width="1040" height="376" role="img" aria-label="Ending the game and saving it">
+<rect width="1040" height="376" fill="#f3f4fb"/>
+<text x="40" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#141a2e">At the end</text>
+<text x="40" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#667085">End the game, then save it. Two taps and the file is safe.</text>
+<rect x="40" y="84" width="460" height="216" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<text x="60" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">More menu</text>
+<rect x="52" y="126" width="436" height="36" rx="8" fill="#e8efff" stroke="#e8efff" stroke-width="1"/>
+<text x="64" y="142" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="800" fill="#2563eb">End game</text>
+<text x="64" y="156" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9.5" font-weight="400" fill="#667085">Close the game off and mark it final</text>
+<text x="64" y="184" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="800" fill="#141a2e">Save / load / export</text>
+<text x="64" y="198" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9.5" font-weight="400" fill="#667085">Game, box score, plays</text>
+<text x="64" y="226" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="800" fill="#141a2e">Team and players</text>
+<text x="64" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9.5" font-weight="400" fill="#667085">Names, colours and the roster</text>
+<text x="64" y="268" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="800" fill="#141a2e">Help &amp; about</text>
+<text x="64" y="282" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9.5" font-weight="400" fill="#667085">Shortcuts and where data lives</text>
+<circle cx="24" cy="100" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="24" y="104" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">1</text>
+<rect x="520" y="84" width="460" height="216" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<text x="540" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">Save / load / export</text>
+<rect x="540" y="128" width="200" height="32" rx="8" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<text x="640" y="149" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#141a2e" text-anchor="middle">Box score CSV</text>
+<rect x="756" y="128" width="200" height="32" rx="8" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<text x="856" y="149" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#141a2e" text-anchor="middle">Play-by-play CSV</text>
+<rect x="540" y="172" width="200" height="32" rx="8" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<text x="640" y="193" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#141a2e" text-anchor="middle">Game summary CSV</text>
+<rect x="756" y="172" width="200" height="32" rx="8" fill="#2563eb" stroke="#2563eb" stroke-width="1"/>
+<text x="856" y="193" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#fff" text-anchor="middle">Save game</text>
+<rect x="540" y="216" width="200" height="32" rx="8" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<text x="640" y="237" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#141a2e" text-anchor="middle">Load game…</text>
+<text x="540" y="272" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10" font-weight="400" fill="#667085">The CSVs are for reports. Save game is the whole game, loadable back.</text>
+<circle cx="504" cy="100" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="504" y="104" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">2</text>
+<rect x="40" y="316" width="940" height="44" rx="10" fill="#e8efff" stroke="#e8efff" stroke-width="1"/>
+<text x="60" y="336" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#141a2e">Ending asks first, parks the clock at 00:00 of the last period and marks the game final — that is what settles the last seconds of the minutes.</text>
+<text x="60" y="352" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">The game lives in this browser alone: clearing the site data erases it. Save before you clear anything, and before you hand the tablet back.</text>
+</svg>

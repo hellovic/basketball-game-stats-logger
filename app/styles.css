@@ -3006,6 +3006,16 @@ ul {
   margin: 0;
 }
 
+/* The one link in the app: the beginner guide, offered from Help. */
+.about__lead {
+  margin: 0;
+  font-weight: 700;
+}
+
+.about a {
+  color: var(--accent);
+}
+
 .about__keys {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

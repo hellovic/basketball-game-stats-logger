@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beginner's guide — 籃球比賽數據記錄器 / Basketball Game Stats Logger</title>
+<meta name="description" content="A short, pictured guide to scoring a game with the basketball stats logger: what to set up, what to tap, and what to do when something is missed.">
+<style>
+  :root {
+    --base: #f3f4fb;
+    --surface: #ffffff;
+    --ink: #141a2e;
+    --ink-muted: #667085;
+    --ink-faint: #98a2b3;
+    --border: #e6e8f2;
+    --accent: #2563eb;
+    --accent-soft: #e8efff;
+    --radius: 16px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 20px 72px;
+    background: var(--base);
+    color: var(--ink);
+    font: 16px/1.55 var(--font);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  main { max-width: 900px; margin: 0 auto; }
+
+  .top { padding: 28px 0 4px; }
+  .back {
+    display: inline-block;
+    margin-bottom: 18px;
+    color: var(--ink-muted);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .back:hover { color: var(--accent); }
+
+  h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; }
+  .lede { margin: 0; font-size: 18px; color: var(--ink-muted); }
+
+  section {
+    margin-top: 34px;
+    padding: 24px 26px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  h2 { margin: 0 0 10px; font-size: 20px; }
+  h3 { margin: 22px 0 6px; font-size: 15px; }
+
+  p { margin: 0 0 12px; }
+  p:last-child { margin-bottom: 0; }
+
+  ol, ul { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+
+  figure { margin: 18px 0 6px; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { margin-top: 8px; font-size: 13.5px; color: var(--ink-faint); }
+
+  .keys {
+    margin: 16px 0 0;
+    padding-left: 22px;
+    font-size: 15px;
+  }
+
+  .keys li { margin-bottom: 4px; }
+
+  .callout {
+    margin: 18px 0 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--accent-soft);
+    font-size: 15px;
+  }
+
+  .remember { counter-reset: none; }
+
+  code {
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--base);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.92em;
+  }
+
+  footer {
+    margin-top: 34px;
+    color: var(--ink-muted);
+    font-size: 14px;
+    text-align: center;
+  }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="back" href="../">← Back to the app</a>
+    <h1>Beginner's guide</h1>
+    <p class="lede">
+      Tap a key when something happens. Everything else — the score, the quarter
+      totals, the box score — is worked out from those taps. You never add
+      anything up by hand.
+    </p>
+  </div>
+
+  <section>
+    <h2>1. Before the game (two minutes)</h2>
+    <ol>
+      <li>Open the app on the tablet.</li>
+      <li><strong>More → Team and players:</strong> type each team's name and
+        abbreviation, then add players (number, name, <strong>Add</strong>). A
+        short press on either team's score block opens that team's roster
+        directly.</li>
+      <li><strong>More → Game settings:</strong> the date, tip-off time, venue
+        and quarter length.</li>
+    </ol>
+    <p>
+      No roster? Skip it. Each team has a row of its own in the table, so you can
+      score a side you have no names for — the opponent whose players nobody is
+      keeping.
+    </p>
+  </section>
+
+  <section>
+    <h2>2. The screen</h2>
+    <figure>
+      <img src="screen.svg" alt="The app's screen: the scoreboard across the top, the quarter strip below it, then Live entry on the left with the play-by-play and box score on the right.">
+      <figcaption>The whole app is one screen. Nothing to switch between.</figcaption>
+    </figure>
+    <ol class="keys">
+      <li><strong>The scoreboard.</strong> Tap the clock to start and stop it.
+        The <strong>↶ Undo</strong> button is at its right — that is the button to
+        reach for when you tap the wrong key.</li>
+      <li><strong>The quarter strip.</strong> The score by quarter, added up for
+        you. Check it against the board on the wall.</li>
+      <li><strong>Live entry.</strong> One row per player, and the keys you tap:
+        the made shots, the misses, then rebounds, assists, steals, blocks,
+        turnovers and fouls.</li>
+      <li><strong>The team's own row</strong>, at the bottom under the heavier
+        line. Taps here count for the side rather than for a player.</li>
+      <li><strong>Play-by-play and box score.</strong> What just happened, and
+        where it all stands. Both scroll on their own.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>3. Recording a stat</h2>
+    <p>
+      Find the player's row and tap the key that matches what happened. There is
+      one tap per event: a made two is <code>+2</code>, a missed three is the
+      <code>3</code> under <em>Miss</em>, a defensive rebound is <code>REB</code>.
+    </p>
+    <p>
+      The scoreboard, the quarter strip, the play-by-play and the box score all
+      update at once, because they are the same list of taps read four ways. The
+      row flashes so you can see the tap landed, and there is an
+      <strong>Undo</strong> in the toast that follows it.
+    </p>
+    <div class="callout">
+      Tapped the wrong player? Use the dropdown on the row in the play-by-play to
+      move the entry — or the ✕ to delete it.
+    </div>
+  </section>
+
+  <section>
+    <h2>4. The clock</h2>
+    <p>
+      It counts down. Tap the face to start it, tap again to stop it.
+      <strong>Edit</strong> beside it types an exact time (<code>7:30</code>, or
+      <code>0730</code>), and the small <code>−1 −5 +1 +5</code> buttons nudge it
+      by seconds.
+    </p>
+    <p>
+      If the clock and the last play disagree, the strip under the scoreboard
+      says so — set the clock to the right time before you record anything else.
+      Minutes on court are read from this clock, so it is worth keeping honest.
+    </p>
+  </section>
+
+  <section>
+    <h2>5. Substitutions</h2>
+    <figure>
+      <img src="sub.svg" alt="Making a substitution: tap Sub, tap who comes off, then tap who comes on.">
+    </figure>
+    <p>
+      Minutes played and <strong>+/-</strong> come from this and nothing else, so
+      it is the one thing worth doing carefully. Players on the floor keep their
+      name and their keys; the bench keeps its name but loses its keys, so a tap
+      cannot land on the wrong row.
+    </p>
+  </section>
+
+  <section>
+    <h2>6. If you miss something</h2>
+    <figure>
+      <img src="fix.svg" alt="If you miss a play: tap the key when you notice, find the row, then type the time it really happened.">
+    </figure>
+    <p>
+      Log it as soon as you notice and correct its time afterwards. The block in
+      the screenshot above is the entry's time in the play-by-play: it is a
+      field, not a label — type the time the play really happened and the row
+      moves to where it belongs, with the minutes and +/- following it.
+    </p>
+    <p>
+      For a basket you only need on the scoreboard, the <strong>Team total</strong>
+      box under the table is quicker: type the points and they land on the board
+      without being credited to anyone.
+    </p>
+  </section>
+
+  <section>
+    <h2>7. At the end</h2>
+    <figure>
+      <img src="end.svg" alt="End game in the More menu, and the save and export buttons in the file bar.">
+    </figure>
+    <p>
+      <strong>End game</strong> asks first, then parks the clock at 00:00 of the
+      last period and marks the game final — that is what settles the last few
+      seconds of the minutes. Then save.
+    </p>
+    <p>
+      <strong>Save game</strong> writes the whole game to one file that loads
+      back in. The three CSVs are for reports. Everything lives in this browser
+      on this tablet and nothing is uploaded, so a game that is not exported is
+      one cleared site data away from being gone.
+    </p>
+  </section>
+
+  <section>
+    <h2>Five things to remember</h2>
+    <ol class="remember">
+      <li><strong>One tap, one event.</strong> Every number on the screen is
+        worked out from those taps.</li>
+      <li><strong>The clock is a stopwatch, not a feed from the board.</strong>
+        Check it against the last play every so often.</li>
+      <li><strong>Subs are the only thing that measures minutes.</strong> Tap
+        <em>Sub</em> when players change and the rest looks after itself.</li>
+      <li><strong>Nothing is final until you say so.</strong> Undo, ✕, the
+        dropdown, the time field — a mistake is always fixable.</li>
+      <li><strong>Export when the buzzer goes.</strong> The game lives in this
+        browser alone.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <p>
+      <a href="../">Back to the app</a> · more detail in <strong>More → Help &amp; about</strong>
+    </p>
+  </footer>
+</main>
+</body>
+</html>

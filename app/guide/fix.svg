@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 312" width="1040" height="312" role="img" aria-label="Fixing a missed play">
+<rect width="1040" height="312" fill="#f3f4fb"/>
+<text x="40" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#141a2e">If you miss something</text>
+<text x="40" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#667085">Record it as soon as you notice, then correct the time on that row. The row moves to where the play belongs.</text>
+<rect x="40" y="84" width="280" height="104" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<circle cx="60" cy="104" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="60" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">1</text>
+<text x="80" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">Tap the key when you notice</text>
+<text x="60" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">A turnover, a basket — it is</text>
+<text x="60" y="153" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">recorded straight away, and it</text>
+<text x="60" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">counts from that moment.</text>
+<path d="M330 136 h26" stroke="#98a2b3" stroke-width="1.6" fill="none"/><path d="M356 136 l-6 -4 v8 z" fill="#98a2b3"/>
+<rect x="370" y="84" width="280" height="104" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<circle cx="390" cy="104" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="390" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">2</text>
+<text x="410" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">Find that row in the play-by-play</text>
+<text x="390" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">Every entry is listed, newest</text>
+<text x="390" y="153" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">first, with the time it was</text>
+<text x="390" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">recorded against it.</text>
+<path d="M660 136 h26" stroke="#98a2b3" stroke-width="1.6" fill="none"/><path d="M686 136 l-6 -4 v8 z" fill="#98a2b3"/>
+<rect x="700" y="84" width="280" height="104" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<circle cx="720" cy="104" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="720" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">3</text>
+<text x="740" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">Type the time it happened</text>
+<text x="720" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">The time is a field on the row:</text>
+<text x="720" y="153" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">tap it and type 7:30, 0730,</text>
+<text x="720" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">or a count of seconds.</text>
+<text x="40" y="222" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="700" fill="#667085">The row in the play-by-play:</text>
+<rect x="40" y="230" width="460" height="34" rx="8" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<rect x="48" y="236" width="62" height="22" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+<text x="79" y="251" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="800" fill="#141a2e" text-anchor="middle">04:12</text>
+<text x="120" y="251" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="9.5" font-weight="800" fill="#98a2b3">Q3</text>
+<text x="142" y="251" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="800" fill="#141a2e">#4 J. Reed</text>
+<text x="240" y="251" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">Made 2PT</text>
+<text x="486" y="251" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#e5484d" text-anchor="end">+2</text>
+<circle cx="24" cy="247" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="24" y="251" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">3</text>
+<text x="520" y="244" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">← the time and the period are fields: correct them and the entry re-files itself.</text>
+<text x="520" y="260" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">   Minutes and +/- are read from there, so they follow.</text>
+<text x="40" y="292" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">A wrong entry is the other case: the ✕ on the row deletes it, and the dropdown moves it to another player — or to the team.</text>
+</svg>

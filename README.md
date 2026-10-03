@@ -7,6 +7,12 @@ list of entries.
 
 No accounts, no server, no build step, no dependencies.
 
+**First time, or scoring once a season?** There is a pictured beginner's guide
+built into the app — **More → Help & about → beginner's guide**, or open
+`/guide/` on whichever address you are using. It walks through one whole game:
+what to set up, which key to tap, the clock, substitutions, what to do about a
+play you missed, and how to finish and save.
+
 ---
 
 ## Running it
