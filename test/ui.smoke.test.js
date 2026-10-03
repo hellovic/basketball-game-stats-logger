@@ -780,6 +780,57 @@ test('a player on the floor carries their team colour across the row', async () 
   assert.match(css, /\.entry tbody tr\.player-card--on td \{\s*background: var\(--wash/);
 });
 
+test('the bench steps back, and the five on the floor do not', async () => {
+  await startApp();
+
+  const cards = () => document.getElementById('player-cards').innerHTML;
+  const count = (name) => (cards().match(new RegExp(name, 'g')) || []).length;
+
+  // The sample game carries a lineup, so there is a bench to tell from the five.
+  assert.equal(count('player-card--on'), 5);
+  assert.equal(count('player-card--bench'), 2);
+
+  // Dimmed and on the floor are opposites: every row sitting down is marked,
+  // and no row out there is.
+  for (const row of cards().split('<tr class="player-card').slice(1)) {
+    assert.equal(
+      /player-card--bench/.test(row),
+      !/player-card--on/.test(row),
+      'a row is either on the floor or sitting down',
+    );
+  }
+
+  // It is the styling that does the dimming, and it takes the keys on the row
+  // with it, because they are cells of the same row.
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  assert.match(css, /\.entry tbody tr\.player-card--bench td \{\s*opacity: 0\.[0-9]+;/);
+
+  // Half-way through a substitution the bench is the answer, so it comes back
+  // to full strength while the banner is asking for one of them.
+  assert.match(css, /\.entry tbody tr\.player-card--wanted td \{\s*opacity: 1;/);
+});
+
+test('nobody is held back before the five have been named', async () => {
+  const dom = await startApp();
+
+  // A blank game with two players on it, neither of them put on the floor yet.
+  emit(dom.listeners, 'click', actionable({ action: 'new-game' }));
+  confirmDanger(dom);
+  for (const [number, name] of [['4', 'J. Reed'], ['7', 'A. Cole']]) {
+    document.getElementById('new-number').value = number;
+    document.getElementById('new-name').value = name;
+    emit(dom.listeners, 'submit', document.getElementById('add-player-form'));
+  }
+
+  const cards = document.getElementById('player-cards').innerHTML;
+  assert.match(cards, /J\. Reed/, 'both players are on the panel');
+  assert.match(cards, /A\. Cole/);
+  // No floor has been recorded, so there is no bench to hold back either:
+  // dimming every row here would read as "nobody can be scored".
+  assert.equal((cards.match(/player-card--on/g) || []).length, 0);
+  assert.equal((cards.match(/player-card--bench/g) || []).length, 0);
+});
+
 test('a substitution takes one player off and puts another on', async () => {
   const dom = await startApp();
   const before = storedGame();

@@ -1554,6 +1554,19 @@ ul {
   color: var(--accent);
 }
 
+/* Whoever is sitting down is not the one the next tap is for. Their whole row
+   steps back — the name, the number and every key on it — so the five out there
+   read at full strength without the scorer having to read a single name. It is
+   dimming, not disabling: a stat logged on the wrong player is still a stat, so
+   the row stays legible enough to log one.
+
+   Set before the substitution rules below, which override it in both
+   directions — the bench is dimmer still while it is out of the running, and
+   comes all the way back when it is the answer the banner is waiting for. */
+.entry tbody tr.player-card--bench td {
+  opacity: 0.5;
+}
+
 /* Half-way through a substitution only some rows are the right answer: the ones
    on the floor come off, the ones sitting down come on. The others stay in place
    and go quiet, so the roster does not reorder under the scorer's finger. */
@@ -1563,6 +1576,10 @@ ul {
 
 .entry tbody tr.player-card--wanted {
   cursor: pointer;
+}
+
+.entry tbody tr.player-card--wanted td {
+  opacity: 1;
 }
 
 .entry tbody tr.player-card--wanted:hover td {

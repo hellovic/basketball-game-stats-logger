@@ -642,6 +642,11 @@ function renderEntry(derived) {
   // Who is on the floor decides both the shading on each row and which rows a
   // substitution can use.
   const onCourt = new Set(derived.floor.onCourt[teamId] ?? []);
+  // A team whose five have never been named has no bench to speak of. Dimming
+  // the rows before the start of a game would say "none of these players can be
+  // scored", which is the opposite of what the panel is for, so the quiet rows
+  // only arrive once there is a floor to be left off.
+  const floorKnown = Array.isArray(derived.floor.onCourt[teamId]);
   const pickedStarters = subStep?.stage === 'start' ? new Set(subStep.picked) : new Set();
 
   // The keys go quiet while a substitution is being entered: the next tap is a
@@ -699,6 +704,8 @@ function renderEntry(derived) {
 
       return `
         <tr class="player-card${isOn ? ' player-card--on' : ''}${
+          floorKnown && !isOn ? ' player-card--bench' : ''
+        }${
           subStep && wanted ? ' player-card--wanted' : ''
         }${
           subStep && !wanted ? ' player-card--passed' : ''
