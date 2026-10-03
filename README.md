@@ -230,7 +230,7 @@ the entry row or the box score on a screen too narrow to show them side by side;
 
 The **More** menu holds what does not fit in the top bar: game settings, the
 team and its players (also one press and hold on that team's scoreboard block),
-swapping the two sides, the game's own exports, the game summary, and help —
+swapping the two sides, the game's own files, and help —
 and each of them opens a dialog that gets out of the way again, which is what
 keeps the two columns tall enough to read at a glance on an iPad.
 Game settings is behind that menu rather than on a button of its own: the date,

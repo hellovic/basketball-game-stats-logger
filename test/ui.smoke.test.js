@@ -1561,6 +1561,27 @@ test('the entry rows carry no checkbox, and the dialog lists the roster', async 
   assert.deepEqual(rosterListIds(), ids, 'every player is listed, in roster order');
 });
 
+test('the game summary dialog is gone, but its CSV is not', async () => {
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  const app = readFileSync(resolve(appDir, 'js', 'app.js'), 'utf8');
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+
+  // The dialog went with the menu item that was its only door: a screen nobody
+  // can open is a trap for whoever reads the markup next.
+  assert.doesNotMatch(html, /open-summary/, 'no menu item opens it');
+  assert.doesNotMatch(html, /id="summary-dialog"/, 'and the dialog is gone');
+  assert.doesNotMatch(app, /renderSummary/, 'along with the code that drew it');
+  assert.doesNotMatch(css, /\.summary__/, 'and its styles, which nothing else wore');
+  assert.equal(document.getElementById('summary-dialog'), null);
+
+  // The CSV it used to offer is still an export, in the export dialog — the
+  // summary a report is written from is the file, not the window.
+  const at = html.indexOf('id="export-dialog"');
+  const exports = html.slice(at, html.indexOf('<!-- =', at));
+  assert.match(exports, /data-action="export-csv" data-kind="summary"/);
+  assert.match(html, /Game summary CSV/);
+});
+
 test('the files live in a dialog behind the menu, not in a bar', async () => {
   const dom = await startApp();
   const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');

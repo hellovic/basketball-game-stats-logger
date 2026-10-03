@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.40.0">
-<meta name="app-build" content="2026-10-03M">
+<meta name="app-version" content="0.40.1">
+<meta name="app-build" content="2026-10-03N">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -187,13 +187,6 @@
             <span class="menu__text">
               <span class="menu__label">Save / load / export</span>
               <span class="menu__sub">Game, box score, plays</span>
-            </span>
-          </button>
-          <button type="button" class="menu__item" role="menuitem" data-action="open-summary">
-            <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13.4V2.6M2 13.4h12"/><path d="M4.6 11.2 7.4 6.9l2.2 2.2 3-4.4"/></svg>
-            <span class="menu__text">
-              <span class="menu__label">View game summary</span>
-              <span class="menu__sub">Quarter grid and leading scorers</span>
             </span>
           </button>
           <button type="button" class="menu__item" role="menuitem" data-action="end-game"
@@ -610,10 +603,6 @@
   </div>
 </div>
 
-<!-- =====================================================================
-     Game summary: the same events the strip and the box score show, read
-     the third way — per quarter, per team, at the end of a game.
-     ===================================================================== -->
 
 <!-- =====================================================================
      Team colour: the rainbow, plus the two kit colours that are not in it.
@@ -636,19 +625,6 @@
   </div>
 </div>
 
-<div class="dialog" id="summary-dialog" role="dialog" aria-modal="true"
-     aria-labelledby="summary-title" hidden>
-  <div class="dialog__panel dialog__panel--wide">
-    <h2 class="dialog__title" id="summary-title">Game summary</h2>
-    <div id="summary-body"></div>
-    <div class="dialog__actions">
-      <button type="button" class="btn btn--ghost" data-action="close-dialog">Close</button>
-      <button type="button" class="btn btn--primary" data-action="export-csv" data-kind="summary">
-        Export this as CSV
-      </button>
-    </div>
-  </div>
-</div>
 
 <!-- =====================================================================
      Help and about: what the app is, what it refuses to do, and where the

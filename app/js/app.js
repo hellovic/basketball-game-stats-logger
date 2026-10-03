@@ -2131,7 +2131,6 @@ function openDialog(id) {
 function closeDialogs() {
   for (const id of [
     'settings-dialog',
-    'summary-dialog',
     'about-dialog',
     'color-dialog',
     'roster-dialog',
@@ -2169,84 +2168,7 @@ function renderMenuState() {
     : 'Close the game off at 00:00 of the last period';
 }
 
-// ---------------------------------------------------------------------------
-// The game summary
-// ---------------------------------------------------------------------------
 
-/**
- * The third reading of the same entries: the quarter grid and the leading
- * scorers, for the moment at the end of a game when someone asks how it went.
- *
- * It is computed on open rather than kept up to date, because it is only ever
- * looked at — nothing here can be tapped.
- */
-function renderSummary() {
-  const derived = computeGame(game);
-  const periods = listPeriods(game);
-
-  const gridHead = `<thead><tr><th>Team</th>${periods
-    .map((p) => `<th>${escapeHtml(periodLabel(p, game.periodsPerGame))}</th>`)
-    .join('')}<th>Total</th></tr></thead>`;
-
-  const gridBody = `<tbody>${derived.grid.rows
-    .map((row) => {
-      const team = game.teams[row.teamId];
-      const cells = row.cells.map((cell) => `<td>${escapedNumber(cell.value)}</td>`).join('');
-
-      return `<tr>
-        <td class="js-name" style="--accent: ${accentFor(row.teamId)}">
-          <span class="sheet__team-dot" aria-hidden="true"></span>${escapeHtml(team?.name || 'Team')}
-        </td>
-        ${cells}
-        <td class="row--team-total">${escapedNumber(row.total)}</td>
-      </tr>`;
-    })
-    .join('')}</tbody>`;
-
-  const scorers = [game.awayTeamId, game.homeTeamId]
-    .filter(Boolean)
-    .map((teamId) => {
-      const team = game.teams[teamId];
-      const ranked = playersOf(game, teamId)
-        .map((player) => ({ player, line: derived.playerLines[player.id] }))
-        .filter((entry) => entry.line && entry.line.points > 0)
-        .sort((a, b) => b.line.points - a.line.points || a.player.name.localeCompare(b.player.name))
-        .slice(0, 3);
-
-      const items = ranked.length
-        ? ranked
-            .map(
-              (entry) => `<li>
-                <span class="summary__num">${
-                  escapeHtml(entry.player.number) ? `#${escapeHtml(entry.player.number)}` : '—'
-                }</span>
-                <span class="summary__name">${escapeHtml(entry.player.name)}</span>
-                <span class="summary__pts">${entry.line.points}</span>
-              </li>`,
-            )
-            .join('')
-        : '<li class="summary__none">No points recorded.</li>';
-
-      return `<div class="summary__team">
-        <h3 class="summary__heading" style="--accent: ${accentFor(teamId)}">${escapeHtml(
-          team?.name || 'Team',
-        )}</h3>
-        <ol class="summary__list">${items}</ol>
-      </div>`;
-    })
-    .join('');
-
-  const line = (teamId) =>
-    `<span class="summary__side" style="--accent: ${accentFor(teamId)}">
-      <span class="summary__side-name">${escapeHtml(game.teams[teamId]?.name || 'Team')}</span>
-      <span class="summary__side-score">${derived.scores[teamId] ?? 0}</span>
-    </span>`;
-
-  $('summary-body').innerHTML = `
-    <div class="summary__score">${line(game.awayTeamId)}${line(game.homeTeamId)}</div>
-    <div class="table-scroll"><table class="summary__grid">${gridHead}${gridBody}</table></div>
-    <div class="summary__teams">${scorers}</div>`;
-}
 
 // ---------------------------------------------------------------------------
 // Finishing the game
@@ -2488,11 +2410,6 @@ document.addEventListener('click', (event) => {
       closeMenu();
       openDialog('export-dialog');
       break;
-    case 'open-summary':
-      closeMenu();
-      renderSummary();
-      openDialog('summary-dialog');
-      break;
     case 'end-game':
       // One item, two jobs: the label says which, and the game says which
       // label is true.
@@ -2687,7 +2604,6 @@ document.addEventListener('keydown', (event) => {
   const importing = !$('load-team-dialog').hidden || !$('paste-roster-dialog').hidden;
   const viewing = [
     'settings-dialog',
-    'summary-dialog',
     'about-dialog',
     'color-dialog',
     'roster-dialog',
