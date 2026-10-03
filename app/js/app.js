@@ -1300,8 +1300,8 @@ function shotTeamRows(teamId, team, rows, taken, scored) {
 
   const head = `
     <tr class="shot__team" style="--team-accent: ${accentFor(teamId)}; --team-soft: ${softFor(teamId)}">
-      <th scope="colgroup" colspan="5">${escapeHtml(team?.name || 'Team')}
-        <span class="shot__count">${scored} / ${taken}</span></th>
+      <th scope="rowgroup" colspan="4">${escapeHtml(team?.name || 'Team')}</th>
+      <th scope="col" class="shot__made"><span class="shot__count">${scored} / ${taken}</span></th>
     </tr>`;
 
   return (

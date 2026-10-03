@@ -665,6 +665,13 @@ test('the expanded box draws a shot profile of every attempt', async () => {
 
   // The team heading carries the same count as its column of squares.
   assert.match(profile.innerHTML, /12 \/ 13/, 'Northside took thirteen shots');
+  // And it sits in the Made column, over the players' counts, rather than
+  // floating at the end of the team name.
+  assert.equal(
+    (profile.innerHTML.match(/<th scope="col" class="shot__made"><span class="shot__count">/g) || []).length,
+    2,
+    'both team totals are Made cells',
+  );
 
   // The profile follows the sort, because it is the same roster in the same
   // order — read down one and then the other. The away block leads the profile,

@@ -1502,10 +1502,17 @@ ul {
 }
 
 .shot__count {
-  float: right;
   font-family: var(--font-num);
   letter-spacing: 0;
   color: var(--ink-faint);
+}
+
+/* The Made column reads down: a heading, a row of counts, and the team's own
+   total at the top of its block. One right edge holds all of them, so the
+   team's figure lands over the players' rather than floating at the end of
+   the name. */
+.shot__table .shot__made {
+  text-align: right;
 }
 
 .shot__row th {
