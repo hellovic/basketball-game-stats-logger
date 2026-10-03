@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.33.0">
-<meta name="app-build" content="2026-10-03C">
+<meta name="app-version" content="0.33.1">
+<meta name="app-build" content="2026-10-03D">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -173,8 +173,8 @@
           <button type="button" class="menu__item" role="menuitem" data-action="toggle-actionbar" id="menu-toggle-files">
             <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10.6V1.8M5.2 4.6 8 1.8l2.8 2.8"/><path d="M2 11v2.6h12V11"/></svg>
             <span class="menu__text">
-              <span class="menu__label">Import / export</span>
-              <span class="menu__sub">CSV, JSON and team files&hellip;</span>
+              <span class="menu__label">Save / load / export</span>
+              <span class="menu__sub">Game, box score, plays</span>
             </span>
             <span class="menu__state" id="menu-files-state">Shown</span>
           </button>
@@ -502,10 +502,10 @@
         Game summary CSV
       </button>
       <button type="button" class="btn btn--sm" data-action="export-json"
-              title="The complete game, re-importable.">Full backup JSON</button>
+              title="Write the whole game to a file, to keep or to carry.">Save game</button>
       <button type="button" class="btn btn--sm btn--ghost" data-action="import-json"
-              title="Load a full game backup back in.">
-        Restore JSON&hellip;
+              title="Read a saved game back from a file.">
+        Load game&hellip;
       </button>
     </div>
   </div>

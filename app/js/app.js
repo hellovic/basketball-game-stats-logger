@@ -1819,15 +1819,15 @@ async function importFromFile(file) {
     // Confirmed once the file is known to be readable: asking before the picker
     // would put the question before there is anything to answer about.
     askBefore({
-      title: 'Restore this backup?',
+      title: 'Load this game?',
       text: `The game on screen will be replaced by ${file.name}. ${atStake()}`,
-      confirmLabel: 'Restore it',
+      confirmLabel: 'Load it',
       run: () => {
         game = imported;
         detailTeamSlot = 'home';
         save();
         render();
-        showToast(`Restored the game from ${file.name}.`);
+        showToast(`Loaded the game from ${file.name}.`);
       },
     });
   } catch {
