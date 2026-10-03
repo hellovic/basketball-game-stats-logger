@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.38.0">
-<meta name="app-build" content="2026-10-03K">
+<meta name="app-version" content="0.39.0">
+<meta name="app-build" content="2026-10-03L">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -149,6 +149,18 @@
           <span class="icon-btn__label">More</span>
         </button>
         <div class="menu__panel" id="more-menu" role="menu" aria-labelledby="more-button" hidden>
+          <!-- An anchor rather than a button: it goes somewhere, so middle-click
+               and "open in a new tab" should work, and the menu needs no code to
+               follow it. It leads the list because a scorer who has never used
+               this wants the guide before they want the settings. -->
+          <a class="menu__item" role="menuitem" href="guide/" id="menu-guide">
+            <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.6 3.2h4.2c.9 0 1.2.5 1.2 1.1v8.5c0-.6-.5-1.1-1.2-1.1H2.6z"/><path d="M13.4 3.2H9.2c-.9 0-1.2.5-1.2 1.1v8.5c0-.6.5-1.1 1.2-1.1h4.2z"/></svg>
+            <span class="menu__text">
+              <span class="menu__label">Beginner's guide</span>
+              <span class="menu__sub">How to score a game, in pictures</span>
+            </span>
+            <span class="menu__state" id="menu-guide-state">&#8594;</span>
+          </a>
           <button type="button" class="menu__item" role="menuitem" data-action="open-settings">
             <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.6"/><path d="M8 1.2v1.9M8 12.9v1.9M1.2 8h1.9M12.9 8h1.9M3.2 3.2l1.3 1.3M11.5 11.5l1.3 1.3M12.8 3.2l-1.3 1.3M4.5 11.5l-1.3 1.3"/></svg>
             <span class="menu__text">
@@ -646,8 +658,9 @@
         for the period, typed rather than tapped.
       </p>
       <p class="about__lead">
-        New to this? The <a href="guide/">beginner's guide</a> walks through a
-        whole game in pictures.
+        New to this? <strong>More → Beginner's guide</strong> walks through a
+        whole game in pictures — <a href="guide/">open it now</a> (English or
+        繁體中文).
       </p>
       <dl class="about__keys">
         <dt>Ctrl / Cmd + Z</dt><dd>Undo the last entry</dd>

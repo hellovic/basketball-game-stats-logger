@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Beginner's guide — 籃球比賽數據記錄器 / Basketball Game Stats Logger</title>
-<meta name="description" content="A short, pictured guide to scoring a game with the basketball stats logger: what to set up, what to tap, and what to do when something is missed.">
+<meta name="description" content="A short, pictured guide to scoring a game with the basketball stats logger: what to set up, what to tap, and what to do when something is missed. In English and 繁體中文.">
 <style>
   :root {
     --base: #f3f4fb;
@@ -32,16 +32,61 @@
 
   main { max-width: 900px; margin: 0 auto; }
 
+  /* One page, two languages. The block for the language not in play is taken out
+     of the flow entirely rather than merely faded, so a screen reader is never
+     given both, and the page reads as one document either way. */
+  .lang--zh { display: none; }
+  html[data-lang='zh-Hant'] .lang--en { display: none; }
+  html[data-lang='zh-Hant'] .lang--zh { display: block; }
+
   .top { padding: 28px 0 4px; }
-  .back {
-    display: inline-block;
+
+  .top__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: 18px;
+  }
+
+  .back {
     color: var(--ink-muted);
     font-size: 14px;
     font-weight: 700;
     text-decoration: none;
   }
   .back:hover { color: var(--accent); }
+
+  /* Two buttons rather than one that flips: the language you are reading is the
+     one that looks pressed, so nobody has to work out what a tap will do. */
+  .lang-switch {
+    display: inline-flex;
+    flex: none;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  .lang-switch button {
+    min-height: 30px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .lang-switch button:hover { color: var(--ink); }
+
+  .lang-switch button[aria-pressed='true'] {
+    background: var(--accent);
+    color: #fff;
+  }
 
   h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; }
   .lede { margin: 0; font-size: 18px; color: var(--ink-muted); }
@@ -83,8 +128,6 @@
     font-size: 15px;
   }
 
-  .remember { counter-reset: none; }
-
   code {
     padding: 1px 5px;
     border: 1px solid var(--border);
@@ -106,159 +149,334 @@
 <body>
 <main>
   <div class="top">
-    <a class="back" href="../">← Back to the app</a>
-    <h1>Beginner's guide</h1>
-    <p class="lede">
-      Tap a key when something happens. Everything else — the score, the quarter
-      totals, the box score — is worked out from those taps. You never add
-      anything up by hand.
-    </p>
+    <div class="top__row">
+      <a class="back lang lang--en" href="../">← Back to the app</a>
+      <a class="back lang lang--zh" lang="zh-Hant" href="../">← 返回應用程式</a>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="zh-Hant" aria-pressed="false">繁體中文</button>
+      </div>
+    </div>
+    <div class="lang lang--en">
+      <h1>Beginner's guide</h1>
+      <p class="lede">
+        Tap a key when something happens. Everything else — the score, the quarter
+        totals, the box score — is worked out from those taps. You never add
+        anything up by hand.
+      </p>
+    </div>
+    <div class="lang lang--zh" lang="zh-Hant">
+      <h1>新手指南</h1>
+      <p class="lede">
+        有事情發生時，按下對應的按鈕。分數、各節比分、個人數據表等所有數字，都由這些記錄自動計算，你不需要自己加總。
+      </p>
+    </div>
   </div>
 
   <section>
-    <h2>1. Before the game (two minutes)</h2>
-    <ol>
-      <li>Open the app on the tablet.</li>
-      <li><strong>More → Team and players:</strong> type each team's name and
-        abbreviation, then add players (number, name, <strong>Add</strong>). A
-        short press on either team's score block opens that team's roster
-        directly.</li>
-      <li><strong>More → Game settings:</strong> the date, tip-off time, venue
-        and quarter length.</li>
-    </ol>
-    <p>
-      No roster? Skip it. Each team has a row of its own in the table, so you can
-      score a side you have no names for — the opponent whose players nobody is
-      keeping.
-    </p>
-  </section>
-
-  <section>
-    <h2>2. The screen</h2>
-    <figure>
-      <img src="screen.svg" alt="The app's screen: the scoreboard across the top, the quarter strip below it, then Live entry on the left with the play-by-play and box score on the right.">
-      <figcaption>The whole app is one screen. Nothing to switch between.</figcaption>
-    </figure>
-    <ol class="keys">
-      <li><strong>The scoreboard.</strong> Tap the clock to start and stop it.
-        The <strong>↶ Undo</strong> button is at its right — that is the button to
-        reach for when you tap the wrong key.</li>
-      <li><strong>The quarter strip.</strong> The score by quarter, added up for
-        you. Check it against the board on the wall.</li>
-      <li><strong>Live entry.</strong> One row per player, and the keys you tap:
-        the made shots, the misses, then rebounds, assists, steals, blocks,
-        turnovers and fouls.</li>
-      <li><strong>The team's own row</strong>, at the bottom under the heavier
-        line. Taps here count for the side rather than for a player.</li>
-      <li><strong>Play-by-play and box score.</strong> What just happened, and
-        where it all stands. Both scroll on their own.</li>
-    </ol>
-  </section>
-
-  <section>
-    <h2>3. Recording a stat</h2>
-    <p>
-      Find the player's row and tap the key that matches what happened. There is
-      one tap per event: a made two is <code>+2</code>, a missed three is the
-      <code>3</code> under <em>Miss</em>, a defensive rebound is <code>REB</code>.
-    </p>
-    <p>
-      The scoreboard, the quarter strip, the play-by-play and the box score all
-      update at once, because they are the same list of taps read four ways. The
-      row flashes so you can see the tap landed, and there is an
-      <strong>Undo</strong> in the toast that follows it.
-    </p>
-    <div class="callout">
-      Tapped the wrong player? Use the dropdown on the row in the play-by-play to
-      move the entry — or the ✕ to delete it.
+    <div class="lang lang--en">
+      <h2>1. Before the game (two minutes)</h2>
+      <ol>
+        <li>Open the app on the tablet.</li>
+        <li><strong>More → Team and players:</strong> type each team's name and
+          abbreviation, then add players (number, name, <strong>Add</strong>). A
+          short press on either team's score block opens that team's roster
+          directly.</li>
+        <li><strong>More → Game settings:</strong> the date, tip-off time, venue
+          and quarter length.</li>
+      </ol>
+      <p>
+        No roster? Skip it. Each team has a row of its own in the table, so you can
+        score a side you have no names for — the opponent whose players nobody is
+        keeping.
+      </p>
+    </div>
+    <div class="lang lang--zh" lang="zh-Hant">
+      <h2>1. 賽前兩分鐘</h2>
+      <ol>
+        <li>在平板上開啟應用程式。</li>
+        <li><strong>More → Team and players：</strong>輸入兩隊的隊名與縮寫，然後加入球員（號碼、姓名，按 <strong>Add</strong>）。長按任何一隊的比分區塊，可直接開啟該隊名單。</li>
+        <li><strong>More → Game settings：</strong>日期、開賽時間、場地與每節長度。</li>
+      </ol>
+      <p>
+        沒有球員名單？可以略過。表格中每隊都有自己的「球隊列」，所以即使沒有球員名單，也可以記錄該隊的數據——例如對手的球員沒有人負責記錄時。
+      </p>
     </div>
   </section>
 
   <section>
-    <h2>4. The clock</h2>
-    <p>
-      It counts down. Tap the face to start it, tap again to stop it.
-      <strong>Edit</strong> beside it types an exact time (<code>7:30</code>, or
-      <code>0730</code>), and the small <code>−1 −5 +1 +5</code> buttons nudge it
-      by seconds.
-    </p>
-    <p>
-      If the clock and the last play disagree, the strip under the scoreboard
-      says so — set the clock to the right time before you record anything else.
-      Minutes on court are read from this clock, so it is worth keeping honest.
-    </p>
+    <div class="lang lang--en">
+      <h2>2. The screen</h2>
+      <figure>
+        <img src="screen.svg" alt="The app's screen: the scoreboard across the top, the quarter strip below it, then Live entry on the left with the play-by-play and box score on the right.">
+        <figcaption>The whole app is one screen. Nothing to switch between.</figcaption>
+      </figure>
+      <ol class="keys">
+        <li><strong>The scoreboard.</strong> Tap the clock to start and stop it.
+          The <strong>↶ Undo</strong> button is at its right — that is the button to
+          reach for when you tap the wrong key.</li>
+        <li><strong>The quarter strip.</strong> The score by quarter, added up for
+          you. Check it against the board on the wall.</li>
+        <li><strong>Live entry.</strong> One row per player, and the keys you tap:
+          the made shots, the misses, then rebounds, assists, steals, blocks,
+          turnovers and fouls.</li>
+        <li><strong>The team's own row</strong>, at the bottom under the heavier
+          line. Taps here count for the side rather than for a player.</li>
+        <li><strong>Play-by-play and box score.</strong> What just happened, and
+          where it all stands. Both scroll on their own.</li>
+      </ol>
+    </div>
+    <div class="lang lang--zh" lang="zh-Hant">
+      <h2>2. 畫面</h2>
+      <figure>
+        <img src="screen.svg" alt="應用程式的畫面：最上方是記分牌，下面是各節比分，左邊是 Live entry，右邊是 Play-by-play 與 Box score。">
+        <figcaption>整個應用程式就是一個畫面，不需要切換。</figcaption>
+      </figure>
+      <ol class="keys">
+        <li><strong>記分牌。</strong>按時鐘可開始或停止計時。右邊的 <strong>↶ Undo</strong> 是最常用的按鈕——按錯時就按它。</li>
+        <li><strong>各節比分。</strong>每一節的得分，系統已替你加總。可以用來核對場邊的記分牌。</li>
+        <li><strong>Live entry。</strong>每位球員一列，以及你要按的按鈕：投中、失手，然後是籃板、助攻、抄截、封阻、失誤與犯規。</li>
+        <li><strong>球隊列（Team）</strong>，在下方較粗的分隔線之下。按這裡的數據算在球隊上，而不是某位球員。</li>
+        <li><strong>Play-by-play 與 Box score。</strong>剛才發生的事，以及目前的總計。兩者各自捲動。</li>
+      </ol>
+    </div>
   </section>
 
   <section>
-    <h2>5. Substitutions</h2>
-    <figure>
-      <img src="sub.svg" alt="Making a substitution: tap Sub, tap who comes off, then tap who comes on.">
-    </figure>
-    <p>
-      Minutes played and <strong>+/-</strong> come from this and nothing else, so
-      it is the one thing worth doing carefully. Players on the floor keep their
-      name and their keys; the bench keeps its name but loses its keys, so a tap
-      cannot land on the wrong row.
-    </p>
+    <div class="lang lang--en">
+      <h2>3. Recording a stat</h2>
+      <p>
+        Find the player's row and tap the key that matches what happened. There is
+        one tap per event: a made two is <code>+2</code>, a missed three is the
+        <code>3</code> under <em>Miss</em>, a defensive rebound is <code>REB</code>.
+      </p>
+      <p>
+        The scoreboard, the quarter strip, the play-by-play and the box score all
+        update at once, because they are the same list of taps read four ways. The
+        row flashes so you can see the tap landed, and there is an
+        <strong>Undo</strong> in the toast that follows it.
+      </p>
+      <div class="callout">
+        Tapped the wrong player? Use the dropdown on the row in the play-by-play to
+        move the entry — or the ✕ to delete it.
+      </div>
+    </div>
+    <div class="lang lang--zh" lang="zh-Hant">
+      <h2>3. 記錄一項數據</h2>
+      <p>
+        找到該球員那一列，按下對應的按鈕。每個事件只需按一下：投中兩分是 <code>+2</code>，三分失手是按 <em>Miss</em> 下面的 <code>3</code>，防守籃板是 <code>REB</code>。
+      </p>
+      <p>
+        記分牌、各節比分、比賽紀錄與個人數據表會同時更新，因為它們都是同一份記錄的四種讀法。該列會閃一下，讓你知道已記錄；隨後的通知也有 <strong>Undo</strong> 可以即時取消。
+      </p>
+      <div class="callout">
+        按錯球員？在比賽紀錄那一列的下拉選單把記錄移到正確球員，或按 ✕ 刪除。
+      </div>
+    </div>
   </section>
 
   <section>
-    <h2>6. If you miss something</h2>
-    <figure>
-      <img src="fix.svg" alt="If you miss a play: tap the key when you notice, find the row, then type the time it really happened.">
-    </figure>
-    <p>
-      Log it as soon as you notice and correct its time afterwards. The block in
-      the screenshot above is the entry's time in the play-by-play: it is a
-      field, not a label — type the time the play really happened and the row
-      moves to where it belongs, with the minutes and +/- following it.
-    </p>
-    <p>
-      For a basket you only need on the scoreboard, the <strong>Team total</strong>
-      box under the table is quicker: type the points and they land on the board
-      without being credited to anyone.
-    </p>
+    <div class="lang lang--en">
+      <h2>4. The clock</h2>
+      <p>
+        It counts down. Tap the face to start it, tap again to stop it.
+        <strong>Edit</strong> beside it types an exact time (<code>7:30</code>, or
+        <code>0730</code>), and the small <code>−1 −5 +1 +5</code> buttons nudge it
+        by seconds.
+      </p>
+      <p>
+        If the clock and the last play disagree, the strip under the scoreboard
+        says so — set the clock to the right time before you record anything else.
+        Minutes on court are read from this clock, so it is worth keeping honest.
+      </p>
+    </div>
+    <div class="lang lang--zh" lang="zh-Hant">
+      <h2>4. 時鐘</h2>
+      <p>
+        時鐘是倒數的。按鐘面開始計時，再按一下停止。旁邊的 <strong>EDIT</strong> 可以直接輸入時間（<code>7:30</code>，或 <code>0730</code>），而 <code>−1 −5 +1 +5</code> 可按秒微調。
+      </p>
+      <p>
+        如果時鐘與最後一筆記錄不一致，記分牌下方的橫條會提示你——請先把時鐘調到正確時間，再繼續記錄。上陣時間就是依這個時鐘計算，所以值得保持準確。
+      </p>
+    </div>
   </section>
 
   <section>
-    <h2>7. At the end</h2>
-    <figure>
-      <img src="end.svg" alt="End game in the More menu, and the save and export buttons in the file bar.">
-    </figure>
-    <p>
-      <strong>End game</strong> asks first, then parks the clock at 00:00 of the
-      last period and marks the game final — that is what settles the last few
-      seconds of the minutes. Then save.
-    </p>
-    <p>
-      <strong>Save game</strong> writes the whole game to one file that loads
-      back in. The three CSVs are for reports. Everything lives in this browser
-      on this tablet and nothing is uploaded, so a game that is not exported is
-      one cleared site data away from being gone.
-    </p>
+    <div class="lang lang--en">
+      <h2>5. Substitutions</h2>
+      <figure>
+        <img src="sub.svg" alt="Making a substitution: tap Sub, tap who comes off, then tap who comes on.">
+      </figure>
+      <p>
+        Minutes played and <strong>+/-</strong> come from this and nothing else, so
+        it is the one thing worth doing carefully. Players on the floor keep their
+        name and their keys; the bench keeps its name but loses its keys, so a tap
+        cannot land on the wrong row.
+      </p>
+    </div>
+    <div class="lang lang--zh" lang="zh-Hant">
+      <h2>5. 換人</h2>
+      <figure>
+        <img src="sub.svg" alt="換人流程：按 Sub，按要換出場的球員，然後按要換入場的球員。">
+      </figure>
+      <p>
+        上陣時間與 <strong>+/-</strong> 完全由此決定，所以這是最值得小心做好的部分。在場上的球員會保留姓名與按鈕；後備球員保留姓名，但按鈕會收起，避免按錯列。
+      </p>
+    </div>
   </section>
 
   <section>
-    <h2>Five things to remember</h2>
-    <ol class="remember">
-      <li><strong>One tap, one event.</strong> Every number on the screen is
-        worked out from those taps.</li>
-      <li><strong>The clock is a stopwatch, not a feed from the board.</strong>
-        Check it against the last play every so often.</li>
-      <li><strong>Subs are the only thing that measures minutes.</strong> Tap
-        <em>Sub</em> when players change and the rest looks after itself.</li>
-      <li><strong>Nothing is final until you say so.</strong> Undo, ✕, the
-        dropdown, the time field — a mistake is always fixable.</li>
-      <li><strong>Export when the buzzer goes.</strong> The game lives in this
-        browser alone.</li>
-    </ol>
+    <div class="lang lang--en">
+      <h2>6. If you miss something</h2>
+      <figure>
+        <img src="fix.svg" alt="If you miss a play: tap the key when you notice, find the row, then type the time it really happened.">
+      </figure>
+      <p>
+        Log it as soon as you notice and correct its time afterwards. The block in
+        the picture above is the entry's time in the play-by-play: it is a field,
+        not a label — type the time the play really happened and the row moves to
+        where it belongs, with the minutes and +/- following it.
+      </p>
+      <p>
+        For a basket you only need on the scoreboard, the <strong>Team total</strong>
+        box under the table is quicker: type the points and they land on the board
+        without being credited to anyone.
+      </p>
+    </div>
+    <div class="lang lang--zh" lang="zh-Hant">
+      <h2>6. 漏記了怎麼辦</h2>
+      <figure>
+        <img src="fix.svg" alt="漏記處理：發現時先按按鈕記錄，找回那一列，然後輸入真正發生時間。">
+      </figure>
+      <p>
+        發現漏記就立刻補按，之後再修正時間。上圖中的方塊就是比賽紀錄裡該筆記錄的時間：它是可以輸入的欄位，不是文字。輸入真正發生的時間，該列會移到正確位置，上陣時間與 +/- 也會跟著更新。
+      </p>
+      <p>
+        如果只是要讓記分牌上的分數正確，表格下方的 <strong>Team total</strong> 更快：輸入分數，記分牌會加上去，但不會算在任何球員身上。
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="lang lang--en">
+      <h2>7. At the end</h2>
+      <figure>
+        <img src="end.svg" alt="End game in the More menu, and the save and export buttons in the file bar.">
+      </figure>
+      <p>
+        <strong>End game</strong> asks first, then parks the clock at 00:00 of the
+        last period and marks the game final — that is what settles the last few
+        seconds of the minutes. Then save.
+      </p>
+      <p>
+        <strong>Save game</strong> writes the whole game to one file that loads
+        back in. The three CSVs are for reports. Everything lives in this browser
+        on this tablet and nothing is uploaded, so a game that is not exported is
+        one cleared site data away from being gone.
+      </p>
+    </div>
+    <div class="lang lang--zh" lang="zh-Hant">
+      <h2>7. 比賽結束</h2>
+      <figure>
+        <img src="end.svg" alt="More 選單中的 End game，以及檔案列上的儲存與匯出按鈕。">
+      </figure>
+      <p>
+        <strong>End game</strong> 會先請你確認，然後把時鐘停在最後一節的 00:00，並將比賽標記為已完成——最後幾秒的上陣時間就是這樣定下來的。之後再儲存。
+      </p>
+      <p>
+        <strong>Save game</strong> 會把整場比賽寫成一個檔案，可以再次載入。三個 CSV 是給報告用的。所有資料只存在這部平板的這個瀏覽器裡，不會上傳，所以沒有匯出的比賽，只要清除網站資料就會消失。
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="lang lang--en">
+      <h2>Five things to remember</h2>
+      <ol>
+        <li><strong>One tap, one event.</strong> Every number on the screen is
+          worked out from those taps.</li>
+        <li><strong>The clock is a stopwatch, not a feed from the board.</strong>
+          Check it against the last play every so often.</li>
+        <li><strong>Subs are the only thing that measures minutes.</strong> Tap
+          <em>Sub</em> when players change and the rest looks after itself.</li>
+        <li><strong>Nothing is final until you say so.</strong> Undo, ✕, the
+          dropdown, the time field — a mistake is always fixable.</li>
+        <li><strong>Export when the buzzer goes.</strong> The game lives in this
+          browser alone.</li>
+      </ol>
+    </div>
+    <div class="lang lang--zh" lang="zh-Hant">
+      <h2>五個要點</h2>
+      <ol>
+        <li><strong>一下記錄，一項數據。</strong>畫面上每個數字都由這些記錄計算出來。</li>
+        <li><strong>時鐘是碼錶，不是記分牌的連線。</strong>請不時核對它與最後一筆記錄。</li>
+        <li><strong>換人是唯一用來計算上陣時間的動作。</strong>球員更替時按 <em>Sub</em>，其餘交給系統。</li>
+        <li><strong>未確認前都不算定案。</strong>Undo、✕、下拉選單、時間欄位——錯誤永遠可以修正。</li>
+        <li><strong>完場哨聲一響就匯出。</strong>比賽只存在這個瀏覽器裡。</li>
+      </ol>
+    </div>
   </section>
 
   <footer>
-    <p>
+    <p class="lang lang--en">
       <a href="../">Back to the app</a> · more detail in <strong>More → Help &amp; about</strong>
+    </p>
+    <p class="lang lang--zh" lang="zh-Hant">
+      <a href="../">回到應用程式</a> · 更多說明在 <strong>More → Help &amp; about</strong>
     </p>
   </footer>
 </main>
+
+<script>
+// One page in two languages: both are in the markup above, and this decides which
+// one is shown. The choice is remembered, because a scorer who reads Chinese should
+// not have to ask for it twice; failing that, the browser's own language answers;
+// failing that the page stays English, which is what it is without this script.
+(function () {
+  const KEY = 'game-stats-logger/guide-lang';
+  const TITLES = {
+    en: "Beginner's guide — 籃球比賽數據記錄器 / Basketball Game Stats Logger",
+    'zh-Hant': '新手指南 — 籃球比賽數據記錄器 / Basketball Game Stats Logger',
+  };
+  const buttons = [...document.querySelectorAll('.lang-switch button')];
+
+  // Storage throws in some privacy modes and on file://, exactly as it does for
+  // the game: a browser that refuses it forgets the choice rather than failing.
+  const remembered = () => {
+    try {
+      return localStorage.getItem(KEY);
+    } catch {
+      return null;
+    }
+  };
+
+  const remember = (lang) => {
+    try {
+      localStorage.setItem(KEY, lang);
+    } catch {
+      /* the page is already showing the right language */
+    }
+  };
+
+  function show(wanted, { save = false } = {}) {
+    const lang = TITLES[wanted] ? wanted : 'en';
+    document.documentElement.dataset.lang = lang;
+    document.documentElement.lang = lang;
+    document.title = TITLES[lang];
+    for (const button of buttons) {
+      button.setAttribute('aria-pressed', String(button.dataset.lang === lang));
+    }
+    if (save) remember(lang);
+  }
+
+  for (const button of buttons) {
+    button.addEventListener('click', () => show(button.dataset.lang, { save: true }));
+  }
+
+  const languages = navigator.languages?.length ? navigator.languages : [navigator.language];
+  const browsers = languages.some((tag) => /^zh/i.test(tag || '')) ? 'zh-Hant' : 'en';
+  show(remembered() || browsers);
+})();
+</script>
 </body>
 </html>

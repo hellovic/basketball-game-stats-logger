@@ -2645,6 +2645,8 @@ ul {
   font: inherit;
   text-align: left;
   cursor: pointer;
+  /* One menu item is a link to the guide rather than a button that acts here. */
+  text-decoration: none;
 }
 
 .menu__item:hover {
