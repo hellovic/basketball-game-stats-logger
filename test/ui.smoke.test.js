@@ -1721,6 +1721,54 @@ test('the Team and players dialog carries the team file controls', async () => {
   assert.equal(dom.downloads.length, 1, 'Save team still downloads the roster');
 });
 
+test('loading a game asks before it replaces the one on screen', async () => {
+  const dom = await startApp();
+  const onScreen = storedGame();
+
+  // A file the app can read, written the way Save game writes one: the same
+  // game, at a different venue so the swap is visible afterwards.
+  const { gameJson } = await import('../app/js/export.js');
+  const picker = document.getElementById('import-file');
+  const pick = () => {
+    picker.files = [
+      { name: 'other-game.json', text: async () => gameJson({ ...onScreen, venue: 'Another hall' }) },
+    ];
+    emit(dom.listeners, 'change', picker);
+  };
+  // The file is read asynchronously before the question is put. The stub clock
+  // is the app's, not the test runner's, so this turns the microtask queue over
+  // by hand rather than waiting on a timer.
+  const settle = async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  };
+
+  pick();
+  assert.equal(
+    document.getElementById('confirm-dialog').hidden,
+    true,
+    'the question waits until the file is known to be readable',
+  );
+  await settle();
+
+  // The question names the file and counts what answering it would discard.
+  assert.equal(document.getElementById('confirm-dialog').hidden, false, 'and then asks');
+  assert.equal(document.getElementById('confirm-title').textContent, 'Load this game?');
+  assert.match(document.getElementById('confirm-text').textContent, /other-game\.json/);
+  assert.match(document.getElementById('confirm-text').textContent, /recorded entries will be discarded/);
+
+  // Cancelling leaves the game on screen untouched.
+  emit(dom.listeners, 'click', actionable({ action: 'cancel-danger' }));
+  assert.equal(document.getElementById('confirm-dialog').hidden, true);
+  assert.equal(storedGame().venue, onScreen.venue, 'nothing replaced yet');
+
+  // Confirming is what actually swaps the game.
+  pick();
+  await settle();
+  confirmDanger(dom);
+  assert.equal(storedGame().venue, 'Another hall');
+});
+
 test('removing a player takes them and their entries off the roster', async () => {
   const dom = await startApp();
 

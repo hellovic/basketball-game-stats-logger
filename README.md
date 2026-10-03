@@ -9,8 +9,9 @@ No accounts, no server, no build step, no dependencies.
 
 **First time, or scoring once a season?** There is a pictured beginner's guide
 built into the app — **More → Beginner's guide**, the first item in that menu.
-It walks through one whole game: what to set up, which key to tap, the clock,
-substitutions, what to do about a play you missed, and how to finish and save.
+It walks through one whole game: what to set up, the five who start, which key to
+tap, the clock, substitutions, what to do about a play you missed, and how to
+finish and save.
 It is written in English and 繁體中文, and switches between them in place, so one
 link suits everyone at the table.
 

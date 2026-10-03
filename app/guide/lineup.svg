@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 296" width="1040" height="296" role="img" aria-label="Setting the starting five: tap Sub, then tap the five players on the floor">
+<rect width="1040" height="296" fill="#f3f4fb"/>
+<text x="40" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#141a2e">Setting the starting five</text>
+<text x="40" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" fill="#667085">Once, before tip-off, in the Live entry heading. Each side has a five of its own.</text>
+<rect x="40" y="84" width="280" height="104" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<circle cx="60" cy="104" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="60" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">1</text>
+<text x="80" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">Tap Sub</text>
+<text x="60" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">In the Live entry heading. With</text>
+<text x="60" y="153" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">nobody named yet it reads Start</text>
+<text x="60" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">and asks for the five starting.</text>
+<path d="M330 136 h26" stroke="#98a2b3" stroke-width="1.6" fill="none"/><path d="M356 136 l-6 -4 v8 z" fill="#98a2b3"/>
+<rect x="370" y="84" width="280" height="104" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<circle cx="390" cy="104" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="390" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">2</text>
+<text x="410" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">Tap the five on the floor</text>
+<text x="390" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">One after another, in any order.</text>
+<text x="390" y="153" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">The strip counts them off:</text>
+<text x="390" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">Tap 4 more starting.</text>
+<path d="M660 136 h26" stroke="#98a2b3" stroke-width="1.6" fill="none"/><path d="M686 136 l-6 -4 v8 z" fill="#98a2b3"/>
+<rect x="700" y="84" width="280" height="104" rx="12" fill="#ffffff" stroke="#e6e8f2" stroke-width="1"/>
+<circle cx="720" cy="104" r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/><text x="720" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">3</text>
+<text x="740" y="109" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="800" fill="#141a2e">The five are marked</text>
+<text x="720" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">Their rows carry the team colour;</text>
+<text x="720" y="153" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">the bench keeps its names and</text>
+<text x="720" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">loses its keys.</text>
+<rect x="40" y="208" width="940" height="44" rx="10" fill="#e8efff" stroke="#e8efff" stroke-width="1"/>
+<text x="60" y="228" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#141a2e">Minutes played and +/- are counted from these five taps and nothing else — skip them and those two columns stay empty.</text>
+<text x="60" y="244" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">Tapped the wrong player? Cancel, or the Esc key, drops the lot before anything is recorded — then tap Start again.</text>
+<text x="40" y="276" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#667085">Do it for both sides: the Away / Home tabs switch which team the entry table is scoring, and the box score follows them.</text>
+</svg>

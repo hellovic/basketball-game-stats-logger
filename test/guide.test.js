@@ -57,13 +57,30 @@ test('the guide is the same guide in both languages', () => {
 
   // The translation is really there, not a stub: a few of the words a reader
   // will be looking for, taken from the app's own vocabulary.
-  for (const phrase of ['賽前兩分鐘', '上陣時間', '換人', '記分牌', '個人數據表']) {
+  for (const phrase of ['賽前兩分鐘', '先發五人', '上陣時間', '換人', '記分牌', '個人數據表']) {
     assert.ok(page.includes(phrase), `the Chinese guide should mention ${phrase}`);
   }
 
   // And every Chinese block declares its language, so a screen reader switches
   // voice for it rather than reading it as mangled English.
   assert.equal(countOf(page, /class="lang lang--zh" lang="zh-Hant"/g), sections + 2);
+});
+
+test('the starting five is a step of its own, in both languages', () => {
+  const page = readFileSync(guidePath, 'utf8');
+
+  // It is a before-the-game job, so it sits with the other setup rather than
+  // only inside the substitution section — and it is what minutes and +/-
+  // are counted from, which is worth a picture.
+  assert.match(page, /Set the five who start/, 'the English heading');
+  assert.match(page, /設定先發五人/, 'the Chinese heading');
+  assert.equal(countOf(page, /lineup\.svg/g), 2, 'the picture is shown in both languages');
+
+  // The two talks about the lineup are the same talk: each language names the
+  // button the reader will press and what the taps buy.
+  for (const phrase of ['Start', 'Tap 4 more starting', 'MIN']) {
+    assert.ok(page.includes(phrase), `the guide should name ${phrase}`);
+  }
 });
 
 test('the guide offers both languages, and remembers the choice', () => {
