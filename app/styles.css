@@ -1507,13 +1507,22 @@ ul {
   color: var(--ink-faint);
 }
 
-/* The Made column stands beside the name, so a player's count is read in the
-   same glance as the player it belongs to. It is kept to the width of its own
-   text — the room this panel buys is for the squares, not the figures — and the
-   team's total heads the same column, over the counts it adds up. */
+/* The name and Made columns are held to the width of their own text, so the
+   room this panel buys goes to the squares rather than to air after a name that
+   is read in one glance anyway. The team's total heads the Made column, over
+   the counts it adds up. */
+.shot__row th,
+.shot__team th:first-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
 .shot__table .shot__made {
   width: 1%;
   white-space: nowrap;
+  /* Air where the figures stop and the squares begin, so a count and the run it
+     belongs to do not read as one column. */
+  padding-right: var(--sp-4);
 }
 
 .shot__row th {
