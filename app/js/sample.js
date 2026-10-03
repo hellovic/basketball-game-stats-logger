@@ -144,7 +144,10 @@ export function sampleGame() {
     venue: 'Riverside Gymnasium',
     periodsPerGame: 4,
     currentPeriod: 3,
-    clock: { running: false, seconds: 412 },
+    // The clock sits where the last recorded play ends — 9:42 into the third,
+    // so 00:18 on the face — because a sample whose clock trails its own
+    // entries would be the one game in the app that disagrees with itself.
+    clock: { running: false, seconds: 18 },
   });
 
   game.homeTeamId = HOME_TEAM;

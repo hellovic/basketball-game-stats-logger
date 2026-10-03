@@ -439,6 +439,14 @@ game says so rather than guessing from the wall clock. Plus/minus is unaffected:
 it is about who was on the floor when the ball went in, not how long they were
 there.
 
+A clock left *behind* the play — stopped for a stoppage and never restarted, or
+edited to an earlier time — is handled from both ends. The last stint of anyone
+still on the floor runs to whichever is later, the clock or the last entry
+recorded in that period, so time that was played and logged is never handed to
+nobody. And while the clock is still behind, the strip under the quarter totals
+says so, naming both readings and how much time is at stake. Neither blocks
+anything: a scorer mid-game has no time to untangle a clock.
+
 ### How the score is calculated
 
 **Every point is an entry**, and the scoreboard, the quarter strip, the box score

@@ -122,7 +122,7 @@ function fixture() {
  * meaningful for the team-level entries that have no player, which is exactly
  * the rule `addEvent` enforces.
  */
-function log(game, stat, result, { team = 'home', player = null, period = 1 } = {}) {
+function log(game, stat, result, { team = 'home', player = null, period = 1, clockSeconds } = {}) {
   const playerObj =
     typeof player === 'string' ? game.players.find((p) => p.id === player) : player;
   const slot = playerObj ? (playerObj.teamId === game.homeTeamId ? 'home' : 'away') : team;
@@ -133,6 +133,7 @@ function log(game, stat, result, { team = 'home', player = null, period = 1 } = 
     stat,
     result,
     period,
+    clockSeconds,
   });
   assert.equal(outcome.error, null, `logging ${stat}/${result} failed: ${outcome.error}`);
   return outcome.event;
@@ -725,6 +726,85 @@ test('minutes run from a player coming on to coming off, across the period break
   // home2 is still on, so their stint runs to the live clock: the rest of the
   // first period, plus the four minutes played so far in the second.
   assert.equal(report.minutes[home2.id], 2 * 60 + 4 * 60);
+});
+
+test('a clock left behind the last entry does not shorten the on-court time', () => {
+  const { game, players } = fixture();
+  const { home1, home2 } = players;
+
+  // The five are out, and the play is logged to 9:50 of the first period. The
+  // clock, though, was left at 5:00 — stopped for a stoppage, corrected, or
+  // left where an older correction was typed.
+  sub(game, { on: home1.id, period: 1, clockSeconds: 600 });
+  sub(game, { on: home2.id, period: 1, clockSeconds: 600 });
+  log(game, '2PT', 'made', { player: home1, period: 1, clockSeconds: 10 });
+  setClock(game, 300);
+
+  const report = floorReport(game);
+
+  // Both stints run to the last reading rather than to the clock: the five
+  // minutes of play after the clock stopped belong to whoever was out there.
+  assert.equal(report.minutes[home1.id], 9 * 60 + 50);
+  assert.equal(report.minutes[home2.id], 9 * 60 + 50);
+
+  // And the same game with the clock at the end of the period counts the whole
+  // quarter, which is what the reading could not tell us on its own.
+  setClock(game, 0);
+  assert.equal(floorReport(game).minutes[home1.id], 10 * 60);
+});
+
+test('a player who comes on after the clock was left still gets their minutes', () => {
+  const { game, players } = fixture();
+  const { home1, home2 } = players;
+
+  sub(game, { on: home1.id, period: 1, clockSeconds: 600 });
+  log(game, '2PT', 'made', { player: home1, period: 1, clockSeconds: 10 });
+  setClock(game, 300);
+  // A change recorded at 7:00, later than the clock was left: the stint that
+  // follows it used to be dropped for ending before it started.
+  sub(game, { off: home1.id, on: home2.id, period: 1, clockSeconds: 180 });
+
+  const report = floorReport(game);
+  assert.equal(report.minutes[home2.id], 2 * 60 + 50, '7:00 to 9:50 on the floor');
+  assert.equal(report.minutes[home1.id], 7 * 60, 'and the one who came off keeps theirs');
+});
+
+test('a clock lagging the last entry is named, and only while it lags', () => {
+  const { game, players } = fixture();
+  const { home1 } = players;
+
+  sub(game, { on: home1.id, period: 1, clockSeconds: 600 });
+  log(game, '2PT', 'made', { player: home1, period: 1, clockSeconds: 10 });
+
+  // Nothing to say while the clock is where the play ended.
+  assert.deepEqual(consistencyWarnings(game).filter((w) => /clock reads/.test(w.message)), []);
+
+  // Left at 5:00 with entries to 9:50, and the note says what is at stake.
+  setClock(game, 300);
+  const warnings = consistencyWarnings(game).filter((w) => /clock reads/.test(w.message));
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0].message, /05:00 in Q1/);
+  assert.match(warnings[0].message, /09:50/);
+  assert.match(warnings[0].message, /04:50 short/);
+
+  // A clock ahead of the play is the ordinary case, not a problem.
+  setClock(game, 0);
+  assert.deepEqual(consistencyWarnings(game).filter((w) => /clock reads/.test(w.message)), []);
+
+  // And with no lineup there are no minutes to be short of.
+  const { game: blank, players: blankPlayers } = fixture();
+  sub(blank, { on: blankPlayers.home1.id, period: 1, clockSeconds: 600 });
+  log(blank, '2PT', 'made', { player: blankPlayers.home1, period: 1, clockSeconds: 10 });
+  setClock(blank, 300);
+  const bare = fixture();
+  bare.game.clock.seconds = 10;
+  log(bare.game, '2PT', 'made', { player: bare.players.home1, period: 1, clockSeconds: 10 });
+  setClock(bare.game, 300);
+  assert.deepEqual(
+    consistencyWarnings(bare.game).filter((w) => /clock reads/.test(w.message)),
+    [],
+    'no lineup, no minutes to be short of',
+  );
 });
 
 test('a period the clock never ran contributes no minutes', () => {

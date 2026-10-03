@@ -10,7 +10,7 @@
  */
 
 import { LINEUP, SHOOTING, REBOUND, STATS, eventPoints, getStat, isShooting } from './stats.js';
-import { periodLabel } from './format.js';
+import { clock, periodLabel } from './format.js';
 import { elapsedInPeriod, periodLength } from './clock.js';
 
 /** Is this event attributed to a specific player? */
@@ -282,6 +282,23 @@ function periodStart(game, period) {
   return total;
 }
 
+/**
+ * How far into a period its last recorded reading sits, or null for none.
+ *
+ * This is where the evidence ends rather than where the clock was left: the
+ * readings are stamped when an entry is made, so the furthest of them is the
+ * latest moment the scorer demonstrably had the game running.
+ */
+function furthestReading(game, period) {
+  let furthest = null;
+  for (const event of game.events) {
+    if (event.period !== period) continue;
+    const at = elapsedInPeriod(game, event);
+    if (at !== null && (furthest === null || at > furthest)) furthest = at;
+  }
+  return furthest;
+}
+
 /** Where an event sits on that timeline. */
 function eventSeconds(game, event) {
   return periodStart(game, event.period) + (elapsedInPeriod(game, event) ?? 0);
@@ -396,10 +413,21 @@ export function floorReport(game) {
 
   // A stint still open at the end runs to the live clock, so minutes read as
   // "so far" during a game rather than only settling at the next substitution.
-  const now = periodStart(game, game.currentPeriod || 1) + elapsedInPeriod(game, {
-    period: game.currentPeriod || 1,
+  //
+  // The clock is not always ahead of the play, though: a scorer stops it for a
+  // stoppage and forgets to start it again, corrects it, or leaves it where an
+  // older correction was typed. An open stint therefore ends at whichever is
+  // later — the clock, or the furthest reading in the period — because a clock
+  // left five minutes behind the last entry would otherwise hand the last five
+  // minutes of the game to nobody at all.
+  const openPeriod = game.currentPeriod || 1;
+  const liveElapsed = elapsedInPeriod(game, {
+    period: openPeriod,
     clockSeconds: game.clock?.seconds ?? 0,
   });
+  const now =
+    periodStart(game, openPeriod) +
+    Math.max(liveElapsed ?? 0, furthestReading(game, openPeriod) ?? 0);
   for (const [, players] of onFloor) {
     for (const playerId of players) {
       closeStint(playerId, cameOnAt.get(playerId) ?? now, now);
@@ -454,6 +482,28 @@ export function consistencyWarnings(game) {
         'player who is no longer on the roster, so the team totals include points ' +
         'that no player line shows.',
     });
+  }
+
+  // Minutes come from the clock as much as from the log, so a clock left behind
+  // the last entry silently shortens everyone's time on court — and the clock is
+  // one edit away from being anywhere. Nothing is blocked (a scorer is mid-game
+  // and has no time to untangle it) but it is named while the table is still set
+  // up, rather than found in the report afterwards.
+  if (derived.floor.tracked) {
+    const period = game.currentPeriod || 1;
+    const live = elapsedInPeriod(game, { period, clockSeconds: game.clock?.seconds ?? 0 });
+    const furthest = furthestReading(game, period);
+    // A few seconds of slack, because the clock is read a moment before the tap
+    // lands and a reading one second 'behind' is not a mistake.
+    if (live !== null && furthest !== null && furthest - live > 5) {
+      warnings.push({
+        level: 'warn',
+        message:
+          `The clock reads ${clock(game.clock?.seconds ?? 0)} in ${periodLabel(period, game.periodsPerGame)} ` +
+          `but the last entry is at ${clock(furthest)}, so on-court minutes are ` +
+          `${clock(furthest - live)} short until they agree.`,
+      });
+    }
   }
 
   // A typed team total is added on top of that team's player entries for the

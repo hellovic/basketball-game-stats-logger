@@ -391,7 +391,7 @@ test('the app boots and renders without throwing', async () => {
   assert.match(document.getElementById('score-home').textContent, /^\d+$/);
   assert.match(document.getElementById('score-away').textContent, /^\d+$/);
   assert.equal(document.getElementById('period-display').textContent, 'Q3');
-  assert.equal(document.getElementById('clock-display').textContent, '06:52');
+  assert.equal(document.getElementById('clock-display').textContent, '00:18');
 
   // Home and away names come from the sample teams.
   assert.equal(document.getElementById('score-home-name').textContent, 'Northside');
@@ -614,10 +614,11 @@ test('expanding the box score adds the shooting percentages and efficiency', asy
 
   // J. Reed: 9 points on 4 of 5 from the field, 1 of 2 from three, no free
   // throws, plus a rebound and an assist. He starts and never comes off, so his
-  // minutes run to the live clock — 23:08 into a game sitting at 3:08 of Q3.
+  // minutes run to the last play — 29:42 into a game whose clock sits at 00:18
+  // of Q3, where that play was logged.
   const reed = rowFor('J. Reed');
   assert.deepEqual(reed.slice(13, 19), ['80%', '50%', '—', '90%', '90%', '10']);
-  assert.equal(reed[19], '23:08', 'minutes so far, from the live clock');
+  assert.equal(reed[19], '29:42', 'minutes so far, to the last recorded play');
   assert.match(reed[20], /^[+-]?\d+$/, 'and a signed points swing');
 
   // Riverside's team row: 21 points on 9 of 10 from the field, all of them
@@ -1951,8 +1952,8 @@ test('switching to halves moves the period length to twenty minutes', async () =
 
 test('the clock face reflects the sample game on load', async () => {
   await startApp();
-  // The sample is positioned mid-Q3 with 6:52 left.
-  assert.equal(document.getElementById('clock-display').textContent, '06:52');
+  // The sample stands where its last recorded play left off: 00:18 left in Q3.
+  assert.equal(document.getElementById('clock-display').textContent, '00:18');
   assert.match(document.getElementById('clock-display').getAttribute('aria-label'), /tap to start/);
 });
 
@@ -1986,6 +1987,34 @@ test('a clock time can be typed in and then counted down', async () => {
   runTimers();
   assert.equal(document.getElementById('clock-display').textContent, '07:29');
   assert.equal(storedGame().clock.running, true);
+});
+
+test('a clock left behind the last entry is said out loud', async () => {
+  const dom = await startApp();
+
+  // The sample stands where its last recorded play left off, so the strip has
+  // nothing to report.
+  assert.equal(document.getElementById('warning-note').hidden, true);
+
+  // Wound back five minutes, the on-court minutes go short by that much — and
+  // the strip that already carries the app's other caveats says so, with both
+  // readings in it.
+  emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
+  const face = document.getElementById('clock-display');
+  face.textContent = '5:00';
+  emit(dom.listeners, 'blur', face);
+
+  const note = document.getElementById('warning-note');
+  assert.equal(note.hidden, false);
+  assert.match(note.textContent, /clock reads 05:00 in Q3/);
+  assert.match(note.textContent, /09:42/);
+  assert.match(note.textContent, /04:42 short/);
+
+  // Put it back where the play is and the note goes away again.
+  emit(dom.listeners, 'click', actionable({ action: 'edit-clock' }));
+  face.textContent = '0:18';
+  emit(dom.listeners, 'blur', face);
+  assert.equal(note.hidden, true);
 });
 
 test('a bare number of seconds is accepted', async () => {
