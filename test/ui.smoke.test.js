@@ -457,6 +457,67 @@ test('the roster is set up from a dialog, not from a row of the screen', async (
   assert.equal(document.getElementById('team-name-input').value, 'Riverside');
 });
 
+/**
+ * A scoreboard team block, as the press handlers see it.
+ *
+ * The block answers to both of its roles: it is the button that switches the
+ * side being scored, and the handle for that team's roster on a hold.
+ */
+function teamBlock(slot) {
+  const el = actionable({ action: 'select-team', teamSlot: slot });
+  el.classList.add('team-block');
+  el.closest = (selector) =>
+    selector === '[data-hold="roster"]' || selector === '[data-action]' ? el : null;
+  return el;
+}
+
+test('holding up a team block opens the roster for that team', async () => {
+  const dom = await startApp();
+  const dialog = document.getElementById('roster-dialog');
+  assert.equal(dialog.hidden, true);
+
+  // Home is the side being scored; the hold is on the away block.
+  const away = teamBlock('away');
+  emit(dom.listeners, 'pointerdown', away, { clientX: 700, clientY: 40 });
+
+  // A press that has not been held yet is still a tap: nothing has opened.
+  assert.equal(dialog.hidden, true);
+
+  runTimers();
+
+  assert.equal(dialog.hidden, false, 'the hold opens the roster');
+  assert.equal(document.getElementById('team-tab-away').getAttribute('aria-selected'), 'true');
+  assert.equal(document.getElementById('team-name-input').value, 'Riverside');
+
+  // The hold is advertised rather than secret: both blocks say so.
+  const html = readFileSync(resolve(appDir, 'index.html'), 'utf8');
+  assert.equal((html.match(/data-hold="roster"/g) || []).length, 2);
+  assert.match(html, /press and hold to edit its players/);
+
+  // And iOS is told not to drop its own long-press callout over the dialog.
+  const css = readFileSync(resolve(appDir, 'styles.css'), 'utf8');
+  assert.match(css, /\.team-block \{[\s\S]*?-webkit-touch-callout: none;/);
+});
+
+test('a press let go early, or one that slides, opens nothing', async () => {
+  const dom = await startApp();
+  const dialog = document.getElementById('roster-dialog');
+
+  // Let go before the hold lands.
+  const away = teamBlock('away');
+  emit(dom.listeners, 'pointerdown', away, { clientX: 700, clientY: 40 });
+  emit(dom.listeners, 'pointerup', away);
+  runTimers();
+  assert.equal(dialog.hidden, true, 'a tap is a tap');
+
+  // A finger that travels is scrolling, not holding.
+  const home = teamBlock('home');
+  emit(dom.listeners, 'pointerdown', home, { clientX: 300, clientY: 40 });
+  emit(dom.listeners, 'pointermove', home, { clientX: 300, clientY: 120 });
+  runTimers();
+  assert.equal(dialog.hidden, true, 'a drag is a drag');
+});
+
 test('every element id referenced by the app exists in the HTML document', async () => {
   // Read the ids straight from the markup and check the app's lookups against
   // them, so a renamed or removed id fails here rather than at runtime.

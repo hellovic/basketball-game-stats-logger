@@ -109,8 +109,10 @@ That is why both exports matter: the **Export** group in the file bar
 
 ## Using it during a game
 
-Set the two teams and their rosters up in **More → Team and players**, then work
-straight down the page. Every part of the game is on the one screen — there is
+Set the two teams and their rosters up in **More → Team and players**, or press
+and hold either team block on the scoreboard to open that team's roster
+directly — the block is the handle for the team it names. Then work straight
+down the page. Every part of the game is on the one screen — there is
 nothing to switch between. The scoreboard stays pinned to the top, and the setup
 strip below it (the date and venue, the quarter totals) scrolls away as you go,
 so a scroll down leaves the entry rows filling the screen. Each panel scrolls
@@ -202,8 +204,8 @@ the entry row or the box score on a screen too narrow to show them side by side;
 `Esc` also returns to two columns.
 
 The **More** menu holds what does not fit in the top bar: game settings, the
-team and its players, swapping the two sides, the game's own exports, the game
-summary, and help. The file bar it toggles is hidden until you ask for it,
+team and its players (also one press and hold on that team's scoreboard block),
+swapping the two sides, the game's own exports, the game summary, and help. The file bar it toggles is hidden until you ask for it,
 which is what keeps the two columns tall enough to read at a glance on an iPad.
 Game settings is behind that menu rather than on a button of its own: the date,
 time, venue and period pills on the strip all open it, so the scoreboard keeps

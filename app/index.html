@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.32.0">
-<meta name="app-build" content="2026-10-03B">
+<meta name="app-version" content="0.33.0">
+<meta name="app-build" content="2026-10-03C">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -40,8 +40,8 @@
     <!-- Home reads inward from the left, away outward to the right: the board
          runs home-first, the same way the quarter strip reads below it. -->
     <button type="button" class="team-block team-block--home" id="team-block-home"
-            data-action="select-team" data-team-slot="home"
-            title="Show the home team's roster and stats">
+            data-action="select-team" data-team-slot="home" data-hold="roster"
+            title="Score the home team &middot; press and hold to edit its players">
       <span class="team-block__text">
         <span class="team-block__name" id="score-home-name">Home</span>
         <span class="team-block__meta">
@@ -111,8 +111,8 @@
     </div>
 
     <button type="button" class="team-block team-block--away" id="team-block-away"
-            data-action="select-team" data-team-slot="away"
-            title="Show the away team's roster and stats">
+            data-action="select-team" data-team-slot="away" data-hold="roster"
+            title="Score the away team &middot; press and hold to edit its players">
       <span class="team-block__score" id="score-away">0</span>
       <span class="team-block__text">
         <span class="team-block__name" id="score-away-name">Away</span>

@@ -419,9 +419,14 @@ ul {
   min-height: 72px;
 }
 
-/* A team block is also the button that switches the roster to that team. */
+/* A team block is also the button that switches the roster to that team, and
+   the handle for that team's players on a press and hold — so the text on it
+   is not a selection to drag, and iOS has no callout to drop over the dialog
+   the hold opens. */
 .team-block {
   display: flex;
+  -webkit-touch-callout: none;
+  user-select: none;
   align-items: center;
   gap: var(--sp-3);
   min-width: 0;

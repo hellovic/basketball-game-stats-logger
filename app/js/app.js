@@ -2116,6 +2116,106 @@ function renderSummary() {
 }
 
 // ---------------------------------------------------------------------------
+// Press and hold on a team block
+// ---------------------------------------------------------------------------
+
+/**
+ * Open Team and players on one side of the board.
+ *
+ * The dialog edits whichever side the tabs have selected, so this selects the
+ * side first: a scorer who holds up the away block is asking about the away
+ * team, and the panel behind the dialog follows them there.
+ */
+function openTeamRoster(slot) {
+  closeMenu();
+
+  if (slot === 'home' || slot === 'away') {
+    detailTeamSlot = slot;
+    // A substitution belongs to the roster it was started from.
+    subStep = null;
+  }
+  render();
+
+  openDialog('roster-dialog');
+
+  // The cursor lands in the team name, which is the one field a scorer is most
+  // likely to want and the one that is awkward to reach on a tablet.
+  const field = $('team-name-input');
+  field.focus();
+  field.select();
+}
+
+/**
+ * How long a team block has to be held before it opens that team's roster.
+ *
+ * Long enough that a tap which lingers is still a tap, short enough that the
+ * scorer does not think the app has missed them.
+ */
+const HOLD_MS = 500;
+
+/** How far a finger may wander before the press counts as a drag instead. */
+const HOLD_SLOP = 12;
+
+/** The press being watched: where it started and which side it is over. */
+let holdPress = null;
+let holdTimer = null;
+
+/** Stop watching a press, whatever happens to it. */
+function endHold() {
+  if (holdTimer !== null) clearTimeout(holdTimer);
+  holdTimer = null;
+  holdPress = null;
+}
+
+/**
+ * Start watching a press on a team block.
+ *
+ * The block is two controls in one: a tap switches the side being scored, a
+ * hold opens that team's players. Nothing here cancels the tap — the click the
+ * browser sends when the finger lifts means the same thing either way, so a
+ * hold leaves the board showing the team whose roster it just opened.
+ */
+function beginHold(event) {
+  const block = event.target?.closest?.('[data-hold="roster"]');
+  if (!block) return;
+
+  endHold();
+  holdPress = {
+    slot: block.dataset.teamSlot,
+    x: event.clientX ?? 0,
+    y: event.clientY ?? 0,
+  };
+  holdTimer = setTimeout(() => {
+    const slot = holdPress?.slot;
+    holdTimer = null;
+    holdPress = null;
+    if (slot) openTeamRoster(slot);
+  }, HOLD_MS);
+}
+
+/** Give up on the hold if the finger slides: that is a drag, not a press. */
+function moveHold(event) {
+  if (!holdPress) return;
+  const dx = (event.clientX ?? 0) - holdPress.x;
+  const dy = (event.clientY ?? 0) - holdPress.y;
+  if (Math.hypot(dx, dy) > HOLD_SLOP) endHold();
+}
+
+// Watched from the document rather than bound to the blocks, because the
+// board re-renders under the finger and a press that outlives its element
+// would otherwise be lost.
+document.addEventListener('pointerdown', beginHold);
+document.addEventListener('pointermove', moveHold);
+document.addEventListener('pointerup', endHold);
+document.addEventListener('pointercancel', endHold);
+
+// A long press is the roster shortcut, not a link menu: iOS would otherwise
+// drop its own callout on top of the dialog the hold is opening.
+document.addEventListener('contextmenu', (event) => {
+  if (event.target?.closest?.('[data-hold="roster"]')) event.preventDefault();
+});
+
+// ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
 
@@ -2179,17 +2279,11 @@ document.addEventListener('click', (event) => {
       closeMenu();
       openDialog('settings-dialog');
       break;
-    case 'open-roster': {
+    case 'open-roster':
       // Setting up the two teams is the first thing a scorer does and then not
       // again, so it sits in the menu rather than owning a row of the screen.
-      // The cursor lands in the team name, which is what the scorer came for.
-      closeMenu();
-      openDialog('roster-dialog');
-      const field = $('team-name-input');
-      field.focus();
-      field.select();
+      openTeamRoster(detailTeamSlot);
       break;
-    }
     case 'swap-sides': {
       closeMenu();
       swapSides(game);
