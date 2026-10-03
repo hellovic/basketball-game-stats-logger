@@ -120,6 +120,27 @@
 
   .keys li { margin-bottom: 4px; }
 
+  /* The one-glance summary, before any of the how: what the app does and where
+     the data lives. Short enough to read standing up in a gym. */
+  .glance {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .glance li {
+    margin: 0;
+    padding: 10px 13px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
   .callout {
     margin: 18px 0 0;
     padding: 14px 16px;
@@ -127,6 +148,8 @@
     background: var(--accent-soft);
     font-size: 15px;
   }
+
+  .callout--top { margin-top: 12px; }
 
   code {
     padding: 1px 5px;
@@ -164,11 +187,40 @@
         totals, the box score — is worked out from those taps. You never add
         anything up by hand.
       </p>
+      <ul class="glance">
+        <li>⚡ <strong>One tap, one stat</strong> — the scoreboard, the quarter
+          totals and the box score all move together.</li>
+        <li>⏱ <strong>Clock, minutes and +/-</strong> — run the game clock, and
+          know exactly who was on the floor.</li>
+        <li>🧮 <strong>Rates without arithmetic</strong> — FG%, 3P%, FT%, eFG%,
+          TS% and efficiency, plus a shot profile of every attempt.</li>
+        <li>↩️ <strong>Mistakes are fixable</strong> — Undo, delete a row, or
+          retype the time of a play you logged late.</li>
+        <li>💾 <strong>Yours to keep</strong> — save the whole game to a file, or
+          export the box score and play-by-play as CSV.</li>
+      </ul>
+      <p class="callout callout--top">
+        🔒 <strong>Private by design.</strong> The game is kept in this browser,
+        on this device — no account, no server, and nothing sent anywhere. Once
+        the page has loaded it works with no internet at all, so a gym with no
+        signal is fine. Clearing the browser's site data is what erases it, so
+        export anything you want to keep.
+      </p>
     </div>
     <div class="lang lang--zh" lang="zh-Hant">
       <h1>新手指南</h1>
       <p class="lede">
         有事情發生時，按下對應的按鈕。分數、各節比分、個人數據表等所有數字，都由這些記錄自動計算，你不需要自己加總。
+      </p>
+      <ul class="glance">
+        <li>⚡ <strong>一下一項數據</strong>——記分牌、各節比分與個人數據表同步更新。</li>
+        <li>⏱ <strong>時鐘、上陣時間與 +/-</strong>：控制比賽時鐘，也清楚知道誰在場上。</li>
+        <li>🧮 <strong>百分比自動算好</strong>——FG%、3P%、FT%、eFG%、TS% 與效率值，還有每次出手的投籃分布。</li>
+        <li>↩️ <strong>錯誤都能修正</strong>——Undo、刪除單筆，或補記之後修改時間。</li>
+        <li>💾 <strong>檔案自己保管</strong>——整場比賽可存成檔案，或匯出個人數據表與比賽紀錄 CSV。</li>
+      </ul>
+      <p class="callout callout--top">
+        🔒 <strong>私密，只留在本機。</strong>比賽資料存放在這部裝置的瀏覽器裡——沒有帳號、沒有伺服器，也不會傳送到任何地方。頁面載入之後完全不需要網路，沒有訊號的球場也能照常記錄。清除瀏覽器的網站資料才會刪除，所以要保留的請先匯出。
       </p>
     </div>
   </div>

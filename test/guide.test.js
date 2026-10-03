@@ -83,6 +83,25 @@ test('the starting five is a step of its own, in both languages', () => {
   }
 });
 
+test('the guide opens by saying what the app does, and where the data lives', () => {
+  const page = readFileSync(guidePath, 'utf8');
+
+  // The summary sits in the two title blocks rather than in a section of its
+  // own, so it is the first thing on the page and adds no heading level between
+  // the guide and its steps.
+  assert.equal(countOf(page, /class="glance"/g), 2, 'the summary is in both languages');
+
+  // And the promise about the data is the one the app can actually keep: it is
+  // local storage, so there is no account, no server and no network need.
+  // Read with the line breaks flattened, since the prose is wrapped.
+  const prose = page.replace(/\s+/g, ' ');
+  for (const phrase of ['no account, no server', 'no internet', 'no signal']) {
+    assert.ok(prose.includes(phrase), `the guide should say "${phrase}"`);
+  }
+  assert.match(page, /沒有帳號/, 'and the same promise in Chinese');
+  assert.match(page, /不需要網路/);
+});
+
 test('the guide offers both languages, and remembers the choice', () => {
   const page = readFileSync(guidePath, 'utf8');
 
