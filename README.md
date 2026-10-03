@@ -515,7 +515,7 @@ Four exports, all generated in your browser:
 | --- | --- |
 | **Box score CSV** | One row per player plus a team totals row. Opens directly in Excel, Numbers or Google Sheets. |
 | **Play-by-play CSV** | The full entry log, oldest first, each row stamped with elapsed game time. The audit trail — enough to reconstruct a game by hand. |
-| **Game summary CSV** | The quarter grid plus the leading scorers. Good for sharing a result. |
+| **Game summary CSV** | What the game was: the date, time, venue, period structure and whether it is finished — plus the quarter grid and both rosters. The file a report is written from. |
 | **Save game** | The complete game. Re-importable, so this is what to use to move a game to another device or browser. |
 
 Files are named `2026-01-17_RIV-at-NOR_box-score.csv`, and CSV files carry a

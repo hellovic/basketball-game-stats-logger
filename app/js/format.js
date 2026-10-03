@@ -86,14 +86,21 @@ export function displayTime(value) {
  * The noun follows the number of periods, because a two-period game is played
  * in halves and calling them quarters would be wrong in the gym.
  */
-export function structureLabel(periods, periodSeconds) {
+/** "4 quarters" or "2 halves": the structure without its period length. */
+export function periodsLabel(periods) {
   const count = Number(periods);
   if (!Number.isFinite(count) || count <= 0) return '';
-
   const noun = count === 4 ? 'quarters' : count === 2 ? 'halves' : 'periods';
+  return `${count} ${noun}`;
+}
+
+export function structureLabel(periods, periodSeconds) {
+  const structure = periodsLabel(periods);
+  if (!structure) return '';
+
   const seconds = Number(periodSeconds);
-  if (!Number.isFinite(seconds) || seconds <= 0) return `${count} ${noun}`;
+  if (!Number.isFinite(seconds) || seconds <= 0) return structure;
 
   const minutes = Math.round(seconds / 60);
-  return `${count} ${noun} • ${minutes} min${minutes === 1 ? '' : 's'}`;
+  return `${structure} • ${minutes} min${minutes === 1 ? '' : 's'}`;
 }

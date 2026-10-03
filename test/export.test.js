@@ -279,35 +279,63 @@ test('an entry saved before clocks were recorded shows a blank time, not 00:00',
 // Summary
 // ---------------------------------------------------------------------------
 
-test('summary shows the quarter grid and the leading scorers', () => {
+test('the summary carries the settings, the score and both rosters', () => {
   const { game, home1, away1 } = fixture();
+  game.time = '19:30';
+  game.venue = 'Northside Sports Hall';
   log(game, '2PT', 'made', { player: home1, period: 1 });
   log(game, '3PT', 'made', { player: home1, period: 3 });
   log(game, 'FT', 'made', { player: away1, period: 4 });
 
   const rows = parseCsv(summaryCsv(game));
-  assert.deepEqual(rows[0], ['Team', 'Q1', 'Q2', 'Q3', 'Q4', 'Total']);
+  const setting = (label) => rows.find((row) => row[0] === label)?.[1];
 
-  const northside = rows.find((row) => row[0] === 'Northside');
-  assert.deepEqual(northside.slice(1, 5), ['2', '0', '3', '0']);
-  assert.equal(northside[5], '5');
+  // What the game was played under, and whether it is whole.
+  assert.equal(setting('Date'), '2026-01-17');
+  assert.equal(setting('Time'), '19:30');
+  assert.equal(setting('Venue'), 'Northside Sports Hall');
+  assert.equal(setting('Periods'), '4 quarters');
+  assert.equal(setting('Period length'), '10 minutes');
+  assert.equal(setting('Status'), 'In progress');
 
-  const scorersIndex = rows.findIndex((row) => row[0] === 'Top scorers');
-  assert.ok(scorersIndex > 0);
-  // Home1 has 5 points, away1 has 1, so the order is deterministic.
-  assert.equal(rows[scorersIndex + 1][0], '#4 J. Reed');
-  assert.equal(rows[scorersIndex + 1][1], '5');
-  assert.equal(rows[scorersIndex + 2][1], '1');
+  // The score, as the quarter grid it has always been.
+  const grid = rows.findIndex((row) => row[0] === 'Team' && row[1] === 'Q1');
+  assert.deepEqual(rows[grid], ['Team', 'Q1', 'Q2', 'Q3', 'Q4', 'Total']);
+  assert.deepEqual(rows[grid + 1], ['Northside', '2', '0', '3', '0', '5']);
+
+  // Both rosters, one player per row — including the ones who did not score,
+  // which is the whole difference between a roster and a leaderboard.
+  const rosterAt = rows.findIndex((row) => row[0] === 'Team' && row[1] === 'Abbrev.');
+  assert.deepEqual(rows[rosterAt], ['Team', 'Abbrev.', 'Number', 'Player']);
+  const roster = rows.slice(rosterAt + 1).filter((row) => row[0]);
+  assert.deepEqual(roster, [
+    ['Northside', 'NOR', '4', 'J. Reed'],
+    ['Northside', 'NOR', '7', 'A. Cole'],
+    ['Riverside', 'RIV', '12', 'M. Diaz'],
+  ]);
+
+  // And no leaderboard: the box score already has every line.
+  assert.equal(rows.some((row) => row[0] === 'Top scorers'), false);
 });
 
-test('summary skips players who did not score', () => {
-  const { game, home1 } = fixture();
-  log(game, 'REB', 'DEF', { player: home1 });
+test('a side with nobody on it is still named in the rosters', () => {
+  // A game built by hand: one side filled in, the other not.
+  const game = createGame();
+  game.date = '2026-01-17';
+  updateTeam(game, game.homeTeamId, { name: 'Northside', abbreviation: 'NOR' });
+  updateTeam(game, game.awayTeamId, { name: 'Riverside', abbreviation: 'RIV' });
+  addPlayer(game, game.homeTeamId, { number: '4', name: 'J. Reed' });
 
   const rows = parseCsv(summaryCsv(game));
-  const scorersIndex = rows.findIndex((row) => row[0] === 'Top scorers');
-  // Nothing but the heading, since nobody scored.
-  assert.equal(rows.length, scorersIndex + 1);
+  const rosterAt = rows.findIndex((row) => row[0] === 'Team' && row[1] === 'Abbrev.');
+  const roster = rows.slice(rosterAt + 1).filter((row) => row[0]);
+
+  // Riverside has no players here and still appears, with the side blank rather
+  // than absent, so neither team can be missing from the file by accident.
+  assert.deepEqual(roster, [
+    ['Northside', 'NOR', '4', 'J. Reed'],
+    ['Riverside', 'RIV', '', ''],
+  ]);
 });
 
 // ---------------------------------------------------------------------------

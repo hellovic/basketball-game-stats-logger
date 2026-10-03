@@ -11,9 +11,9 @@
 
 import { LINEUP, describeEvent, eventPoints, getStat } from './stats.js';
 import { computeGame } from './derive.js';
-import { eventClock, periodLabel, safeText } from './format.js';
-import { elapsedInPeriod } from './clock.js';
-import { eventsInOrder, deserialize, serialize } from './store.js';
+import { eventClock, periodLabel, periodsLabel, safeText } from './format.js';
+import { PERIOD_LENGTHS, elapsedInPeriod } from './clock.js';
+import { eventsInOrder, deserialize, playersOf, serialize } from './store.js';
 
 /**
  * Quote a CSV field when it contains a comma, quote or newline, doubling any
@@ -213,36 +213,67 @@ export function playByPlayCsv(game) {
   return toCsv(rows);
 }
 
-/** A leaderboard-style summary, handy for sharing one game's result. */
+/**
+ * What the game was, not a leaderboard.
+ *
+ * This is the file a report is written from, and the two things such a report
+ * has to state before it can quote a number are what the game was played under
+ * and who played it. The leading scorers this used to carry were a fifth
+ * reading of the same entries — the box score has every line — while the
+ * settings and the rosters were the parts no other export held.
+ */
 export function summaryCsv(game) {
   const derived = computeGame(game);
-  const rows = [['Team', 'Q1', 'Q2', 'Q3', 'Q4', 'Total']];
-
   const periods = derived.grid.periods || [];
-  const header = ['Team'];
-  for (const period of periods) header.push(periodLabel(period, game.periodsPerGame));
-  header.push('Total');
-  rows[0] = header;
+  const rows = [];
 
+  rows.push(['Game settings']);
+  rows.push(['Date', safeText(game.date)]);
+  rows.push(['Time', safeText(game.time)]);
+  rows.push(['Venue', safeText(game.venue)]);
+  rows.push(['Periods', periodsLabel(game.periodsPerGame)]);
+  rows.push(['Period length', periodLengthLabel(game.periodSeconds)]);
+  // Whether the game is whole or still being played is the first thing a reader
+  // needs to know about an export, and the only place it can be said.
+  rows.push(['Status', game.finishedAt ? 'Final' : 'In progress']);
+  rows.push([]);
+
+  rows.push(['Score']);
+  rows.push(['Team', ...periods.map((period) => periodLabel(period, game.periodsPerGame)), 'Total']);
   for (const row of derived.grid.rows) {
     const team = game.teams?.[row.teamId] || {};
     rows.push([team.name || team.abbreviation || 'Team', ...row.cells.map((c) => c.value), row.total]);
   }
-
-  // Top scorers underneath, separated by a blank row.
   rows.push([]);
-  rows.push(['Top scorers', 'PTS']);
-  const scorers = game.players
-    .map((player) => ({ player, line: derived.playerLines[player.id] }))
-    .filter((entry) => entry.line && entry.line.points > 0)
-    .sort((a, b) => b.line.points - a.line.points)
-    .slice(0, 5);
 
-  for (const { player, line } of scorers) {
-    rows.push([`${player.number ? `#${player.number} ` : ''}${player.name}`, line.points]);
+  // Both rosters, in jersey order, one player per row: a team with nobody on it
+  // still gets a row, so neither side can be missing from the file by accident.
+  rows.push(['Rosters']);
+  rows.push(['Team', 'Abbrev.', 'Number', 'Player']);
+  for (const row of derived.grid.rows) {
+    const team = game.teams?.[row.teamId] || {};
+    const name = team.name || team.abbreviation || 'Team';
+    const abbrev = safeText(team.abbreviation);
+    const roster = playersOf(game, row.teamId);
+
+    if (roster.length === 0) {
+      rows.push([name, abbrev, '', '']);
+      continue;
+    }
+    for (const player of roster) {
+      rows.push([name, abbrev, safeText(player.number), safeText(player.name)]);
+    }
   }
 
   return toCsv(rows);
+}
+
+/** The period length as the settings dialog names it: "10 minutes". */
+function periodLengthLabel(seconds) {
+  const known = PERIOD_LENGTHS.find((entry) => entry.seconds === seconds);
+  if (known) return known.label;
+  const minutes = Math.round(Number(seconds) / 60);
+  return Number.isFinite(minutes) && minutes > 0 ? `${minutes} minutes` : '';
 }
 
 /** The full game state, so nothing is lost and it can be re-imported later. */
