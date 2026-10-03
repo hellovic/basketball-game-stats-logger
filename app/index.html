@@ -8,8 +8,8 @@
 <!-- Surfaced in the bottom bar so a stale cached bundle is immediately visible.
      Bump the version and the build stamp together whenever shipped code changes:
      the stamp is the only way to tell a stale tab from a real bug at a glance. -->
-<meta name="app-version" content="0.33.2">
-<meta name="app-build" content="2026-10-03E">
+<meta name="app-version" content="0.34.0">
+<meta name="app-build" content="2026-10-03F">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -54,7 +54,7 @@
     </button>
 
     <div class="scoreboard__center">
-      <div class="clock-card">
+      <div class="clock-card" id="clock-card">
         <div class="clock-card__row">
           <div class="period-pill">
             <button type="button" class="period-pill__step" data-action="period-prev"
@@ -185,6 +185,14 @@
               <span class="menu__sub">Quarter grid and leading scorers</span>
             </span>
           </button>
+          <button type="button" class="menu__item" role="menuitem" data-action="end-game"
+                  id="menu-end-game">
+            <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13.4V2.6"/><path d="M3 2.6h8.2l-1.8 2.4 1.8 2.4H3"/></svg>
+            <span class="menu__text">
+              <span class="menu__label" id="menu-end-label">End game</span>
+              <span class="menu__sub" id="menu-end-sub">Close the game off and mark it final</span>
+            </span>
+          </button>
           <button type="button" class="menu__item" role="menuitem" data-action="open-about">
             <svg class="menu__icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M6.1 6.2a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4"/><circle cx="8" cy="11.6" r="0.9" fill="currentColor" stroke="none"/></svg>
             <span class="menu__text">
@@ -232,6 +240,9 @@
   </button>
 
   <span class="game-details__spacer"></span>
+  <!-- Said here rather than over the board: a finished game is a fact about
+       the game, like the venue, and the scoreboard stays three buttons wide. -->
+  <span class="game-details__final" id="game-final" hidden>Final</span>
   <span class="game-details__hint" id="game-status"></span>
 </section>
 

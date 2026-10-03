@@ -458,6 +458,15 @@ ul {
   --team-soft: var(--home-soft);
 }
 
+/* A finished game: the clock is at 00:00 and will not start again until the game
+   is reopened, so the card stops offering to. It stays readable — it is still
+   the time the game ended. */
+.clock-card.is-finished .clock-box,
+.clock-card.is-finished .clock-nudge,
+.clock-card.is-finished .clock-edit {
+  opacity: 0.55;
+}
+
 /* The side being scored carries the raised card, so it is obvious where the
    next tap lands before any row colour is read. */
 .team-block.is-current {
@@ -2574,6 +2583,21 @@ ul {
 .pill__text {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* The badge a finished game wears in the strip that carries its facts. */
+.game-details__final {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--sp-2);
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .game-details__hint {

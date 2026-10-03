@@ -21,6 +21,7 @@ import {
   setClock,
   setClockRunning,
   setPeriod,
+  setFinished,
   setPeriodSeconds,
   setPeriodsPerGame,
   setTeamPeriodTotal,
@@ -391,6 +392,18 @@ test('a serialised game round trips with all settings intact', () => {
   setPeriodSeconds(game, 6 * 60);
 
   assert.deepEqual(deserialize(serialize(game)), game);
+});
+
+test('a game starts open, and the stamp that closes it travels with the file', () => {
+  const game = createGame();
+  assert.equal(game.finishedAt, null, 'a new game is still being played');
+
+  setFinished(game, 1730000000000);
+  assert.equal(game.finishedAt, 1730000000000);
+  assert.equal(deserialize(serialize(game)).finishedAt, 1730000000000, 'and it survives a round trip');
+
+  setFinished(game, null);
+  assert.equal(game.finishedAt, null, 'reopening is the same field, emptied');
 });
 
 test('swapping sides moves the teams and not their contents', () => {

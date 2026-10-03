@@ -1989,6 +1989,63 @@ test('a clock time can be typed in and then counted down', async () => {
   assert.equal(storedGame().clock.running, true);
 });
 
+test('ending the game closes it off at 00:00 and marks it final', async () => {
+  const dom = await startApp();
+
+  // The minutes are only on screen in the expanded box, so open it first.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
+  const reedMinutes = () => {
+    const rows = document.getElementById('box-table').innerHTML.split('<tr');
+    const row = rows.find((chunk) => chunk.includes('J. Reed'));
+    assert.ok(row, 'expected a row for J. Reed');
+    const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) =>
+      m[1].replace(/<[^>]*>/g, '').trim(),
+    );
+    return cells[19];
+  };
+  assert.equal(reedMinutes(), '29:42', 'the seconds after the last play are not counted yet')
+
+  // Ending it is a question first, and the question names the period it will
+  // close at, so a mis-press in the third quarter cannot pass for the buzzer.
+  emit(dom.listeners, 'click', actionable({ action: 'end-game' }));
+  assert.equal(document.getElementById('confirm-dialog').hidden, false);
+  assert.match(document.getElementById('confirm-title').textContent, /End the game at Q3 00:00\?/);
+  assert.equal(storedGame().finishedAt ?? null, null, 'nothing happens until it is answered');
+
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-danger' }));
+  assert.ok(storedGame().finishedAt, 'the game carries the stamp');
+  assert.equal(storedGame().clock.seconds, 0);
+  assert.equal(storedGame().clock.running, false);
+  assert.equal(document.getElementById('clock-display').textContent, '00:00');
+  assert.equal(document.getElementById('game-final').hidden, false, 'and wears it in the strip');
+
+  // The quarter is now known to have run out, so the seconds nobody logged
+  // belong to the five who were out there.
+  assert.equal(reedMinutes(), '30:00');
+
+  // The clock is closed to changes, and says how to open it.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-clock' }));
+  assert.equal(storedGame().clock.running, false, 'a finished clock does not start');
+
+  // The same door leads back, and the clock stays where the ending put it.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-menu' }));
+  assert.equal(document.getElementById('menu-end-label').textContent, 'Reopen the game');
+  emit(dom.listeners, 'click', actionable({ action: 'end-game' }));
+  assert.equal(storedGame().finishedAt, null);
+  assert.equal(document.getElementById('game-final').hidden, true);
+});
+
+test('a finished game says so in the file it exports', async () => {
+  const dom = await startApp();
+
+  emit(dom.listeners, 'click', actionable({ action: 'end-game' }));
+  emit(dom.listeners, 'click', actionable({ action: 'confirm-danger' }));
+  emit(dom.listeners, 'click', actionable({ action: 'export-json' }));
+
+  const payload = JSON.parse(dom.downloads.at(-1).text);
+  assert.ok(payload.game.finishedAt, 'the file carries the ending, so a reader knows it is whole');
+});
+
 test('a clock left behind the last entry is said out loud', async () => {
   const dom = await startApp();
 

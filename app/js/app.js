@@ -25,6 +25,7 @@ import {
   saveState,
   setClock,
   setClockRunning,
+  setFinished,
   setPeriod,
   setPeriodsPerGame,
   setTeamPeriodTotal,
@@ -153,7 +154,7 @@ function save() {
  * that is not a rare state to reach.
  */
 function startClock() {
-  if (game.clock.running) return;
+  if (game.clock.running || clockIsClosed()) return;
 
   const { seconds, fromZero } = clockface.startValue(game);
   setClock(game, seconds);
@@ -309,6 +310,7 @@ function renderClockRunState() {
 
   $('clock-box').classList.toggle('is-running', running);
   $('clock-dot').classList.toggle('is-running', running);
+  $('clock-card').classList.toggle('is-finished', Boolean(game.finishedAt));
   if (!clockIsBeingEdited()) setClockFaceMode(false);
 }
 
@@ -327,7 +329,9 @@ function setClockFaceMode(editing) {
     'aria-label',
     editing
       ? 'Game clock, editable'
-      : `Game clock, tap to ${game.clock.running ? 'stop' : 'start'}`,
+      : game.finishedAt
+        ? 'Game clock, final'
+        : `Game clock, tap to ${game.clock.running ? 'stop' : 'start'}`,
   );
 }
 
@@ -1215,6 +1219,10 @@ function renderFooter() {
     game.events.length === 1 ? 'y' : 'ies'
   }`;
 
+  // A finished game says so where the rest of the game's facts are read, so
+  // an export taken later is not mistaken for one taken mid-quarter.
+  $('game-final').hidden = !game.finishedAt;
+
   // Shown so a stale cached bundle is obvious at a glance when something looks
   // out of date. The build stamp is the discriminator: if you are expecting a
   // fix and this still reads the old stamp, the browser is running old code.
@@ -1852,7 +1860,7 @@ function clockIsBeingEdited() {
  */
 function beginClockEdit() {
   const display = $('clock-display');
-  if (clockIsBeingEdited()) return;
+  if (clockIsBeingEdited() || clockIsClosed()) return;
 
   if (game.clock.running) {
     setClockRunning(game, false);
@@ -2034,6 +2042,14 @@ function toggleMenu() {
 function renderMenuState() {
   const bar = $('actionbar');
   $('menu-files-state').textContent = bar.hidden ? 'Hidden' : 'Shown';
+
+  // Ending a game and reopening one are the same door, so the item carries the
+  // wording of whichever way it currently leads.
+  const finished = Boolean(game.finishedAt);
+  $('menu-end-label').textContent = finished ? 'Reopen the game' : 'End game';
+  $('menu-end-sub').textContent = finished
+    ? 'Carry on from where the clock stopped'
+    : 'Close the game off at 00:00 of the last period';
 }
 
 // ---------------------------------------------------------------------------
@@ -2113,6 +2129,56 @@ function renderSummary() {
     <div class="summary__score">${line(game.awayTeamId)}${line(game.homeTeamId)}</div>
     <div class="table-scroll"><table class="summary__grid">${gridHead}${gridBody}</table></div>
     <div class="summary__teams">${scorers}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Finishing the game
+// ---------------------------------------------------------------------------
+
+/**
+ * Is the clock closed to changes because the game has been finished?
+ *
+ * Ending a game is only a clock move and a stamp, so the way back is to say so
+ * rather than to hunt for an undo. Every clock control asks this first, and the
+ * answer names the way out instead of leaving a tap looking broken.
+ */
+function clockIsClosed() {
+  if (!game.finishedAt) return false;
+  showToast('The game is finished — reopen it to change the clock.');
+  return true;
+}
+
+/**
+ * Close the game off at the end of the period it is standing in.
+ *
+ * The clock is what decides how much of the last period was played, so ending a
+ * game is really a clock move: to 00:00 of that period, stopped. Minutes and
+ * plus/minus then settle at the final buzzer — including the seconds after the
+ * last entry, which no reading could speak for on its own.
+ */
+function endGame() {
+  const last = clockface.label(game.currentPeriod || 1, game.periodsPerGame);
+  askBefore({
+    title: `End the game at ${last} 00:00?`,
+    text: 'The clock goes to 00:00 and the game is marked final, so minutes and +/- stop at the final buzzer. Nothing is deleted, and the game can be reopened.',
+    confirmLabel: 'End the game',
+    run: () => {
+      setClockRunning(game, false);
+      setClock(game, 0);
+      setFinished(game, Date.now());
+      save();
+      render();
+      showToast(`Game finished at ${last} 00:00.`);
+    },
+  });
+}
+
+/** Open a finished game again, leaving the clock where the ending put it. */
+function reopenGame() {
+  setFinished(game, null);
+  save();
+  render();
+  showToast('Game reopened — the clock is stopped at 00:00.');
 }
 
 // ---------------------------------------------------------------------------
@@ -2305,6 +2371,13 @@ document.addEventListener('click', (event) => {
       renderSummary();
       openDialog('summary-dialog');
       break;
+    case 'end-game':
+      // One item, two jobs: the label says which, and the game says which
+      // label is true.
+      closeMenu();
+      if (game.finishedAt) reopenGame();
+      else endGame();
+      break;
     case 'open-about':
       closeMenu();
       openDialog('about-dialog');
@@ -2358,11 +2431,15 @@ document.addEventListener('click', (event) => {
       openDialog('color-dialog');
       break;
     case 'period-next':
+      // A finished game stands in its last period: stepping out of it would
+      // silently credit a period nobody played.
+      if (clockIsClosed()) break;
       setPeriod(game, game.currentPeriod + 1);
       save();
       render();
       break;
     case 'period-prev':
+      if (clockIsClosed()) break;
       setPeriod(game, Math.max(1, game.currentPeriod - 1));
       save();
       render();
@@ -2385,6 +2462,7 @@ document.addEventListener('click', (event) => {
       // A nudge next to an open edit would fight the value being typed, so the
       // typed value lands first.
       if (clockIsBeingEdited() && !commitClockEdit()) break;
+      if (clockIsClosed()) break;
       const step = Number(target.dataset.clockStep) || 0;
       const next = Math.min(
         clockface.periodLength(game),
@@ -2397,6 +2475,7 @@ document.addEventListener('click', (event) => {
       break;
     }
     case 'reset-clock': {
+      if (clockIsClosed()) break;
       // Back to the start of the period, stopped: easier than waiting for a
       // ten-minute countdown when correcting a mistake.
       setClockRunning(game, false);

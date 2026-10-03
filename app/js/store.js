@@ -49,6 +49,16 @@ export function createGame(overrides = {}) {
     periodSeconds: defaultPeriodSeconds(4),
     currentPeriod: 1,
     clock: { running: false, seconds: 0 },
+    /**
+     * When the game was closed off, or null while it is still being played.
+     *
+     * The finished clock is what makes this worth storing rather than
+     * inferring: a game whose clock sits at 00:00 of its last period is a game
+     * whose minutes are complete, and saying so explicitly is what lets the
+     * difference between "finished" and "left in the middle" travel with the
+     * file.
+     */
+    finishedAt: null,
     homeTeamId,
     awayTeamId,
     teams: {
@@ -516,6 +526,23 @@ export function setClock(game, seconds) {
 
 export function setClockRunning(game, running) {
   game.clock = { ...game.clock, running: Boolean(running) };
+  return touch(game);
+}
+
+// ---------------------------------------------------------------------------
+// Persistence
+// ---------------------------------------------------------------------------
+
+/**
+ * Mark the game finished, or open it again.
+ *
+ * Only the timestamp is stored. Everything a finished game means is read from
+ * it and from the clock the ending set, so reopening has nothing to unwind —
+ * and the stamp travels with the file, which is what tells a reader of an
+ * export whether the numbers are the whole game or a game still in progress.
+ */
+export function setFinished(game, finishedAt) {
+  game.finishedAt = finishedAt ?? null;
   return touch(game);
 }
 

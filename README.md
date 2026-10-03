@@ -383,6 +383,26 @@ The clock bar is deliberately thin, and it is sticky — so every pixel it takes
 permanently lost from the scoring area below. That is why the labels are one word
 and the controls are compact. Phone-width layouts restore full-size tap targets.
 
+### Ending a game
+
+**More → End game** closes a game off. It asks first, then stops the clock and
+parks it at 00:00 of the period the game is standing in — the fourth quarter,
+or the overtime you played. The game wears a **Final** badge in the strip under
+the board, and its export carries the ending with it (`finishedAt` in the JSON),
+so a reader can tell a finished game from one left in the middle.
+
+Ending is what settles the last few seconds: minutes and +/- run to the final
+buzzer rather than stopping at the last play anybody logged. The clock will not
+start again while a game is finished, and the period will not move on — say
+**Reopen the game** from the same menu to carry on, which leaves the clock where
+the ending put it.
+
+Ending is a stamp, not a lock: entries stay editable afterwards, because the
+correction somebody notices on the drive home is still a correction. And the
+dialog names the period it is about to close at ("End the game at Q3 00:00?"),
+so pressing it in the wrong quarter is visible before it happens rather than
+after.
+
 Set the **period length** under *Game settings*: 6, 8, 10, 12 or 20 minutes.
 Switching between quarters and halves moves the length with it (10 → 20 minutes),
 unless you have already chosen a specific length, in which case your choice
