@@ -2279,9 +2279,9 @@ ul {
   border-left-color: var(--border-strong);
 }
 
-/* Both teams are in the one table, so the team whose roster is on the entry
-   table has to be marked — otherwise there is no way to tell where the next
-   tap will land. */
+/* The box carries one team at a time, and this is that team: its own colour on
+   the band over its rows, so the side on screen is legible before a name is
+   read and the tab that put it there is obvious. */
 .box-score .team-heading.is-current td {
   background: var(--team-soft);
   color: var(--team-accent);

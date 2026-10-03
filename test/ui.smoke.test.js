@@ -551,16 +551,22 @@ test('every element id referenced by the app exists in the HTML document', async
 });
 
 test('the sample game renders a populated box score and scoresheet', async () => {
-  await startApp();
+  const dom = await startApp();
 
-  const box = document.getElementById('box-table').innerHTML;
-  assert.match(box, /J\. Reed/);
-  assert.match(box, /M\. Diaz/);
-  assert.match(box, /Team totals/);
+  const box = () => document.getElementById('box-table').innerHTML;
+  // The box answers with the side the subhead names — home to begin with.
+  assert.match(box(), /J\. Reed/);
+  assert.match(box(), /Team totals/);
+  assert.doesNotMatch(box(), /M\. Diaz/, 'the other side is not mixed in');
 
   // The counting line is all that is there while the panel shares the screen.
-  assert.equal((box.match(/<th[ >]/g) || []).length, 13, 'Player plus twelve columns');
-  assert.doesNotMatch(box, /is-advanced/);
+  assert.equal((box().match(/<th[ >]/g) || []).length, 13, 'Player plus twelve columns');
+  assert.doesNotMatch(box(), /is-advanced/);
+
+  // Away / Home above the table is the switch, and it reads the other way too.
+  emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
+  assert.match(box(), /M\. Diaz/);
+  assert.doesNotMatch(box(), /J\. Reed/, 'and never both sides at once');
 
   const sheet = document.getElementById('sheet-table').innerHTML;
   assert.match(sheet, /Northside/);
@@ -621,13 +627,16 @@ test('expanding the box score adds the shooting percentages and efficiency', asy
   assert.equal(reed[19], '29:42', 'minutes so far, to the last recorded play');
   assert.match(reed[20], /^[+-]?\d+$/, 'and a signed points swing');
 
-  // Riverside's team row: 21 points on 9 of 10 from the field, all of them
-  // threes. Effective and true shooting can pass 100% — a three is worth more
-  // than the two points a plain percentage assumes. A team has no single answer
-  // to minutes or to plus/minus, so its row leaves both blank.
+  // Riverside's team row, read from its own tab: 21 points on 9 of 10 from the
+  // field, all of them threes. Effective and true shooting can pass 100% — a
+  // three is worth more than the two points a plain percentage assumes. A team
+  // has no single answer to minutes or to plus/minus, so its row leaves both
+  // blank.
+  emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
   const away = totalsFor('Riverside');
   assert.deepEqual(away.slice(13, 19), ['90%', '100%', '—', '105%', '105%', '24']);
   assert.deepEqual(away.slice(19), ['—', '—']);
+  emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'home' }));
 
   // Collapsing puts the compact table back exactly as it was.
   emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
@@ -669,18 +678,26 @@ test('the expanded box draws a shot profile of every attempt', async () => {
   // floating at the end of the team name.
   assert.equal(
     (profile.innerHTML.match(/<th scope="col" class="shot__made"><span class="shot__count">/g) || []).length,
-    2,
-    'both team totals are Made cells',
+    1,
+    'the total is a Made cell of the side on screen',
   );
 
-  // The profile follows the sort, because it is the same roster in the same
-  // order — read down one and then the other. The away block leads the profile,
-  // and in jersey order it opens on number 2; sorted by points, the leading
-  // scorer takes the top row instead.
+  // It is the same roster in the same order as the table, and it follows the
+  // tabs with it: the away side brings its own players and leaves the home
+  // ones behind.
   const firstRow = () => profile.innerHTML.split('<tr class="shot__row"')[1];
-  assert.ok(firstRow().includes('T. Okonkwo'), 'number 2 opens the away side');
+  emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'away' }));
+  assert.ok(rowFor('M. Diaz'), 'the away shooters are there');
+  assert.equal(rowFor('J. Reed'), undefined, 'and the home ones are not');
+  assert.match(profile.innerHTML, /9 \/ 10/, 'Riverside took ten shots');
+  assert.ok(firstRow().includes('T. Okonkwo'), 'number 2 opens the away side in jersey order');
+
+  // The sort reaches the profile too: sorted by points, the leading scorer takes
+  // the top row instead.
   emit(dom.listeners, 'click', actionable({ action: 'sort-box', column: 'pts' }));
   assert.ok(firstRow().includes('M. Diaz'), 'the leading scorer leads');
+  emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: 'home' }));
+  assert.ok(firstRow().includes('J. Reed'), 'which holds on the other tab as well');
 
   // Collapsing puts it away again, contents and all.
   emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
@@ -721,6 +738,11 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
 
   const sortBy = (column) =>
     emit(dom.listeners, 'click', actionable({ action: 'sort-box', column }));
+
+  // The box carries one side at a time, so this is also how the other team's
+  // block is reached.
+  const showTeam = (slot) =>
+    emit(dom.listeners, 'click', actionable({ action: 'select-team', teamSlot: slot }));
 
   const jerseyOrder = teamOrder('Northside').players;
   assert.deepEqual(jerseyOrder, [
@@ -785,6 +807,9 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
   // for a player.
   sortBy('name');
   assert.deepEqual(teamOrder('Northside').players, jerseyOrder);
+
+  // The other side sorts by the same rules, read from its own tab.
+  showTeam('away');
   assert.deepEqual(teamOrder('Riverside').players, [
     'T. Okonkwo',
     'M. Diaz',
@@ -798,16 +823,7 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
   // A second tap counts down from the highest number, which is neither the
   // roster order nor anything alphabetical.
   sortBy('name');
-  assert.deepEqual(teamOrder('Northside').players, [
-    'A. Bergstrom',
-    'S. Whitfield',
-    'T. Nguyen',
-    'M. Ferrer',
-    'D. Okafor',
-    'A. Cole',
-    'J. Reed',
-  ]);
-  // Each team is still sorted inside its own block, under its own heading.
+  // Each side is sorted inside its own block, under its own heading.
   assert.deepEqual(teamOrder('Riverside').players, [
     'D. Lindqvist',
     'P. Alvarez',
@@ -816,6 +832,17 @@ test('tapping a heading in the expanded box sorts that team, biggest first', asy
     'R. Feldman',
     'M. Diaz',
     'T. Okonkwo',
+  ]);
+  // And the same heading carries the same order across to the other tab.
+  showTeam('home');
+  assert.deepEqual(teamOrder('Northside').players, [
+    'A. Bergstrom',
+    'S. Whitfield',
+    'T. Nguyen',
+    'M. Ferrer',
+    'D. Okafor',
+    'A. Cole',
+    'J. Reed',
   ]);
 });
 
@@ -1753,9 +1780,12 @@ test('removing every player on the viewed team zeroes that side only', async () 
     true,
     'the away roster should be untouched',
   );
-  // The box score still renders; the removed side contributes no players.
-  assert.match(document.getElementById('box-table').innerHTML, /Riverside/);
-  assert.doesNotMatch(document.getElementById('box-table').innerHTML, /J\. Reed/);
+  // The box score still renders the side on screen, with nobody left in it —
+  // and it does not reach across to fill the gap from the other team.
+  const box = document.getElementById('box-table').innerHTML;
+  assert.match(box, /Team totals/);
+  assert.doesNotMatch(box, /J\. Reed/);
+  assert.doesNotMatch(box, /M\. Diaz/);
   // With nobody left, the list says so rather than going blank.
   assert.match(document.getElementById('roster-list').innerHTML, /No players yet/);
 });

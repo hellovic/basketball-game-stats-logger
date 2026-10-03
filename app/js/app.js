@@ -1163,26 +1163,28 @@ function renderBox(derived) {
   }`;
   // The headings only become buttons with the room the full width gives them, so
   // the hint is where the panel says so.
-  $('box-hint').textContent = expanded ? 'Tap a heading to sort' : 'Both teams, every column';
+  $('box-hint').textContent = expanded ? 'Tap a heading to sort' : 'Away / Home picks the team';
 
-  const body = [game.awayTeamId, game.homeTeamId]
+  // One team at a time, the one the subhead and the tabs above the table name.
+  // A scoring table is read down one side, and carrying both met that with the
+  // other team's rows in between — the side you did not ask for, every glance.
+  const body = [currentTeamId]
     .filter(Boolean)
     .map((teamId) => {
       const team = game.teams[teamId];
       const teamLineValues = derived.teamTotals[teamId] || teamLine(game, teamId);
 
-      // Sorting happens inside each team rather than across both: the table is
-      // read team by team, and a heading that jumped between them would be
-      // harder to follow than the roster order it replaces.
+      // Sorting stays inside the side on screen rather than reaching across to
+      // the other, which is not there: a heading that pulled in a name from
+      // somewhere else would be harder to follow than the roster order it
+      // replaces.
       const roster = sortBoxRoster(playersOf(game, teamId), columns, derived);
 
-      // Both teams stay in one table so the two totals can be read against each
-      // other; the heading of the team being entered is marked so it is obvious
-      // where the next tap will land — in that team's own colour, which is what
-      // the scoreboard and the strip above it are using for the same team.
-      const heading = `<tr class="team-heading${
-        teamId === currentTeamId ? ' is-current' : ''
-      }" style="--team-accent: ${accentFor(teamId)}; --team-soft: ${softFor(teamId)}">
+      // The band over the rows is the selected team's own colour — the same one
+      // the scoreboard and the strip above use for it — so which side is on
+      // screen is legible before a single name is read.
+      const heading = `<tr class="team-heading is-current"
+        style="--team-accent: ${accentFor(teamId)}; --team-soft: ${softFor(teamId)}">
         <td colspan="${columns.length + 1}">${escapeHtml(team?.name || 'Team')}</td></tr>`;
 
       const playerRows = roster
@@ -1263,9 +1265,9 @@ function shotHeading() {
 }
 
 /**
- * The frame the profile is read in: one set of headings over both teams, the
- * same shape as the box score above it, so the two can be read down one after
- * the other.
+ * The frame the profile is read in: one set of headings over the side the box
+ * score is showing, the same shape as the table above it, so the two can be
+ * read down one after the other.
  */
 function shotTable(rows) {
   return `

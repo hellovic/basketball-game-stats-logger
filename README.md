@@ -191,15 +191,16 @@ white kit with dark numbers reads from the table.
    its place — log it when you notice, then correct the time — and the players who
    were on the floor for it take the +/- from the corrected time, not from the
    moment the omission was spotted.
-5. **Box score** — both teams, per-player totals with a team totals row. The
-   heading of the team you are entering is highlighted, so it is obvious where
-   the next tap will land. Its **Full width** button adds the shooting
-   percentages and efficiency, and turns every heading into a sort key — tap one
-   and that team's players reorder, biggest first, and a second tap on the same
-   heading turns it round. The **Player** heading is the exception: it sorts by
-   jersey number, counting up from the lowest, because that is how a roster is
-   printed and how a coach finds a name. Each team sorts inside its own block,
-   so the two are never mixed together. See below.
+5. **Box score** — one team at a time, per-player totals with a team totals row.
+   The **Away** / **Home** tabs above the table pick the side, and the band over
+   the rows wears that team's own colour, so it is obvious which side is on
+   screen and where the next tap will land. Its **Full width** button adds the
+   shooting percentages and efficiency, and turns every heading into a sort key
+   — tap one and that team's players reorder, biggest first, and a second tap on
+   the same heading turns it round. The **Player** heading is the exception: it
+   sorts by jersey number, counting up from the lowest, because that is how a
+   roster is printed and how a coach finds a name. A sort belongs to the side on
+   screen, so switching tabs never mixes the two. See below.
 
    Tapping a player's row marks it, and tapping it again lets it go: the row is
    tinted across every column, which is what keeps an eye on one line in the
@@ -212,8 +213,8 @@ white kit with dark numbers reads from the table.
    free-throw columns with a made-of-taken count at the foot of each row. Solid
    is a make and an outline is a miss — the entry keys' own language — so a cold
    run and a hot one are told apart at a glance instead of hiding behind a
-   percentage. Both teams are listed, in the table's own order, so a sort moves
-   the two halves together.
+   percentage. It follows the table — the same side, in the same order — so the
+   Away / Home tabs and a sort move both halves together.
 6. **Team total** — under the entry table: the points the selected team has
    scored *in the period on the board*, typed rather than tapped. It is the
    scoreboard reading and nothing else; for the team's rebounds, turnovers and
