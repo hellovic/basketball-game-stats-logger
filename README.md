@@ -206,6 +206,14 @@ white kit with dark numbers reads from the table.
    nineteen-column version. The mark follows a player rather than a position, so
    sorting by a heading moves it with them, and removing a player from the
    roster takes the mark away with them too.
+
+   The same width buys a **shot profile** below the table: one square per
+   attempt, in the order it was taken, split into two-point, three-point and
+   free-throw columns with a made-of-taken count at the foot of each row. Solid
+   is a make and an outline is a miss — the entry keys' own language — so a cold
+   run and a hot one are told apart at a glance instead of hiding behind a
+   percentage. Both teams are listed, in the table's own order, so a sort moves
+   the two halves together.
 6. **Team total** — under the entry table: the points the selected team has
    scored *in the period on the board*, typed rather than tapped. It is the
    scoreboard reading and nothing else; for the team's rebounds, turnovers and
@@ -217,7 +225,7 @@ carry one each:
 | Control | Where | What it does |
 | --- | --- | --- |
 | `−` / `+` | Live entry | Smaller or larger stat keys, so more or fewer of the roster fit on screen |
-| the four-corner icon | every panel | Stretch that section across the whole width, hiding the other two |
+| the four-corner icon | every panel | Stretch that section across the whole width, hiding the other two; on the box score it also adds the derived columns and the shot profile |
 
 The keys start small, at **26px**, because fitting the roster on screen is worth
 more at the table than a tall key; the buttons step down to 20px and up through
@@ -652,4 +660,6 @@ row, and `renderBox` builds the fuller box score table below it.
   and it is a single game clock — not per-player floor time.
 - There is one clock setting for the whole game, so a league with a different
   overtime length than 5 minutes cannot be expressed exactly.
-- No shot-chart or location data.
+- No shot locations. An attempt is recorded as made or missed, so the shot
+  profile shows the order of a game's shots, not where on the floor they came
+  from.

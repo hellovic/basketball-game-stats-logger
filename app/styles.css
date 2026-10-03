@@ -1435,6 +1435,125 @@ ul {
 }
 
 /* ===========================================================================
+   Shot profile
+
+   The box score read the other way round: not what a player has, but the order
+   the attempts came in. One square per shot, wearing the app's own language for
+   a shot — solid is a make, an outline is a miss, exactly as the keys on the
+   entry row wear them — so a run of misses is visible at a glance rather than
+   inferred from a percentage.
+   =========================================================================== */
+
+.shot {
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  border-top: 1px solid var(--border-strong);
+}
+
+.shot__label {
+  margin: 0;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.shot__note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1);
+  margin: 4px 0 var(--sp-3);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.shot__table {
+  width: 100%;
+  margin-top: var(--sp-2);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+}
+
+.shot__table th,
+.shot__table td {
+  padding: 5px var(--sp-2);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.shot__table thead th {
+  border-bottom: 1px solid var(--border-strong);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.shot__team th {
+  border-bottom: 1px solid var(--border);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--team-accent, var(--ink-muted));
+}
+
+.shot__count {
+  float: right;
+  font-family: var(--font-num);
+  letter-spacing: 0;
+  color: var(--ink-faint);
+}
+
+.shot__row th {
+  font-weight: 700;
+}
+
+.shot__row td {
+  border-bottom: 1px solid var(--border);
+}
+
+.shot__row:last-child td,
+.shot__row:last-child th {
+  border-bottom: none;
+}
+
+/* The chips wrap, so a forty-attempt game reads as a few short lines rather
+   than running off the panel. */
+.shot__cell {
+  white-space: normal;
+}
+
+.shot__chip {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin: 0 2px 2px 0;
+  border: 1.5px solid var(--stat-made);
+  border-radius: 3px;
+  background: var(--surface);
+  vertical-align: middle;
+}
+
+.shot__chip.is-made {
+  background: var(--stat-made);
+}
+
+.shot__none {
+  color: var(--ink-faint);
+}
+
+.shot__made {
+  font-family: var(--font-num);
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ===========================================================================
    Entry table
 
    One row per player, one column per action. The header stays put while the

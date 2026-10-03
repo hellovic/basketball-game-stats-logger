@@ -114,6 +114,41 @@ function withPercentages(line) {
 }
 
 /**
+ * One player's shots, in the order they were taken.
+ *
+ * The box score counts attempts; this is the pattern behind the same numbers —
+ * the run of makes and misses through a game, which is what a coach reads to see
+ * how a quarter went. Read from the entries in game order, so a shot whose time
+ * was corrected afterwards sits in the run where it belongs rather than at the
+ * end of it.
+ */
+export function shotAttempts(game, playerId) {
+  const two = [];
+  const three = [];
+  const free = [];
+  let made = 0;
+
+  for (const event of eventsInGameOrder(game)) {
+    if (event.playerId !== playerId) continue;
+    const stat = getStat(event.stat);
+    if (!stat || !isShooting(stat.key)) continue;
+
+    const shot = {
+      made: event.result === 'made',
+      period: event.period,
+      clockSeconds: event.clockSeconds,
+    };
+    if (shot.made) made += 1;
+
+    if (stat.key === 'FT') free.push(shot);
+    else if (stat.key === '3PT') three.push(shot);
+    else two.push(shot);
+  }
+
+  return { two, three, free, made, attempts: two.length + three.length + free.length };
+}
+
+/**
  * Every period that has any event, plus at least `minimumPeriods` periods (and
  * at least `currentPeriod`), in ascending order. This is why overtime simply
  * appears: logging an event in period 5 makes period 5 exist.

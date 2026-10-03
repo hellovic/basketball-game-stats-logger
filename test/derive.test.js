@@ -38,6 +38,7 @@ import {
   listPeriods,
   periodScore,
   playerLine,
+  shotAttempts,
   teamLine,
   teamTotal,
 } from '../app/js/derive.js';
@@ -727,6 +728,41 @@ test('period scores, grid totals and box score all reconcile on a mixed game', (
   // Home team rebounds: 1 offensive (home1) + 1 defensive (team-level) = 2.
   assert.equal(derived.teamTotals[game.homeTeamId].reb, 2);
   assert.equal(derived.playerLines[home1.id].reb, 1);
+});
+
+test('shots come back in the order they were taken', () => {
+  const { game, players } = fixture();
+  const { home1, home2 } = players;
+
+  // Typed second, taken first — a play added once it was noticed, or a time
+  // corrected afterwards. The run is the order they happened in.
+  log(game, '2PT', 'missed', { player: home1, period: 1, clockSeconds: 420 });
+  log(game, '2PT', 'made', { player: home1, period: 1, clockSeconds: 480 });
+  log(game, '3PT', 'made', { player: home1, period: 2, clockSeconds: 540 });
+  log(game, 'FT', 'missed', { player: home1, period: 2, clockSeconds: 300 });
+  log(game, '2PT', 'made', { player: home2, period: 1, clockSeconds: 300 });
+
+  const shots = shotAttempts(game, home1.id);
+  assert.deepEqual(shots.two.map((shot) => shot.made), [true, false], 'in game order');
+  assert.deepEqual(shots.three.map((shot) => shot.made), [true]);
+  assert.deepEqual(shots.free.map((shot) => shot.made), [false]);
+  assert.equal(shots.attempts, 4);
+  assert.equal(shots.made, 2);
+  assert.equal(shots.two[0].period, 1, 'and each shot knows when it was taken');
+
+  // Another player's shots are not in this run.
+  assert.deepEqual(shotAttempts(game, home2.id).two.map((shot) => shot.made), [true]);
+});
+
+test('a player who has not shot has an empty profile', () => {
+  const { game, players } = fixture();
+  assert.deepEqual(shotAttempts(game, players.home1.id), {
+    two: [],
+    three: [],
+    free: [],
+    made: 0,
+    attempts: 0,
+  });
 });
 
 // ---------------------------------------------------------------------------

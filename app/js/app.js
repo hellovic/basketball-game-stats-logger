@@ -45,6 +45,7 @@ import {
   derivedPeriodPoints,
   listPeriods,
   playerLine,
+  shotAttempts,
   teamLine,
 } from './derive.js';
 import {
@@ -1209,6 +1210,16 @@ function renderBox(derived) {
         })
         .join('');
 
+      // The shot profile is the same roster in the same order, so a sort by a
+      // column moves both halves together, and the two can be read down one
+      // after the other.
+      const shots = roster.map((player) => ({
+        player,
+        shots: shotAttempts(game, player.id),
+      }));
+      const taken = shots.reduce((total, row) => total + row.shots.attempts, 0);
+      const scored = shots.reduce((total, row) => total + row.shots.made, 0);
+
       const totals = `<tr class="row--team">
         <td>Team totals</td>
         ${columns
@@ -1219,11 +1230,98 @@ function renderBox(derived) {
           .join('')}
       </tr>`;
 
-      return heading + playerRows + totals;
-    })
-    .join('');
+      return {
+        table: heading + playerRows + totals,
+        profile: shotTeamRows(teamId, team, shots, taken, scored),
+      };
+    });
 
-  table.innerHTML = `${head}<tbody>${body}</tbody>`;
+  table.innerHTML = `${head}<tbody>${body.map((rows) => rows.table).join('')}</tbody>`;
+
+  // The profile is what the full width buys, so it is built only while the panel
+  // has it: with the box open the clock re-renders this table once a second, and
+  // there is nothing stale left behind when it closes.
+  const profile = $('shot-profile');
+  const rows = body.map((team) => team.profile).join('');
+  profile.hidden = !expanded;
+  profile.innerHTML = expanded ? shotHeading() + shotTable(rows) : '';
+}
+
+/**
+ * What the profile is and how to read it: the squares are the app's own
+ * language for a shot, so the legend is the keys a scorer already taps — solid
+ * for a make, an outline for a miss.
+ */
+function shotHeading() {
+  return `
+  <p class="shot__label">Shot profile</p>
+  <p class="shot__note">
+    <span class="shot__chip is-made" aria-hidden="true"></span>made &middot;
+    <span class="shot__chip" aria-hidden="true"></span>missed &middot;
+    one square per attempt, in the order they were taken
+  </p>`;
+}
+
+/**
+ * The frame the profile is read in: one set of headings over both teams, the
+ * same shape as the box score above it, so the two can be read down one after
+ * the other.
+ */
+function shotTable(rows) {
+  return `
+  <table class="shot__table">
+    <thead>
+      <tr>
+        <th scope="col">Player</th>
+        <th scope="col">Two-point</th>
+        <th scope="col">Three-point</th>
+        <th scope="col">Free throw</th>
+        <th scope="col" class="shot__made">Made</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/**
+ * One team's stretch of the profile: a heading, then a row per player.
+ *
+ * One square per attempt, in the order they were taken, wearing the app's own
+ * language for a shot — solid is a make, an outline is a miss, the same as the
+ * keys on the entry row.
+ */
+function shotTeamRows(teamId, team, rows, taken, scored) {
+  const chips = (list) =>
+    list.length === 0
+      ? '<span class="shot__none">&mdash;</span>'
+      : list
+          .map((shot) => `<span class="shot__chip${shot.made ? ' is-made' : ''}" title="${shot.made ? 'Made' : 'Missed'} in ${escapeHtml(periodLabel(shot.period, game.periodsPerGame))}"></span>`)
+          .join('');
+
+  const head = `
+    <tr class="shot__team" style="--team-accent: ${accentFor(teamId)}; --team-soft: ${softFor(teamId)}">
+      <th scope="colgroup" colspan="5">${escapeHtml(team?.name || 'Team')}
+        <span class="shot__count">${scored} / ${taken}</span></th>
+    </tr>`;
+
+  return (
+    head +
+    rows
+      .map(({ player, shots }) => {
+        const name = `${player.number ? `#${escapeHtml(player.number)} ` : ''}${escapeHtml(player.name)}`;
+        return `
+    <tr class="shot__row">
+      <th scope="row">${name}</th>
+      <td class="shot__cell">${chips(shots.two)}</td>
+      <td class="shot__cell">${chips(shots.three)}</td>
+      <td class="shot__cell">${chips(shots.free)}</td>
+      <td class="shot__cell shot__made">${
+        shots.attempts === 0 ? '&mdash;' : `${shots.made} / ${shots.attempts}`
+      }</td>
+    </tr>`;
+      })
+      .join('')
+  );
 }
 
 function renderSheet(derived) {

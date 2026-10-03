@@ -634,6 +634,53 @@ test('expanding the box score adds the shooting percentages and efficiency', asy
   assert.equal(columnCount(), 13);
 });
 
+test('the expanded box draws a shot profile of every attempt', async () => {
+  const dom = await startApp();
+
+  const profile = document.getElementById('shot-profile');
+  // The compact box counts shots; the profile is part of what the width buys.
+  assert.equal(profile.hidden, true);
+  assert.equal(profile.innerHTML, '');
+
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
+  assert.equal(profile.hidden, false);
+  assert.match(profile.innerHTML, /Shot profile/);
+  assert.match(profile.innerHTML, /one square per attempt/, 'and a legend for the squares');
+
+  const rowFor = (name) =>
+    profile.innerHTML.split('<tr class="shot__row"').find((chunk) => chunk.includes(name));
+
+  // J. Reed's sample line: 3 of 3 from two and 1 of 2 from three.
+  const reed = rowFor('J. Reed');
+  assert.ok(reed, 'a row per player');
+  assert.equal((reed.match(/shot__chip/g) || []).length, 5, 'one square per attempt');
+  assert.equal((reed.match(/is-made/g) || []).length, 4, 'four of them made');
+  assert.match(reed, /4 \/ 5/);
+
+  // A player who never shot says so, rather than showing a run of nothing.
+  const quiet = rowFor('M. Ferrer');
+  assert.ok(quiet);
+  assert.equal((quiet.match(/shot__chip/g) || []).length, 0);
+  assert.match(quiet, /&mdash;/);
+
+  // The team heading carries the same count as its column of squares.
+  assert.match(profile.innerHTML, /12 \/ 13/, 'Northside took thirteen shots');
+
+  // The profile follows the sort, because it is the same roster in the same
+  // order — read down one and then the other. The away block leads the profile,
+  // and in jersey order it opens on number 2; sorted by points, the leading
+  // scorer takes the top row instead.
+  const firstRow = () => profile.innerHTML.split('<tr class="shot__row"')[1];
+  assert.ok(firstRow().includes('T. Okonkwo'), 'number 2 opens the away side');
+  emit(dom.listeners, 'click', actionable({ action: 'sort-box', column: 'pts' }));
+  assert.ok(firstRow().includes('M. Diaz'), 'the leading scorer leads');
+
+  // Collapsing puts it away again, contents and all.
+  emit(dom.listeners, 'click', actionable({ action: 'toggle-expand', panel: 'box' }));
+  assert.equal(profile.hidden, true);
+  assert.equal(profile.innerHTML, '');
+});
+
 test('tapping a heading in the expanded box sorts that team, biggest first', async () => {
   const dom = await startApp();
 
