@@ -11,6 +11,7 @@
 
 import { LINEUP, getStat, isShooting, isTeamTotal } from './stats.js';
 import { defaultPeriodSeconds } from './clock.js';
+import { eventsInGameOrder } from './order.js';
 
 const SCHEMA_VERSION = 1;
 const STORAGE_KEY = 'game-stats-logger/state/v1';
@@ -474,9 +475,14 @@ export function setTeamPeriodTotal(game, teamId, period, points) {
   return game;
 }
 
-/** Events in game order: oldest first, then insertion order for equal stamps. */
+/**
+ * Events in game order: oldest first, then insertion order for equal stamps.
+ *
+ * The order the CSV of the play-by-play is written in, and the reason a
+ * corrected time moves a row to the place in the log where it belongs.
+ */
 export function eventsInOrder(game) {
-  return [...game.events].sort((a, b) => a.ts - b.ts || 0);
+  return eventsInGameOrder(game);
 }
 
 /** Events newest-first, which is the order the play-by-play reads. */

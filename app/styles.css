@@ -2784,6 +2784,48 @@ ul {
   grid-area: reassign;
 }
 
+/* The time and the period are read off the row, so they are corrected on the
+   row: plain text until they are touched, a field while they are. Keeping them
+   borderless matters more than it sounds — the log is a list to be scanned, and
+   a hundred outlined boxes would stop it reading as one. */
+.log__time-edit,
+.log__period-edit {
+  width: 100%;
+  padding: 2px 3px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.log__time-edit {
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.log__period-edit {
+  appearance: none;
+  padding-left: 2px;
+}
+
+.log__time-edit:hover,
+.log__period-edit:hover,
+.log__time-edit:focus,
+.log__period-edit:focus {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* A row that was just re-filed flashes where it landed. */
+.log__row.is-hit {
+  background: var(--accent-soft);
+}
+
 .log__delete {
   grid-area: delete;
 }

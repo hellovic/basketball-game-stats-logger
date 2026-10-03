@@ -168,6 +168,14 @@ white kit with dark numbers reads from the table.
    into its period the play happened, counting up from 00:00 to the period
    length. Delete a wrong entry, or use the dropdown on a row to move it to a
    different player on the same team.
+
+   A row reads in **game order**, not in the order things were typed, and the
+   **time and period on the row are fields**: tap the time and retype it (7:30,
+   0730, or a bare count of seconds) or pick another period, and the entry moves
+   to where it now says it happened. That is what puts a play you forgot back in
+   its place — log it when you notice, then correct the time — and the players who
+   were on the floor for it take the +/- from the corrected time, not from the
+   moment the omission was spotted.
 5. **Box score** — both teams, per-player totals with a team totals row. The
    heading of the team you are entering is highlighted, so it is obvious where
    the next tap will land. Its **Full width** button adds the shooting
@@ -571,6 +579,7 @@ app/
   js/
     stats.js        the stat catalog — add a stat here to record it
     derive.js       pure derivation: period scores, box score, percentages
+    order.js        the order the game happened in, which is not typing order
     store.js        state, entry/undo/delete, roster loading, persistence
     clock.js        period lengths, starting, ticking down
     teamfile.js     the team file format: capture, write and parse

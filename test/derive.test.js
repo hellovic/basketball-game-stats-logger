@@ -16,6 +16,7 @@ import {
   createGame,
   deleteEvent,
   deserialize,
+  eventsInOrder,
   eventsNewestFirst,
   loadState,
   makeId,
@@ -26,6 +27,7 @@ import {
   setPeriod,
   setTeamPeriodTotal,
   undoLastEvent,
+  updateEvent,
   updateTeam,
 } from '../app/js/store.js';
 import {
@@ -518,6 +520,42 @@ test('an event cannot name a player who left the roster', () => {
 // Play-by-play ordering
 // ---------------------------------------------------------------------------
 
+test('the log reads in game order, not in the order things were typed', () => {
+  const { game, players } = fixture();
+
+  // Typed first, but it happened last: the clock counts down, so 1:00 left is
+  // 9:00 into the period and 9:00 left is 1:00 into it.
+  const last = log(game, '2PT', 'made', { player: players.home1, period: 1, clockSeconds: 60 });
+  const first = log(game, 'AST', null, { player: players.home2, period: 1, clockSeconds: 540 });
+
+  const newest = eventsNewestFirst(game);
+  assert.equal(newest[0].id, last.id, 'the play that happened later reads first');
+  assert.equal(newest[1].id, first.id);
+  assert.equal(eventsInOrder(game)[0].id, first.id, 'and the CSV reads the other way');
+});
+
+test('a corrected time moves the play, and the five it counts for, with it', () => {
+  const { game, players } = fixture();
+  const { home1, home2, away1 } = players;
+
+  sub(game, { on: home1.id, period: 1, clockSeconds: 600 });
+  sub(game, { on: away1.id, period: 1, clockSeconds: 600 });
+  // Home scores at 3:00, and home1 comes off at 5:00.
+  const basket = log(game, '2PT', 'made', { player: home1, period: 1, clockSeconds: 480 });
+  sub(game, { off: home1.id, on: home2.id, period: 1, clockSeconds: 300 });
+
+  assert.equal(floorReport(game).plusMinus[home1.id], 2, 'the scorer was out there for it');
+
+  // It was really at 6:00 — after the swap — and the time is corrected once the
+  // scorer notices. Changing the number has to move the credit with it, which is
+  // the whole reason the walk reads in game order.
+  updateEvent(game, basket.id, { clockSeconds: 240 });
+  const report = floorReport(game);
+  assert.equal(report.plusMinus[home1.id], 0, 'off the floor by then');
+  assert.equal(report.plusMinus[home2.id], 2, 'and the one who came on takes it');
+  assert.equal(report.plusMinus[away1.id], -2, 'the side it was scored against');
+});
+
 test('events read newest-first in the play-by-play', () => {
   const { game, players } = fixture();
   log(game, '2PT', 'made', { player: players.home1 });
@@ -831,8 +869,10 @@ test('plus/minus credits the five on the floor and debits the other five', () =>
   sub(game, { on: home1.id, period: 1, clockSeconds: 600 });
   sub(game, { on: away1.id, period: 1, clockSeconds: 600 });
 
-  // Home scores a three while both are out there.
-  log(game, '3PT', 'made', { player: home1, period: 1 });
+  // Home scores a three while both are out there. Every entry carries the time
+  // it happened: the walk reads the log in game order, so a play left at the
+  // default reading would claim to have happened at the end of the period.
+  log(game, '3PT', 'made', { player: home1, period: 1, clockSeconds: 480 });
   assert.deepEqual(
     [floorReport(game).plusMinus[home1.id], floorReport(game).plusMinus[away1.id]],
     [3, -3],
@@ -840,9 +880,9 @@ test('plus/minus credits the five on the floor and debits the other five', () =>
 
   // The away side answers, and then a player who was sitting down comes on for
   // the last basket of the run — while a home player watches it from the bench.
-  log(game, '2PT', 'made', { player: away1, team: 'away', period: 1 });
+  log(game, '2PT', 'made', { player: away1, team: 'away', period: 1, clockSeconds: 420 });
   sub(game, { off: away1.id, on: away2.id, period: 1, clockSeconds: 300 });
-  log(game, '2PT', 'made', { player: home2, period: 1 });
+  log(game, '2PT', 'made', { player: home2, period: 1, clockSeconds: 240 });
 
   const report = floorReport(game);
 

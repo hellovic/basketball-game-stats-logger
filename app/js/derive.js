@@ -12,6 +12,7 @@
 import { LINEUP, SHOOTING, REBOUND, STATS, eventPoints, getStat, isShooting } from './stats.js';
 import { clock, periodLabel } from './format.js';
 import { elapsedInPeriod, periodLength } from './clock.js';
+import { eventsInGameOrder } from './order.js';
 
 /** Is this event attributed to a specific player? */
 function hasPlayer(event) {
@@ -378,7 +379,9 @@ export function floorReport(game) {
     }
   };
 
-  for (const event of game.events) {
+  // In game order, not typing order: a play whose time was corrected after the
+  // fact has to find the five who were actually on the floor for it.
+  for (const event of eventsInGameOrder(game)) {
     const stat = getStat(event.stat);
 
     if (stat && stat.kind === LINEUP) {

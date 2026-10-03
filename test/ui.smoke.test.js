@@ -1038,11 +1038,17 @@ test('the play-by-play lists the seeded entries newest first', async () => {
   await startApp();
 
   const log = document.getElementById('log-list').innerHTML;
-  const firstPeriod = log.indexOf('Q3');
-  const laterPeriod = log.indexOf('Q1');
-  assert.ok(firstPeriod >= 0, 'Q3 entries should be present');
+  // Every row carries a period picker listing every period the game has, so
+  // the order is read from what each row selects rather than from the markup.
+  const rows = log.split('<li class="log__row').slice(1);
+  const periods = rows.map((row) => Number(/<option value="(\d+)" selected>/.exec(row)?.[1]));
+  assert.ok(periods.length > 0, 'the seeded game should have entries');
+
+  const firstThird = periods.indexOf(3);
+  const lastFirst = periods.lastIndexOf(1);
+  assert.ok(firstThird >= 0, 'Q3 entries should be present');
   assert.ok(
-    firstPeriod < laterPeriod,
+    firstThird < lastFirst,
     'the newest period should appear before the earliest one',
   );
 });
@@ -1051,7 +1057,11 @@ test('the play-by-play counts up from 00:00, not down from the period length', a
   await startApp();
 
   const log = document.getElementById('log-list').innerHTML;
-  const times = [...log.matchAll(/class="log__time">([^<]*)</g)].map((match) => match[1]);
+  const rows = log.split('<li class="log__row').slice(1);
+  // The time is an editable field on the row, so it is read from its value.
+  const times = rows.map(
+    (row) => /class="log__time-edit"[\s\S]*?value="([^"]+)"/.exec(row)?.[1],
+  );
   assert.ok(times.length > 0, 'every entry should render a time');
 
   for (const time of times) {
@@ -1064,6 +1074,45 @@ test('the play-by-play counts up from 00:00, not down from the period length', a
   // would report those two values the other way round.
   assert.equal(times[0], '09:42', 'the newest entry reads late in its period');
   assert.equal(times[times.length - 1], '00:00', 'the oldest entry reads early');
+});
+
+test('a row in the play-by-play can be re-timed, and the log re-files it', async () => {
+  const dom = await startApp();
+
+  const rows = () => document.getElementById('log-list').innerHTML.split('<li class="log__row').slice(1);
+  const timeIn = (row) => /class="log__time-edit"[\s\S]*?value="([^"]+)"/.exec(row)?.[1];
+  const periodIn = (row) => Number(/<option value="(\d+)" selected>/.exec(row)?.[1]);
+  const rowFor = (id) => {
+    const row = rows().find((chunk) => chunk.includes(`data-event-id="${id}"`));
+    assert.ok(row, `expected a row for ${id}`);
+    return row;
+  };
+  const field = (dataset, value) => {
+    const el = actionable(dataset);
+    el.value = value;
+    return el;
+  };
+
+  // The tip-off is the oldest thing in the game, so it is the last row.
+  const oldest = rows().at(-1);
+  assert.equal(timeIn(oldest), '00:00');
+  const id = /data-event-id="([^"]+)"/.exec(oldest)[1];
+
+  // Re-timed to 5:00 of the first period: the row is a correction of where the
+  // play was, so it moves to where the play now says it happened.
+  emit(dom.listeners, 'change', field({ action: 'edit-event-time', eventId: id }, '0500'));
+
+  assert.equal(timeIn(rowFor(id)), '05:00', 'the row carries the corrected time');
+  assert.ok(rows().indexOf(rowFor(id)) < rows().length - 1, 'and is no longer the oldest row');
+
+  // The period is the other half of when: a play logged in the wrong quarter
+  // has to be able to say so.
+  emit(dom.listeners, 'change', field({ action: 'edit-event-period', eventId: id }, '3'));
+  assert.equal(periodIn(rowFor(id)), 3, 'the row is filed under the third period now');
+
+  // And the numbers follow: that substitution now happens five minutes into the
+  // first period rather than at the tip-off.
+  assert.equal(storedGame().events.find((event) => event.id === id).clockSeconds, 300);
 });
 
 test('a logged stat updates the scoreboard, roster and box score together', async () => {

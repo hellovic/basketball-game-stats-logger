@@ -18,6 +18,7 @@ import {
   copyGameAsNew,
   createGame,
   deleteEvent,
+  eventsNewestFirst,
   loadState,
   mergeRoster,
   playersOf,
@@ -834,8 +835,10 @@ function renderLog(derived) {
     return;
   }
 
-  // Newest first: the most recent entry is the one most likely to be wrong.
-  const ordered = [...game.events].reverse();
+  // Newest first, in game order: the most recent entry is the one most likely to
+  // be wrong, and a time corrected after the fact moves its row to where the
+  // play actually happened rather than staying where it was typed.
+  const ordered = eventsNewestFirst(game);
 
   list.innerHTML = ordered
     .map((event) => {
@@ -860,9 +863,10 @@ function renderLog(derived) {
             : `${off} off the floor`;
 
         return `
-        <li class="log__row log__row--team" style="--accent: ${accentFor(event.teamId)}">
-          <span class="log__time">${escapeHtml(eventClock(clockface.elapsedInPeriod(game, event)))}</span>
-          <span class="log__period">${escapeHtml(periodLabel(event.period, game.periodsPerGame))}</span>
+        <li class="log__row log__row--team" data-event-id="${escapeHtml(event.id)}"
+            style="--accent: ${accentFor(event.teamId)}">
+          <span class="log__time">${timeEditor(event)}</span>
+          <span class="log__period">${periodEditor(event)}</span>
           <span class="log__who">${escapeHtml(who)}</span>
           <span class="log__what">${escapeHtml(what)}</span>
           <span class="log__points"></span>
@@ -878,9 +882,10 @@ function renderLog(derived) {
         : 'TEAM';
 
       return `
-        <li class="log__row${player ? '' : ' log__row--team'}" style="--accent: ${accentFor(event.teamId)}">
-          <span class="log__time">${escapeHtml(eventClock(clockface.elapsedInPeriod(game, event)))}</span>
-          <span class="log__period">${escapeHtml(periodLabel(event.period, game.periodsPerGame))}</span>
+        <li class="log__row${player ? '' : ' log__row--team'}" data-event-id="${escapeHtml(event.id)}"
+            style="--accent: ${accentFor(event.teamId)}">
+          <span class="log__time">${timeEditor(event)}</span>
+          <span class="log__period">${periodEditor(event)}</span>
           <span class="log__who">${escapeHtml(who)}</span>
           <span class="log__what">${escapeHtml(describeEvent(event.stat, event.result))}</span>
           <span class="log__points">${points > 0 ? `+${points}` : ''}</span>
@@ -891,6 +896,36 @@ function renderLog(derived) {
         </li>`;
     })
     .join('');
+}
+
+/**
+ * When an entry happened: the time, and the period it is filed under.
+ *
+ * Both are read off the row, so both are corrected on the row. The time is the
+ * one a scorer most often gets wrong after the fact — a play logged when it was
+ * noticed rather than when it happened — and it is typed in the same shapes as
+ * the clock: 7:30, 0730, or a bare count of seconds.
+ */
+function timeEditor(event) {
+  const elapsed = clockface.elapsedInPeriod(game, event);
+  return `<input class="log__time-edit" data-action="edit-event-time"
+    data-event-id="${escapeHtml(event.id)}"
+    value="${escapeHtml(eventClock(elapsed))}"
+    inputmode="numeric" maxlength="5" autocomplete="off"
+    aria-label="Time of this entry" title="When this happened, e.g. 7:30">`;
+}
+
+function periodEditor(event) {
+  const options = listPeriods(game)
+    .map(
+      (period) =>
+        `<option value="${period}"${period === event.period ? ' selected' : ''}>` +
+        `${escapeHtml(periodLabel(period, game.periodsPerGame))}</option>`,
+    )
+    .join('');
+  return `<select class="log__period-edit" data-action="edit-event-period"
+    data-event-id="${escapeHtml(event.id)}"
+    aria-label="Period of this entry">${options}</select>`;
 }
 
 /**
@@ -1285,6 +1320,19 @@ function hideToast() {
 
 function announce(message) {
   $('live-region').textContent = message;
+}
+
+/**
+ * Flash the row an edit landed on.
+ *
+ * Correcting a time re-files the entry, so the row a scorer was looking at is
+ * no longer where they left it. One flash says where it went.
+ */
+function flashLogRow(eventId) {
+  const row = document.querySelector(`.log__row[data-event-id="${CSS.escape(eventId)}"]`);
+  if (!row) return;
+  row.classList.add('is-hit');
+  setTimeout(() => row.classList.remove('is-hit'), 600);
 }
 
 /** Flash a player card so a tap is visibly acknowledged. */
@@ -2648,6 +2696,54 @@ document.addEventListener('change', (event) => {
 
   if (event.target.dataset?.action === 'reassign-event') {
     reassignEvent(event.target.dataset.eventId, event.target.value);
+    return;
+  }
+
+  if (event.target.dataset?.action === 'edit-event-time') {
+    const entry = game.events.find((e) => e.id === event.target.dataset.eventId);
+    if (!entry) return;
+
+    // Typed the way the clock is: 7:30, 0730, or a bare count of seconds.
+    const parsed = clockface.parseInput(event.target.value);
+    if (parsed.error) {
+      showToast(parsed.error);
+      // Put the row back to what the record says rather than leaving the typo
+      // sitting in the log looking like a time.
+      render();
+      return;
+    }
+
+    const length = clockface.periodLength(game, entry.period);
+    const outcome = updateEvent(game, entry.id, {
+      clockSeconds: Math.max(0, Math.min(length, length - parsed.seconds)),
+    });
+    if (outcome.error) {
+      showToast(outcome.error);
+      render();
+      return;
+    }
+
+    save();
+    render();
+    flashLogRow(entry.id);
+    return;
+  }
+
+  if (event.target.dataset?.action === 'edit-event-period') {
+    // A missed play is usually logged in the period it is noticed in, so the
+    // period is half of putting it back: the same row fixes both.
+    const outcome = updateEvent(game, event.target.dataset.eventId, {
+      period: Number(event.target.value),
+    });
+    if (outcome.error) {
+      showToast(outcome.error);
+      render();
+      return;
+    }
+
+    save();
+    render();
+    flashLogRow(event.target.dataset.eventId);
     return;
   }
 
